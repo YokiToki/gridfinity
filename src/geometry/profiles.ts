@@ -69,3 +69,36 @@ export function lipProfile(w: ManifoldToplevel, pitch: number, style: LipStyle):
   if (style === 'none') return null
   return layeredHull(w, pitch - 2 * CLEARANCE, FOOT_R_TOP, LIP_LAYERS[style])
 }
+
+/** Тонкая плита-прямоугольник со скруглёнными углами: шаблон для hull. */
+export function rectSlab(w: ManifoldToplevel, wx: number, wy: number, r: number, z: number): Manifold {
+  const { CrossSection, Manifold } = w
+  const rr = Math.min(r, wx / 2 - 0.005, wy / 2 - 0.005)
+  const cs = rr > 0.001
+    ? CrossSection.square([Math.max(wx - 2 * rr, 0.01), Math.max(wy - 2 * rr, 0.01)], true).offset(rr, 'Round', 2, 24)
+    : CrossSection.square([wx, wy], true)
+  return Manifold.extrude(cs, SLAB_T).translate([0, 0, z])
+}
+
+/** Радиусы слоёв (нижний, средний) для заданного верхнего радиуса: как в layeredHull. */
+export function layerRadii(rTop: number, layers: Layers) {
+  const rMid = Math.max(rTop - layers.up, R_MIN)
+  const rLow = Math.max(rMid - layers.low, R_MIN)
+  return { rMid, rLow }
+}
+
+/** Слоистый профиль прямоугольника topX × topY (как layeredHull для квадрата): для стопорной губы целой коробки. */
+export function layeredHullRect(w: ManifoldToplevel, topX: number, topY: number, rTop: number, layers: Layers): Manifold {
+  const { low, wall, up } = layers
+  const { rMid, rLow } = layerRadii(rTop, layers)
+  const parts: Manifold[] = []
+  let z = 0
+  const s = (dx: number, r: number, zz: number) => rectSlab(w, topX - 2 * dx, topY - 2 * dx, r, zz)
+  if (low > 0) { parts.push(w.Manifold.hull([s(up + low, rLow, 0), s(up, rMid, low)])); z = low }
+  if (wall > 0) { parts.push(w.Manifold.hull([s(up, rMid, z), s(up, rMid, z + wall)])); z += wall }
+  if (up > 0) parts.push(w.Manifold.hull([s(up, rMid, z), s(0, rTop, z + up)]))
+  return w.Manifold.union(parts)
+}
+
+/** Общая высота слоёв губы. */
+export const lipHeight = (style: LipStyle) => (style === 'none' ? 0 : LIP_LAYERS[style].low + LIP_LAYERS[style].wall + LIP_LAYERS[style].up)
