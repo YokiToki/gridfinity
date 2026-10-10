@@ -2,7 +2,7 @@
 
 ## 1. Build for subpath
 
-- [ ] 1.1 Set Vite `base: './'`; verify `npm run build` then `npx vite preview` serves the app and WASM from a nested path (e.g. served under `/sub/` by a static server) with the model rendering.
+- [x] 1.1 Set Vite `base: './'`; verify `npm run build` then `npx vite preview` serves the app and WASM from a nested path (e.g. served under `/sub/` by a static server) with the model rendering.
 
 ## 2. Pipeline
 
