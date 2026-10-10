@@ -14,11 +14,35 @@
 | 07 | `07-box-mode` | 01, 03, 04 | Box/Tray: wall, ledge, scoop |
 | 08 | `08-cutout-mode` | 07, 04 | Cutout: STL-импорт, прямоугольник, центровка |
 | 09 | `09-export-3mf-bambu` | 05–08 | Экспорт 3MF, пресеты Bambu |
+| 10 | `10-product-sections` | 01 | Разделы сайта Gridfinity Master / Keychain Master, маршруты, переключатель продуктов |
+| 11 | `11-keychain-relief` | 10 | Keychain: растр → силуэт → рельеф, масштаб, подложка, STL |
+| 12 | `12-keychain-patterns` | 11 | Keychain: источники высоты (в т.ч. яркость), профили, паттерны |
+| 13 | `13-keychain-mounts` | 11 | Keychain: крепление под кольцо, редактор расстановки, две половинки, штифты |
 
-```
-01 ─┬─ 02
-    └─ 03 ─ 04 ─┬─ 05 ─ 06 ─┐
-                └─ 07 ─ 08 ─┴─ 09
+```mermaid
+gantt
+    title Порядок и зависимости changes (длина полосы условная)
+    dateFormat YYYY-MM-DD
+    axisFormat %d.%m
+    section Основа
+    01 app-foundation       :done, c01, 2026-10-01, 2d
+    02 github-pages-deploy  :done, c02, after c01, 1d
+    03 geometry-core        :done, c03, after c01, 2d
+    04 fastener-placement   :done, c04, after c03, 2d
+    04a fastener-ears       :done, c04a, after c04, 1d
+    section Gridfinity
+    05 baseplate-model      :done, c05, after c04a, 2d
+    06 baseplate-split      :done, c06, after c05, 2d
+    07 box-mode             :c07, after c04a, 2d
+    08 cutout-mode          :c08, after c07, 2d
+    09 export-3mf-bambu     :c09, after c06 c08, 1d
+    section Keychain
+    10 product-sections     :c10, after c01, 1d
+    11 keychain-relief      :c11, after c10, 3d
+    12 keychain-patterns    :c12, after c11, 2d
+    13 keychain-mounts      :c13, after c11, 3d
 ```
 
 05–06 и 07–08 независимы друг от друга и могут идти в любом порядке.
+
+10–13 — отдельная ветка (Keychain Master); 12 и 13 независимы друг от друга.
