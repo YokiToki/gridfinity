@@ -40,6 +40,18 @@ describe('миграция сохранённых параметров baseplate
     expect(p.thickness).toEqual({ ...defaultParams.thickness, floor: 1.2 })
     expect(p.preview).toEqual({ ...defaultParams.preview, showPlate: true })
   })
+  it('настройки разделения донаполняются, включая вложенный connector', () => {
+    store({ split: { enabled: true, connector: { type: 'holes', count: 3 } } })
+    const p = load()
+    expect(p.split.enabled).toBe(true)
+    expect(p.split.margin).toBe(5)
+    expect(p.split.connector).toMatchObject({ type: 'holes', count: 3, diameter: 3.2, overrides: {} })
+    expect(p.split.exploded).toBe(true)
+  })
+  it('старое состояние без split получает разделение по умолчанию (выключено)', () => {
+    store({ unit: 42, x: 3, y: 2 })
+    expect(load().split).toEqual(defaultParams.split)
+  })
   it('false → none, смешанный случай', () => {
     store({ magnets: true, screws: false })
     const p = load()

@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import type { MeshData } from '../../geometry/mesh'
+import { result } from '../../geometry/testing'
 import '../../i18n'
 import { UnitContext } from '../../ui/units'
 import { MeasurementsBar } from './MeasurementsBar'
 
-const model = { min: [0, 0, 0], max: [50.8, 25.4, 8.65], volume: 1, numProp: 3, vertProperties: new Float32Array(), triVerts: new Uint32Array() } as MeshData
+const model = result(1, { min: [0, 0, 0], max: [50.8, 25.4, 8.65] })
 
 describe('MeasurementsBar', () => {
   it('показывает габариты в мм', () => {
@@ -22,7 +22,7 @@ describe('MeasurementsBar', () => {
 
 describe('MeasurementsBar: дюймы', () => {
   it('84 мм → 3.307 in', () => {
-    const m = { min: [0, 0, 0], max: [84, 84, 4.65], volume: 1, numProp: 3, vertProperties: new Float32Array(), triVerts: new Uint32Array() } as MeshData
+    const m = result(1, { min: [0, 0, 0], max: [84, 84, 4.65] })
     render(<UnitContext.Provider value={{ unit: 'in', setUnit: () => {} }}><MeasurementsBar model={m} /></UnitContext.Provider>)
     expect(screen.getByText('X 3.307')).toBeInTheDocument()
     expect(screen.getByText(/Z 0.183 in/)).toBeInTheDocument()

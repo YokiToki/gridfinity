@@ -2,10 +2,8 @@
 import { describe, expect, it, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { useModel } from './useModel'
-import { sharpParams as defaultParams, units } from '../geometry/testing'
-import type { MeshData } from '../geometry/mesh'
-
-const mesh = (volume: number): MeshData => ({ vertProperties: new Float32Array(), triVerts: new Uint32Array(), numProp: 3, min: [0, 0, 0], max: [1, 1, 1], volume })
+import type { ModelResult } from '../geometry/model'
+import { result as mesh, sharpParams as defaultParams, units } from '../geometry/testing'
 
 describe('useModel', () => {
   it('склеивает быстрые правки: генерируется только последняя', async () => {
@@ -21,17 +19,17 @@ describe('useModel', () => {
   })
   it('устаревший результат не заменяет новый', async () => {
     vi.useFakeTimers()
-    let resolveOld!: (m: MeshData) => void
+    let resolveOld!: (m: ModelResult) => void
     const generate = vi.fn()
-      .mockImplementationOnce(() => new Promise<MeshData>((r) => (resolveOld = r)))
+      .mockImplementationOnce(() => new Promise<ModelResult>((r) => (resolveOld = r)))
       .mockResolvedValueOnce(mesh(2))
     const { result, rerender } = renderHook(({ p }) => useModel('baseplate', p, { client: { generate } }), { initialProps: { p: defaultParams } })
     await act(async () => { await vi.advanceTimersByTimeAsync(200) })
     rerender({ p: { ...defaultParams, x: units(5) } })
     await act(async () => { await vi.advanceTimersByTimeAsync(200) })
-    expect(result.current.mesh?.volume).toBe(2)
+    expect(result.current.model?.parts[0].mesh.volume).toBe(2)
     await act(async () => { resolveOld(mesh(1)) })
-    expect(result.current.mesh?.volume).toBe(2)
+    expect(result.current.model?.parts[0].mesh.volume).toBe(2)
     vi.useRealTimers()
   })
   it('enabled=false: генерация не запускается, прежняя сетка остаётся, pending=true', async () => {
@@ -39,11 +37,11 @@ describe('useModel', () => {
     const generate = vi.fn().mockResolvedValue(mesh(1))
     const { result, rerender } = renderHook(({ p, enabled }) => useModel('baseplate', p, { client: { generate }, enabled }), { initialProps: { p: defaultParams, enabled: true } })
     await act(async () => { await vi.advanceTimersByTimeAsync(200) })
-    expect(result.current.mesh?.volume).toBe(1)
+    expect(result.current.model?.parts[0].mesh.volume).toBe(1)
     rerender({ p: { ...defaultParams, x: units(7) }, enabled: false })
     await act(async () => { await vi.advanceTimersByTimeAsync(500) })
     expect(generate).toHaveBeenCalledTimes(1)
-    expect(result.current.mesh?.volume).toBe(1)
+    expect(result.current.model?.parts[0].mesh.volume).toBe(1)
     expect(result.current.pending).toBe(true)
     rerender({ p: { ...defaultParams, x: units(7) }, enabled: true })
     await act(async () => { await vi.advanceTimersByTimeAsync(200) })
@@ -62,7 +60,7 @@ describe('useModel', () => {
     expect(result.current.busy).toBe(false) // быстрее порога
     await act(async () => { await vi.advanceTimersByTimeAsync(300) })
     expect(result.current.error).toBe('bad')
-    expect(result.current.mesh?.volume).toBe(1)
+    expect(result.current.model?.parts[0].mesh.volume).toBe(1)
     expect(result.current.busy).toBe(false)
     vi.useRealTimers()
   })

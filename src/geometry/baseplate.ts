@@ -6,7 +6,7 @@ import { cellCenters, type Footprint } from './footprint'
 import { allPositions, cellWindows, defaultFasteners, fastenerCuts, magnetSize, needsFloor, type FastenerConfig } from './fasteners'
 import { connectorExtras, cutFaces, planFace, type FacePlan, type FastenerHole, type PartExtras } from './connectors'
 import { resolveAxis, type Align } from './sizing'
-import { defaultSplit, MAX_PARTS, resolveCuts, splitParts, type CellRegion, type Part, type SplitGeometry } from './split'
+import { defaultSplit, defaultSplitSettings, MAX_PARTS, resolveCuts, splitGeometry, splitParts, type CellRegion, type Part, type SplitGeometry, type SplitSettings } from './split'
 import type { ManifoldToplevel } from 'manifold-3d'
 
 /** Размер по оси: в ячейках (дробных) или в мм, плюс выравнивание блока ячеек. */
@@ -27,19 +27,28 @@ export interface BaseplateThickness {
 
 export const defaultThickness: BaseplateThickness = { baseHeight: SOCKET_HEIGHT, floor: 0, rim: 0, paddingDrop: 0, cornerRadius: 4 }
 
-/** Всё, что влияет на геометрию модели. */
-export interface BaseplateGeometry {
+/** Размер, толщины и крепёж: то, из чего считается раскладка плиты. */
+export interface BaseplateCore {
   pitch: number
   x: AxisSize
   y: AxisSize
   thickness: BaseplateThickness
   fasteners: FastenerConfig
-  split: SplitGeometry
 }
+
+/** Всё, что влияет на геометрию модели. */
+export interface BaseplateGeometry extends BaseplateCore { split: SplitGeometry }
 
 export interface BaseplatePreview { showPlate: boolean; plateX: number; plateY: number }
 
-export interface BaseplateParams extends BaseplateGeometry { preview: BaseplatePreview }
+/** Параметры режима: ядро плюс настройки разделения и предпросмотр (стол, вид частей). */
+export interface BaseplateParams extends BaseplateCore { split: SplitSettings; preview: BaseplatePreview }
+
+/** Геометрия из параметров: объём печати берётся из стола в превью или из своих значений. */
+export const toGeometry = (p: BaseplateParams): BaseplateGeometry => ({
+  pitch: p.pitch, x: p.x, y: p.y, thickness: p.thickness, fasteners: p.fasteners,
+  split: splitGeometry(p.split, { x: p.preview.plateX, y: p.preview.plateY }),
+})
 
 export const defaultPreview: BaseplatePreview = { showPlate: false, plateX: 256, plateY: 256 }
 
@@ -49,7 +58,7 @@ export const defaultParams: BaseplateParams = {
   y: { mode: 'units', value: 2, align: 'center' },
   thickness: defaultThickness,
   fasteners: defaultFasteners,
-  split: defaultSplit,
+  split: defaultSplitSettings,
   preview: defaultPreview,
 }
 
@@ -68,7 +77,7 @@ export interface BaseplateLayout {
 }
 
 /** Раскладка плиты: целые ячейки, остаток и выравнивание внутри бортика. */
-export function baseplateLayout(g: BaseplateGeometry): BaseplateLayout {
+export function baseplateLayout(g: BaseplateCore): BaseplateLayout {
   const sx = axisMm(g.x, g.pitch), sy = axisMm(g.y, g.pitch)
   const r = g.thickness.rim
   const ax = resolveAxis(sx - 2 * r, g.pitch, g.x.align)
@@ -89,7 +98,7 @@ export interface BaseplateHeights {
 }
 
 /** Низ гнезда = (baseHeight − 4.65) + max(пол, уши). Без отверстий уши — 0. */
-export function baseplateHeights(g: BaseplateGeometry, fp: Footprint = baseplateLayout(g).fp): BaseplateHeights {
+export function baseplateHeights(g: BaseplateCore, fp: Footprint = baseplateLayout(g).fp): BaseplateHeights {
   const hasHoles = needsFloor(allPositions(g.fasteners, fp))
   const pocketBottom = g.thickness.baseHeight - SOCKET_HEIGHT + Math.max(g.thickness.floor, hasHoles ? FLOOR : 0)
   return { total: pocketBottom + SOCKET_HEIGHT, pocketBottom, hasHoles }

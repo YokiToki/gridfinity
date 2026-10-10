@@ -1,15 +1,15 @@
 import { useTranslation } from 'react-i18next'
-import { axisMm, baseplateLayout, defaultParams, MAX_SIZE, type AxisSize, type BaseplateGeometry, type BaseplateError } from '../../geometry/baseplate'
+import { axisMm, baseplateLayout, defaultParams, MAX_SIZE, type AxisSize, type BaseplateCore, type BaseplateError } from '../../geometry/baseplate'
 import { Section } from '../../ui/Section'
 import { LengthField } from '../../ui/LengthField'
 import { SizeInput, type SizeSource } from '../../ui/SizeInput'
 import { Banner } from '../../ui/Banner'
 import { formatLength, useUnit } from '../../ui/units'
 
-type Patch = (f: (g: BaseplateGeometry) => BaseplateGeometry) => void
+type Patch = (f: (g: BaseplateCore) => BaseplateCore) => void
 
 /** Размер плиты: шаг сетки и размер по осям в дробных ячейках или в мм, выравнивание остатка. */
-export function SizeSection({ geometry: g, errors, update }: { geometry: BaseplateGeometry; errors: BaseplateError[]; update: Patch }) {
+export function SizeSection({ geometry: g, errors, update }: { geometry: BaseplateCore; errors: BaseplateError[]; update: Patch }) {
   const { t } = useTranslation()
   const { unit } = useUnit()
   const layout = baseplateLayout(g)

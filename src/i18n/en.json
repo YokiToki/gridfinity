@@ -89,9 +89,16 @@
       "radiusTooLarge": "Radius is larger than half of the plate",
       "tooManyCells": "Too many cells along this axis",
       "paddingDropTooLarge": "Lowering is larger than the plate height",
-      "invalid": "Fix the highlighted values: the preview shows the last valid model"
+      "invalid": "Fix the highlighted values: the preview shows the last valid model",
+      "splitCellTooBig": "A single cell does not fit the bed, so the plate cannot be split.",
+      "splitTooManyParts": "Too many parts (more than {{max}}). Use a larger bed or a smaller plate."
     },
-    "export": "Export STL"
+    "export": {
+      "stl": "Export STL",
+      "all": "Export all parts",
+      "part": "Part {{label}}",
+      "partFile": "{{label}} · STL"
+    }
   },
   "viewport": {
     "label": "3D preview",
@@ -183,5 +190,74 @@
     "floorNote": "Fasteners add ears {{value}} high around the holes; the rest of each cell stays open.",
     "earTooBig": "{{kind}}: the ear of the hole does not fit inside the cell.",
     "earWall": "Ear wall"
+  },
+  "split": {
+    "title": "Split to fit bed",
+    "off": "Off",
+    "summary": "{{n}} parts",
+    "enable": "Split into parts",
+    "source": "Printer bed",
+    "sourcePlate": "Build plate preview ({{size}})",
+    "custom": "Custom",
+    "bedX": "Bed width",
+    "bedY": "Bed depth",
+    "margin": "Edge margin",
+    "mode": "Cuts",
+    "auto": "Automatic",
+    "manual": "Manual cuts",
+    "cutsX": "Cuts along X (before cell)",
+    "cutsY": "Cuts along Y (before cell)",
+    "cutAt": "Cut {{n}}, before cell",
+    "cutPos": "{{pos}} from the edge",
+    "addCut": "Add cut",
+    "removeCut": "Remove cut {{n}}",
+    "noCuts": "No cuts on this axis",
+    "parts": "Parts",
+    "partRow": "{{cells}} cells · {{size}}",
+    "oversize": "Larger than the bed",
+    "oversizeBanner": "{{n}} part(s) exceed the bed ({{bed}}). Move the cuts or reduce the size; export is still possible.",
+    "fitsAll": "All parts fit the bed",
+    "exploded": "Show parts separated",
+    "gap": "Gap between parts",
+    "single": "One part: the plate already fits the bed",
+    "error": {
+      "cellTooBig": "A single cell does not fit the bed, so the plate cannot be split.",
+      "tooManyParts": "Too many parts (more than {{max}}). Use a larger bed or a smaller plate."
+    }
+  },
+  "connector": {
+    "title": "Connectors",
+    "summary": {
+      "none": "None",
+      "holes": "Holes · {{n}} per edge",
+      "dovetail": "Dovetail · {{n}} per edge"
+    },
+    "type": "Connector type",
+    "none": "None",
+    "holes": "End-face holes",
+    "dovetail": "Dovetail",
+    "preset": "Hole preset",
+    "presets": {
+      "m3": "M3 screw",
+      "m6x2": "6 × 2 mm magnet",
+      "pin3": "3 mm pin",
+      "custom": "Custom"
+    },
+    "diameter": "Hole Ø",
+    "depth": "Depth per part",
+    "count": "Per edge",
+    "inset": "Inset from the ends",
+    "clearance": "Fit clearance",
+    "neck": "Neck width",
+    "tip": "Tip width",
+    "dovetailDepth": "Key depth",
+    "perCut": "Per cut",
+    "useDefault": "As above",
+    "cutLabel": "Cut {{axis}}{{n}} ({{parts}})",
+    "tooBigForRidge": "Cut {{cut}} ({{parts}}): the hole does not fit in the wall between the sockets, so no connector was made.",
+    "dovetailTooDeep": "Cut {{cut}} ({{parts}}): the dovetail is too deep for the wall, so no connector was made.",
+    "noRoom": "Cut {{cut}} ({{parts}}): the edge is too short for this count and inset.",
+    "collision": "Cut {{cut}} ({{parts}}): no free place next to the fastener holes for a connector.",
+    "issuesTitle": "Connector warnings"
   }
 }

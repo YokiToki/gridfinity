@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { ModelClient, type WorkerLike, type WorkerRequest, type WorkerResponse } from './modelClient'
-import { sharpParams as defaultParams, units } from './testing'
-import type { MeshData } from './mesh'
+import { result, sharpParams as defaultParams, units } from './testing'
 
-const mesh = (volume: number): MeshData => ({ vertProperties: new Float32Array(), triVerts: new Uint32Array(), numProp: 3, min: [0, 0, 0], max: [1, 1, 1], volume })
 
 class FakeWorker implements WorkerLike {
   sent: WorkerRequest[] = []
@@ -19,20 +17,20 @@ describe('ModelClient', () => {
     const c = new ModelClient(w)
     const a = c.generate('baseplate', defaultParams)
     const b = c.generate('baseplate', { ...defaultParams, x: units(3) })
-    w.reply({ id: 2, mesh: mesh(2) }) // новый ответ пришёл первым
-    w.reply({ id: 1, mesh: mesh(1) }) // старый — позже
+    w.reply({ id: 2, result: result(2) }) // новый ответ пришёл первым
+    w.reply({ id: 1, result: result(1) }) // старый — позже
     expect(await a).toBeNull()
-    expect((await b)?.volume).toBe(2)
+    expect((await b)?.parts[0].mesh.volume).toBe(2)
   })
   it('старый ответ раньше нового тоже не побеждает', async () => {
     const w = new FakeWorker()
     const c = new ModelClient(w)
     const a = c.generate('baseplate', defaultParams)
     const b = c.generate('baseplate', defaultParams)
-    w.reply({ id: 1, mesh: mesh(1) })
-    w.reply({ id: 2, mesh: mesh(2) })
+    w.reply({ id: 1, result: result(1) })
+    w.reply({ id: 2, result: result(2) })
     expect(await a).toBeNull()
-    expect((await b)?.volume).toBe(2)
+    expect((await b)?.parts[0].mesh.volume).toBe(2)
   })
   it('ошибка воркера отклоняет актуальный запрос', async () => {
     const w = new FakeWorker()

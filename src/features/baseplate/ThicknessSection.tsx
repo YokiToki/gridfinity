@@ -1,11 +1,11 @@
 import { useTranslation } from 'react-i18next'
-import { baseplateHeights, defaultThickness, type BaseplateError, type BaseplateGeometry, type BaseplateThickness } from '../../geometry/baseplate'
+import { baseplateHeights, defaultThickness, type BaseplateError, type BaseplateCore, type BaseplateThickness } from '../../geometry/baseplate'
 import { Section } from '../../ui/Section'
 import { LengthField } from '../../ui/LengthField'
 import { Banner } from '../../ui/Banner'
 import { formatLength, useUnit } from '../../ui/units'
 
-type Patch = (f: (g: BaseplateGeometry) => BaseplateGeometry) => void
+type Patch = (f: (g: BaseplateCore) => BaseplateCore) => void
 
 const FIELDS: { key: keyof BaseplateThickness; min: number; max: number; step: number }[] = [
   { key: 'baseHeight', min: 0, max: 30, step: 0.5 },
@@ -16,7 +16,7 @@ const FIELDS: { key: keyof BaseplateThickness; min: number; max: number; step: n
 ]
 
 /** Толщины и высоты плиты со сбросом и сообщениями об ошибках у полей. */
-export function ThicknessSection({ geometry: g, errors, update }: { geometry: BaseplateGeometry; errors: BaseplateError[]; update: Patch }) {
+export function ThicknessSection({ geometry: g, errors, update }: { geometry: BaseplateCore; errors: BaseplateError[]; update: Patch }) {
   const { t } = useTranslation()
   const { unit } = useUnit()
   const fmt = (mm: number) => formatLength(mm, unit)

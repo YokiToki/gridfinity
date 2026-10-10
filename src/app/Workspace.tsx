@@ -1,16 +1,18 @@
 import { useRef, useState, type ReactNode, type PointerEvent } from 'react'
-import type { MeshData } from '../geometry/mesh'
+import type { ModelResult } from '../geometry/model'
 import { useTranslation } from 'react-i18next'
 import { IconChevronDown, IconFocusCentered } from '@tabler/icons-react'
 import { Viewport, type BuildPlate } from '../features/viewport/Viewport'
 import { MeasurementsBar } from '../features/viewport/MeasurementsBar'
 
 /** Раскладка режима: панель параметров, закреплённый блок экспорта и 3D-вид. На узком экране панель — нижняя шторка. */
-export function Workspace({ panel, footer, model, plate, busy }: {
+export function Workspace({ panel, footer, model, plate, gap, busy }: {
   panel: ReactNode
   footer?: ReactNode
-  model: MeshData | null
+  model: ModelResult | null
   plate?: BuildPlate | null
+  /** Зазор между частями в разнесённом виде, мм (0 — собрано). */
+  gap?: number
   busy?: boolean
 }) {
   const { t } = useTranslation()
@@ -54,7 +56,7 @@ export function Workspace({ panel, footer, model, plate, busy }: {
         {footer && <div className="flex-none border-t border-border bg-surface-1 px-4 py-3 shadow-sticky">{footer}</div>}
       </aside>
       <section aria-label={t('viewport.label')} className="relative min-w-0 flex-1 overflow-hidden bg-[radial-gradient(ellipse_at_50%_40%,#1a2029_0%,#0b0d10_75%)]">
-        <Viewport model={model} plate={plate ?? null} onFitReady={(f) => (fitRef.current = f)} />
+        <Viewport model={model} plate={plate ?? null} gap={gap ?? 0} onFitReady={(f) => (fitRef.current = f)} />
         <button type="button" aria-label={t('viewport.fit')} title={t('viewport.fit')} onClick={() => fitRef.current()}
           className="absolute top-4 right-4 inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-group border border-border bg-surface-1/90 text-text-muted hover:text-text md:h-8 md:w-8">
           <IconFocusCentered size={16} stroke={1.75} />

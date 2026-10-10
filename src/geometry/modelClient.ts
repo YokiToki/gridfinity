@@ -1,8 +1,7 @@
-import type { MeshData } from './mesh'
-import type { ModeId, ModeParams } from './model'
+import type { ModeId, ModeParams, ModelResult } from './model'
 
 export interface WorkerRequest { id: number; mode: ModeId; params: ModeParams[ModeId] }
-export type WorkerResponse = { id: number; mesh: MeshData } | { id: number; error: string }
+export type WorkerResponse = { id: number; result: ModelResult } | { id: number; error: string }
 
 /** Минимальный интерфейс воркера: нужен, чтобы подменять его в тестах. */
 export interface WorkerLike {
@@ -11,7 +10,7 @@ export interface WorkerLike {
   terminate?(): void
 }
 
-interface Pending { resolve: (m: MeshData | null) => void; reject: (e: Error) => void }
+interface Pending { resolve: (m: ModelResult | null) => void; reject: (e: Error) => void }
 
 /**
  * Клиент воркера генерации. Побеждает последний запрос: ответ на более старый запрос
@@ -26,7 +25,7 @@ export class ModelClient {
     worker.addEventListener('message', (e) => this.onMessage(e.data))
   }
 
-  generate<M extends ModeId>(mode: M, params: ModeParams[M]): Promise<MeshData | null> {
+  generate<M extends ModeId>(mode: M, params: ModeParams[M]): Promise<ModelResult | null> {
     const id = this.nextId++
     this.latest = id
     // более старые запросы больше никому не нужны
@@ -43,7 +42,7 @@ export class ModelClient {
     this.pending.delete(r.id)
     if (r.id !== this.latest) return p.resolve(null)
     if ('error' in r) p.reject(new Error(r.error))
-    else p.resolve(r.mesh)
+    else p.resolve(r.result)
   }
 
   dispose() { this.worker.terminate?.(); this.pending.clear() }

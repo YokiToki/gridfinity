@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
-import { baseplateLayout, validateBaseplate, type BaseplateGeometry, type BaseplateParams } from '../../geometry/baseplate'
+import { baseplateLayout, toGeometry, validateBaseplate, type BaseplateCore, type BaseplateParams } from '../../geometry/baseplate'
 import { allPositions, needsFloor } from '../../geometry/fasteners'
 import { FastenerSection } from '../fasteners/FastenerSection'
 import { Banner } from '../../ui/Banner'
@@ -9,12 +9,14 @@ import { formatLength, useUnit } from '../../ui/units'
 import { SizeSection } from './SizeSection'
 import { ThicknessSection } from './ThicknessSection'
 import { PlateSection } from './PlateSection'
+import { SplitSection } from './SplitSection'
+import { ConnectorsSection } from './ConnectorsSection'
 
 export function BaseplatePanel({ params: p, onChange }: { params: BaseplateParams; onChange: Dispatch<SetStateAction<BaseplateParams>> }) {
   const { t } = useTranslation()
   const { unit } = useUnit()
-  const update = (f: (g: BaseplateGeometry) => BaseplateGeometry) => onChange((o) => ({ ...o, ...f(o) }))
-  const { errors } = validateBaseplate(p)
+  const update = (f: (g: BaseplateCore) => BaseplateCore) => onChange((o) => ({ ...o, ...f(o) }))
+  const { errors } = validateBaseplate(toGeometry(p))
   const { fp } = baseplateLayout(p)
 
   return (
@@ -25,6 +27,8 @@ export function BaseplatePanel({ params: p, onChange }: { params: BaseplateParam
         {needsFloor(allPositions(p.fasteners, fp)) && <Banner>{t('fastener.floorNote', { value: `${formatLength(FLOOR, unit)} ${t(`units.${unit}`)}` })}</Banner>}
       </FastenerSection>
       <PlateSection geometry={p} preview={p.preview} onChange={(preview) => onChange((o) => ({ ...o, preview }))} />
+      <SplitSection params={p} onChange={(patch) => onChange((o) => ({ ...o, split: { ...o.split, ...patch } }))} />
+      <ConnectorsSection params={p} onChange={(connector) => onChange((o) => ({ ...o, split: { ...o.split, connector } }))} />
     </>
   )
 }

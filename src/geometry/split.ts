@@ -14,6 +14,36 @@ export interface SplitGeometry {
   connector: ConnectorConfig
 }
 
+/** Настройки разделения в параметрах режима: из них и размера стола считается SplitGeometry. */
+export interface SplitSettings {
+  enabled: boolean
+  /** Объём печати: размер стола из превью или свои значения. */
+  source: 'plate' | 'custom'
+  bedX: number
+  bedY: number
+  /** Отступ от краёв стола с каждой стороны, мм. */
+  margin: number
+  auto: boolean
+  xCuts: number[]
+  yCuts: number[]
+  connector: ConnectorConfig
+  /** Части разнесены в превью. */
+  exploded: boolean
+  /** Зазор между частями в разнесённом виде, мм. */
+  gap: number
+}
+
+export const defaultSplitSettings: SplitSettings = {
+  enabled: false, source: 'plate', bedX: 256, bedY: 256, margin: 5, auto: true, xCuts: [], yCuts: [], connector: defaultConnector, exploded: true, gap: 10,
+}
+
+/** Геометрическая часть настроек; plate — размер стола в превью. */
+export function splitGeometry(s: SplitSettings, plate: { x: number; y: number }): SplitGeometry {
+  const bx = s.source === 'plate' ? plate.x : s.bedX
+  const by = s.source === 'plate' ? plate.y : s.bedY
+  return { enabled: s.enabled, maxX: bx - 2 * s.margin, maxY: by - 2 * s.margin, auto: s.auto, xCuts: s.xCuts, yCuts: s.yCuts, connector: s.connector }
+}
+
 export const defaultSplit: SplitGeometry = { enabled: false, maxX: 246, maxY: 246, auto: true, xCuts: [], yCuts: [], connector: defaultConnector }
 
 export interface AutoCutsResult {

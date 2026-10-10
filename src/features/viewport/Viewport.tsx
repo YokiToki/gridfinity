@@ -1,12 +1,13 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import type { MeshData } from '../../geometry/mesh'
+import type { ModelResult } from '../../geometry/model'
 
 export interface BuildPlate { x: number; y: number }
 
 interface Api {
-  setModel: (m: MeshData | null) => void
+  setModel: (m: ModelResult | null) => void
+  setGap: (gap: number) => void
   setPlate: (p: BuildPlate | null) => void
   fit: () => void
 }
@@ -57,9 +58,35 @@ function makeGrid() {
   return mesh
 }
 
-export function Viewport({ model, plate, onFitReady }: { model: MeshData | null; plate: BuildPlate | null; onFitReady?: (fit: () => void) => void }) {
+/** Цвета частей (design/artboards/ViewportStyle.dc.html): заливка, контур и цвет подписи. */
+const PART_STYLES = [
+  { fill: 0x8fa3c4, edge: 0x4a5a78, outline: '#B3C2DB' },
+  { fill: 0x7fc4b0, edge: 0x3f7466, outline: '#A8E0D1' },
+  { fill: 0xc9a7e0, edge: 0x6f5784, outline: '#E2CBF1' },
+  { fill: 0xe0a98a, edge: 0x84583e, outline: '#F2CDB6' },
+]
+
+/** Подпись части: плашка с текстом, всегда повёрнута к экрану. */
+function textSprite(text: string, color: string) {
+  const c = document.createElement('canvas')
+  c.width = 128; c.height = 64
+  const g = c.getContext('2d')!
+  g.fillStyle = 'rgba(14,16,19,0.92)'
+  g.beginPath(); g.roundRect(4, 8, 120, 48, 14); g.fill()
+  g.lineWidth = 3; g.strokeStyle = color; g.stroke()
+  g.fillStyle = '#E6E9EE'; g.font = '500 28px "JetBrains Mono Variable", ui-monospace, monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'
+  g.fillText(text, 64, 33)
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false, transparent: true }))
+  s.scale.set(26, 13, 1)
+  s.renderOrder = 10
+  return s
+}
+
+export function Viewport({ model, plate, gap = 0, onFitReady }: { model: ModelResult | null; plate: BuildPlate | null; gap?: number; onFitReady?: (fit: () => void) => void }) {
   const host = useRef<HTMLDivElement>(null)
   const api = useRef<Api | null>(null)
+  const gapRef = useRef(gap)
+  gapRef.current = gap
 
   useEffect(() => {
     const el = host.current!
@@ -95,6 +122,9 @@ export function Viewport({ model, plate, onFitReady }: { model: MeshData | null;
 
     const modelGroup = new THREE.Group()
     scene.add(modelGroup)
+    let partGroups: { group: THREE.Group; col: number; row: number }[] = []
+    let cols = 1, rows = 1
+    const applyGap = (g: number) => partGroups.forEach((p) => p.group.position.set(g * (p.col - (cols - 1) / 2), g * (p.row - (rows - 1) / 2), 0))
     let radius = 60
 
     // гизмо осей
@@ -141,32 +171,53 @@ export function Viewport({ model, plate, onFitReady }: { model: MeshData | null;
         outline.position.z = -0.04
         plateGroup.add(fill, outline)
       },
+      setGap(g) { applyGap(g) },
       setModel(m) {
-        modelGroup.children.forEach((c) => {
-          const o = c as THREE.Mesh
-          o.geometry.dispose()
+        modelGroup.traverse((o) => {
+          const mesh = o as THREE.Mesh
+          if (mesh.geometry) mesh.geometry.dispose()
+          const sprite = o as THREE.Sprite
+          if (sprite.isSprite) (sprite.material as THREE.SpriteMaterial).map?.dispose()
         })
         modelGroup.clear()
-        if (!m) return
-        const mm = m
-        const pos = new Float32Array((mm.vertProperties.length / mm.numProp) * 3)
-        for (let i = 0; i < pos.length / 3; i++)
-          for (let k = 0; k < 3; k++) pos[i * 3 + k] = mm.vertProperties[i * mm.numProp + k]
-        const indexed = new THREE.BufferGeometry()
-        indexed.setAttribute('position', new THREE.BufferAttribute(pos, 3))
-        indexed.setIndex(new THREE.BufferAttribute(mm.triVerts, 1))
-        // плоское затенение — чёткие грани
-        const g = indexed.toNonIndexed()
-        g.computeVertexNormals()
-        const body = new THREE.Mesh(g, new THREE.MeshStandardMaterial({
-          color: 0x8fa3c4, roughness: 0.6, metalness: 0.05, flatShading: true,
-          polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1,
-        }))
-        // контуры: только резкие рёбра (угол > 25°)
-        const edges = new THREE.LineSegments(new THREE.EdgesGeometry(indexed, 25), new THREE.LineBasicMaterial({ color: 0x4a5a78 }))
-        modelGroup.add(body, edges)
-        indexed.computeBoundingSphere()
-        radius = indexed.boundingSphere!.radius
+        partGroups = []
+        if (!m || m.parts.length === 0) return
+        const many = m.parts.length > 1
+        cols = Math.max(...m.parts.map((p) => p.col)) + 1
+        rows = Math.max(...m.parts.map((p) => p.row)) + 1
+        const total = new THREE.Box3()
+        for (const part of m.parts) {
+          const mm = part.mesh
+          const pos = new Float32Array((mm.vertProperties.length / mm.numProp) * 3)
+          for (let i = 0; i < pos.length / 3; i++)
+            for (let k = 0; k < 3; k++) pos[i * 3 + k] = mm.vertProperties[i * mm.numProp + k]
+          const indexed = new THREE.BufferGeometry()
+          indexed.setAttribute('position', new THREE.BufferAttribute(pos, 3))
+          indexed.setIndex(new THREE.BufferAttribute(mm.triVerts, 1))
+          // плоское затенение — чёткие грани
+          const g = indexed.toNonIndexed()
+          g.computeVertexNormals()
+          const style = many ? PART_STYLES[(part.col + part.row) % PART_STYLES.length] : PART_STYLES[0]
+          const body = new THREE.Mesh(g, new THREE.MeshStandardMaterial({
+            color: style.fill, roughness: 0.6, metalness: 0.05, flatShading: true,
+            polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1,
+          }))
+          // контуры: только резкие рёбра (угол > 25°); у слишком большой части — красные
+          const edges = new THREE.LineSegments(new THREE.EdgesGeometry(indexed, 25), new THREE.LineBasicMaterial({ color: part.oversize ? 0xf0707b : style.edge }))
+          const group = new THREE.Group()
+          group.add(body, edges)
+          if (many) {
+            const label = textSprite(part.label, part.oversize ? '#F0707B' : style.outline)
+            label.position.set((mm.min[0] + mm.max[0]) / 2, (mm.min[1] + mm.max[1]) / 2, mm.max[2] + 6)
+            group.add(label)
+          }
+          modelGroup.add(group)
+          partGroups.push({ group, col: part.col, row: part.row })
+          total.expandByPoint(new THREE.Vector3(...mm.min)).expandByPoint(new THREE.Vector3(...mm.max))
+          indexed.dispose()
+        }
+        applyGap(gapRef.current)
+        radius = total.getBoundingSphere(new THREE.Sphere()).radius
         if (!fitted) { fitted = true; fit() }
       },
     }
@@ -220,6 +271,7 @@ export function Viewport({ model, plate, onFitReady }: { model: MeshData | null;
   }, [])
 
   useEffect(() => { api.current?.setModel(model) }, [model])
+  useEffect(() => { api.current?.setGap(gap) }, [gap])
   useEffect(() => { api.current?.setPlate(plate) }, [plate])
   return <div ref={host} style={{ width: '100%', height: '100%' }} />
 }

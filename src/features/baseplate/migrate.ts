@@ -1,11 +1,13 @@
-import { baseplateLayout, defaultParams, defaultPreview, defaultThickness, type BaseplateGeometry } from '../../geometry/baseplate'
+import { defaultConnector } from '../../geometry/connectors'
+import { defaultSplitSettings } from '../../geometry/split'
+import { baseplateLayout, defaultParams, defaultPreview, defaultThickness, type BaseplateCore } from '../../geometry/baseplate'
 import { defaultFasteners, slotsFromPoints, type FastenerKind } from '../../geometry/fasteners'
 import type { Point } from '../../geometry/footprint'
 
 const isPoint = (p: unknown): p is Point => !!p && typeof (p as Point).x === 'number' && typeof (p as Point).y === 'number'
 
 /** Старый формат вида: булев флаг прототипа или manual-точки в координатах. */
-function migrateKind(old: unknown, current: unknown, params: BaseplateGeometry): FastenerKind | undefined {
+function migrateKind(old: unknown, current: unknown, params: BaseplateCore): FastenerKind | undefined {
   if (old === true) return { mode: 'full', slots: [] }
   if (old === false) return { mode: 'none', slots: [] }
   if (!current || typeof current !== 'object') return undefined
@@ -15,6 +17,13 @@ function migrateKind(old: unknown, current: unknown, params: BaseplateGeometry):
   const points = Array.isArray(k.manual) ? k.manual.filter(isPoint) : []
   // координаты → ближайшие стандартные позиции текущей сетки (до 3 мм), остальные отбрасываем
   return { mode, slots: slotsFromPoints(points, baseplateLayout(params).fp) }
+}
+
+/** Настройки разделения: недостающие поля берутся из значений по умолчанию, в том числе вложенный connector. */
+function normalizeSplit(raw: unknown) {
+  const s = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
+  const c = (s.connector && typeof s.connector === 'object' ? s.connector : {}) as Record<string, unknown>
+  return { ...defaultSplitSettings, ...s, connector: { ...defaultConnector, ...c, overrides: { ...((c.overrides as object | undefined) ?? {}) } } }
 }
 
 const num = (v: unknown, d: number) => (typeof v === 'number' && Number.isFinite(v) ? v : d)
@@ -52,9 +61,10 @@ export function migrateBaseplate(input: Record<string, unknown>): Record<string,
     ...rest,
     thickness: { ...defaultThickness, ...((rest.thickness as object | undefined) ?? {}) },
     preview: { ...defaultPreview, ...((rest.preview as object | undefined) ?? {}) },
+    split: normalizeSplit(rest.split),
   }
   if (!oldFlags && !needsPoints) return fasteners === undefined ? withNested : { ...withNested, fasteners }
-  const params = { ...defaultParams, ...withNested } as BaseplateGeometry
+  const params = { ...defaultParams, ...withNested } as BaseplateCore
   const cur = (fasteners ?? {}) as Record<string, unknown>
   return {
     ...withNested,

@@ -24,3 +24,5 @@ export function meshOf(m: Manifold): MeshData {
 }
 
 export const transferables = (m: MeshData): ArrayBuffer[] => [m.vertProperties.buffer as ArrayBuffer, m.triVerts.buffer as ArrayBuffer]
+
+export const transferablesOf = (ms: MeshData[]): ArrayBuffer[] => ms.flatMap(transferables)

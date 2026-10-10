@@ -1,13 +1,14 @@
-import type { MeshData } from '../../geometry/mesh'
+import { modelBounds, type ModelResult } from '../../geometry/model'
 import { useTranslation } from 'react-i18next'
 import { IconCheck, IconLoader2 } from '@tabler/icons-react'
 import { formatLength, useUnit } from '../../ui/units'
 
 /** Габариты модели X/Y/Z в выбранной единице и состояние расчёта. */
-export function MeasurementsBar({ model, busy }: { model: MeshData | null; busy?: boolean }) {
+export function MeasurementsBar({ model, busy }: { model: ModelResult | null; busy?: boolean }) {
   const { t } = useTranslation()
   const { unit } = useUnit()
-  const dim = (i: number) => (model ? formatLength(model.max[i] - model.min[i], unit) : '–')
+  const b = model && model.parts.length ? modelBounds(model) : null
+  const dim = (i: number) => (b ? formatLength(b.max[i] - b.min[i], unit) : '–')
   return (
     <div className="absolute inset-x-0 bottom-0 flex h-9 items-center gap-5 border-t border-border bg-bg/90 px-4 font-mono text-xs text-text-muted">
       <span>X {dim(0)}</span><span>Y {dim(1)}</span><span>Z {dim(2)} {t(`units.${unit}`)}</span>

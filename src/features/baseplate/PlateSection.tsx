@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { baseplateLayout, type BaseplateGeometry, type BaseplatePreview } from '../../geometry/baseplate'
+import { baseplateLayout, type BaseplateCore, type BaseplatePreview } from '../../geometry/baseplate'
 import { Section } from '../../ui/Section'
 import { LengthField } from '../../ui/LengthField'
 import { Toggle } from '../../ui/Toggle'
@@ -11,7 +11,7 @@ import { BED_PRESETS, fitsBed, presetFor } from './bedPresets'
 const CUSTOM = 'custom'
 
 /** Стол принтера в превью: показ, размеры, пресеты и предупреждение, если плита не помещается. */
-export function PlateSection({ geometry: g, preview, onChange }: { geometry: BaseplateGeometry; preview: BaseplatePreview; onChange: (p: BaseplatePreview) => void }) {
+export function PlateSection({ geometry: g, preview, onChange }: { geometry: BaseplateCore; preview: BaseplatePreview; onChange: (p: BaseplatePreview) => void }) {
   const { t } = useTranslation()
   const { unit } = useUnit()
   const { sizeX: sx, sizeY: sy } = baseplateLayout(g)

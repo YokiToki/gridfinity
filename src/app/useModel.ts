@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import type { MeshData } from '../geometry/mesh'
 import { ModelClient, type WorkerLike } from '../geometry/modelClient'
-import type { ModeId, ModeParams } from '../geometry/model'
+import type { ModeId, ModeParams, ModelResult } from '../geometry/model'
 
 let shared: ModelClient | undefined
 /** Общий клиент с воркером. Создаётся лениво, чтобы тесты не поднимали Worker. */
@@ -20,10 +19,10 @@ export interface UseModelOptions {
   enabled?: boolean
 }
 
-/** Генерация модели вне основного потока: debounce, побеждает последний запрос, прежняя сетка остаётся при ошибке. */
+/** Генерация модели вне основного потока: debounce, побеждает последний запрос, прежняя модель остаётся при ошибке. */
 export function useModel<M extends ModeId>(mode: M, params: ModeParams[M], opts: UseModelOptions = {}) {
   const { debounce = 150, indicatorDelay = 200, client, enabled = true } = opts
-  const [mesh, setMesh] = useState<MeshData | null>(null)
+  const [model, setModel] = useState<ModelResult | null>(null)
   const [busy, setBusy] = useState(false)
   /** Параметры изменились, а сетка ещё старая: экспортировать её нельзя. */
   const [pending, setPending] = useState(true)
@@ -43,7 +42,7 @@ export function useModel<M extends ModeId>(mode: M, params: ModeParams[M], opts:
         (m) => {
           if (cancelled || !m) return // устарело
           finished = true
-          setMesh(m); setError(null); setBusy(false); setPending(false)
+          setModel(m); setError(null); setBusy(false); setPending(false)
         },
         (e: Error) => { if (!cancelled) { finished = true; setError(e.message); setBusy(false); setPending(false) } },
       )
@@ -51,5 +50,5 @@ export function useModel<M extends ModeId>(mode: M, params: ModeParams[M], opts:
     return () => { cancelled = true; clearTimeout(timer); clearTimeout(indicator) }
   }, [mode, params, debounce, indicatorDelay, enabled])
 
-  return { mesh, busy, pending, error }
+  return { model, busy, pending, error }
 }
