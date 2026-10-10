@@ -1,5 +1,5 @@
 import { useRef, useState, type ReactNode, type PointerEvent } from 'react'
-import type { Manifold } from 'manifold-3d'
+import type { MeshData } from '../geometry/mesh'
 import { useTranslation } from 'react-i18next'
 import { IconChevronDown, IconFocusCentered } from '@tabler/icons-react'
 import { Viewport, type BuildPlate } from '../features/viewport/Viewport'
@@ -9,7 +9,7 @@ import { MeasurementsBar } from '../features/viewport/MeasurementsBar'
 export function Workspace({ panel, footer, model, plate, busy }: {
   panel: ReactNode
   footer?: ReactNode
-  model: Manifold | null
+  model: MeshData | null
   plate?: BuildPlate | null
   busy?: boolean
 }) {

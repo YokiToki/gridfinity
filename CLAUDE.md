@@ -36,16 +36,22 @@ Layout of `src/`:
 - `app/` — entry (`main.tsx`, `App.tsx`), `routes.tsx` (hash router: `/` start page, `/box`, `/baseplate`, `/cutout`, unknown → start), `AppShell`, `Header` (mode switcher, mm/in, EN/RU), `StartPage`, `Workspace` (parameter panel + sticky footer + viewport; bottom drawer below 768 px), `usePersistedState`, `lastSession`, `theme.css` (Tailwind `@theme` tokens from the design).
 - `ui/` — generic controls with no domain knowledge: `Section`, `Toggle`, `SegmentedControl`, `NumberField`, `LengthField`, `Banner`, `Button`, and units (`units.ts`, `UnitProvider`).
 - `features/{baseplate,box,cutout,viewport}/` — a mode owns its panel, params and persistence key. Box and Cutout are `ComingSoon` placeholders until their changes land.
-- `geometry/` — React-free CSG (`baseplate.ts`, `stl.ts`).
+- `geometry/` — React-free CSG kernel, see "Geometry package" below.
 - `i18n/` — `en.json`, `ru.json`, init with language detection.
 
+Geometry package (`src/geometry/`, no React or three.js imports):
+- `spec.ts` — Gridfinity constants (pitch 42, layer stacks `SOCKET_LAYERS`/`FOOT_LAYERS`, clearance, radii, fastener sizes). Pitch is a parameter everywhere, never read from a constant inside builders.
+- `profiles.ts` — `layeredHull` is the one profile builder (low chamfer / wall / up chamfer); `socketPocket`, `binFoot`, `lipProfile(style)` are data-driven wrappers. Profile slabs overshoot the nominal top by `SLAB_T` (0.001 mm) on purpose, for clean cuts.
+- `thickness.ts` — `Thickness` defaults and `validateThickness` (returns i18n keys `thickness.*`, never text). `sizing.ts` — `resolveAxis(size, pitch, align)` → cells, padding, offset, truncated.
+- `wasm.ts` — `getWasm(wasmUrl?)`, one WASM module per thread; the url is optional so tests run in Node. `model.ts` — `generate(mode, params)` dispatches by mode and returns `MeshData`; new modes are added to `ModeParams` there. `worker.ts` + `modelClient.ts` — the worker owns WASM; the client makes the latest request win and drops stale replies. UI side: `app/useModel(mode, params)` (debounce 150 ms, `busy` after 200 ms, `pending` while the mesh is stale, previous mesh kept on error).
+- Tests: use `expectValidSolid` from `testing.ts` (status, non-empty, volume > 0, optional bbox). When refactoring geometry, add a volume + bbox regression case first and keep it green.
+
 Conventions:
-- **Geometry is built with `manifold-3d` (WASM), not three.js.** `geometry/baseplate.ts` is the only place that does CSG; spec dimensions (`H`, `CHAMFER_*`, `WALL`, `CLEARANCE`, …) are module constants at the top. `getWasm()` caches one module promise; the app passes the `?url`-imported `manifold.wasm`, tests call `buildBaseplate(params)` without a URL (keep `wasmUrl` optional).
-- **The `Manifold` object is the model.** `Viewport` and `toBinaryStl` read it through `getMesh()`. `Viewport.tsx` is imperative: the three.js scene is created once in a mount effect and driven through an `api` ref. Z is up. The camera is fitted only on the first model. In jsdom tests mock the Viewport (no WebGL).
+- **Geometry is built with `manifold-3d` (WASM), not three.js**, and runs in a Web Worker. The rest of the app only sees `MeshData` (typed arrays + bbox + volume), never `Manifold` objects. `Viewport` and `toBinaryStl` take `MeshData`. `Viewport.tsx` is imperative: the three.js scene is created once in a mount effect and driven through an `api` ref. Z is up. The camera is fitted only on the first model. In jsdom tests mock the Viewport (no WebGL).
 - **Units:** everything is stored and computed in mm. Only `LengthField` converts to/from the display unit (`UnitProvider`, key `gridfinity.unit`); switching units never touches params. Use `LengthField` for any length, `NumberField` for unitless numbers.
 - **i18n:** no hard-coded UI text; add keys to both `en.json` and `ru.json` (a test fails if they diverge). Language key `gridfinity.lang`; `<html lang>` follows the active language.
 - **Persistence:** `usePersistedState(key, defaults)` merges stored JSON over defaults and falls back to defaults on corrupt data. One key per mode (`gridfinity.baseplate`).
-- **Baseplate model:** a 150 ms debounced effect rebuilds on each param change with a `cancelled` flag for stale results. Magnets/screws add a `FLOOR` (4 mm) under the pockets (4.65 → 8.65 mm total). In custom-size mode the plate size is `max(custom, units × unit)` and cells stay centered.
+- **Baseplate model:** `useModel('baseplate', params)` rebuilds on each param change. Magnets/screws add a `FLOOR` (4 mm) under the pockets (4.65 → 8.65 mm total). In custom-size mode the plate size is `max(custom, units × unit)` and cells stay centered.
 - **Tests:** vitest; component tests start with `// @vitest-environment jsdom` (setup in `src/test-setup.ts`, RTL cleanup included).
 
 UI strings are English/Russian; code comments are in Russian.

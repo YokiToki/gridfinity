@@ -1,7 +1,6 @@
-import type { Manifold } from 'manifold-3d'
+import type { MeshData } from './mesh'
 
-export function toBinaryStl(m: Manifold): Blob {
-  const mesh = m.getMesh()
+export function toBinaryStl(mesh: MeshData): Blob {
   const n = mesh.triVerts.length / 3
   const buf = new DataView(new ArrayBuffer(84 + n * 50))
   buf.setUint32(80, n, true)

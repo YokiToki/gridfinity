@@ -1,12 +1,12 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import type { Manifold } from 'manifold-3d'
+import type { MeshData } from '../../geometry/mesh'
 
 export interface BuildPlate { x: number; y: number }
 
 interface Api {
-  setModel: (m: Manifold | null) => void
+  setModel: (m: MeshData | null) => void
   setPlate: (p: BuildPlate | null) => void
   fit: () => void
 }
@@ -57,7 +57,7 @@ function makeGrid() {
   return mesh
 }
 
-export function Viewport({ model, plate, onFitReady }: { model: Manifold | null; plate: BuildPlate | null; onFitReady?: (fit: () => void) => void }) {
+export function Viewport({ model, plate, onFitReady }: { model: MeshData | null; plate: BuildPlate | null; onFitReady?: (fit: () => void) => void }) {
   const host = useRef<HTMLDivElement>(null)
   const api = useRef<Api | null>(null)
 
@@ -148,7 +148,7 @@ export function Viewport({ model, plate, onFitReady }: { model: Manifold | null;
         })
         modelGroup.clear()
         if (!m) return
-        const mm = m.getMesh()
+        const mm = m
         const pos = new Float32Array((mm.vertProperties.length / mm.numProp) * 3)
         for (let i = 0; i < pos.length / 3; i++)
           for (let k = 0; k < 3; k++) pos[i * 3 + k] = mm.vertProperties[i * mm.numProp + k]

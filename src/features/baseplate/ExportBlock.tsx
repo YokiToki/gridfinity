@@ -1,10 +1,10 @@
-import type { Manifold } from 'manifold-3d'
+import type { MeshData } from '../../geometry/mesh'
 import { useTranslation } from 'react-i18next'
 import { IconDownload } from '@tabler/icons-react'
 import { toBinaryStl } from '../../geometry/stl'
 import { Button } from '../../ui/Button'
 
-export function ExportBlock({ model, busy, name }: { model: Manifold | null; busy: boolean; name: string }) {
+export function ExportBlock({ model, busy, name }: { model: MeshData | null; busy: boolean; name: string }) {
   const { t } = useTranslation()
   const exportStl = () => {
     if (!model) return
