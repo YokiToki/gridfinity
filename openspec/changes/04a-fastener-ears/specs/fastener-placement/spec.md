@@ -33,9 +33,9 @@ In Manual mode the user SHALL choose which standard cell-corner positions receiv
 - **WHEN** the user tabs to a position in the 2D view and presses Enter or Space
 - **THEN** that position toggles
 
-#### Scenario: Switch from Full to Manual
-- **WHEN** the user switches from Full to Manual
-- **THEN** all standard positions stay selected and can be toggled off one by one
+#### Scenario: Switch to Manual
+- **WHEN** the user switches to Manual from None, Corner or Full
+- **THEN** no position is selected and the preview shows no holes or ears until the user selects some
 
 #### Scenario: Grid size changes
 - **WHEN** the number of cells changes while positions are selected
