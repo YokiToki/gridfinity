@@ -7,11 +7,11 @@
 - [ ] 1.3 Rework `buildBaseplate` to cut per-cell windows minus ears when holes exist; tests: Full 2×2 has no continuous floor (volume far below the old floor volume, height 8.65), Corner leaves empty cells open, no fasteners is unchanged (regression volumes still match).
 - [ ] 1.4 Extend `checkFasteners` with an "ear does not fit" warning key; test it for a large magnet and a large ear wall.
 
-## 2. Remove manual placement
+## 2. Manual placement as a selection
 
-- [ ] 2.1 Remove the `manual` mode, `manual` arrays and `switchMode` from `geometry/fasteners.ts`; update tests.
-- [ ] 2.2 Delete `PlacementEditor`, `placement.ts` and their tests; remove the unused i18n keys in `en.json` and `ru.json`; `FastenerSection` drops the editor.
-- [ ] 2.3 Migration: stored `manual` kinds load as `full`; tests for old boolean JSON, manual JSON and new JSON.
+- [ ] 2.1 Replace `manual` points with `slots` (cell index + corner) in `geometry/fasteners.ts`: `resolvePositions`, `switchMode` (Full→Manual selects all slots, None→Manual selects none), pruning of slots outside the grid; tests for a 2×2 and a 3×2 grid, shrinking the grid and a plate with no selected slot (no ears, height 4.65).
+- [ ] 2.2 Simplify `PlacementEditor` to toggle buttons at standard positions (`role="switch"`, keyboard operable, per-position labels); remove drag, free add, the coordinate list, the "Add hole" button and the unused helpers in `placement.ts`; update i18n keys in `en.json` and `ru.json`; component tests for toggle on, toggle off, keyboard, Full→Manual and the magnet/screw switcher. Design: `design/artboards/Baseplate.dc.html`.
+- [ ] 2.3 Migration: stored coordinate points snap to the nearest standard position within 3 mm and the rest are dropped; boolean flags still load as Full; tests for exact, near, far and duplicate points, and for old and new JSON.
 
 ## 3. UI
 
@@ -21,8 +21,8 @@
 ## 4. Reconcile planning artifacts
 
 - [ ] 4.1 Update `05-baseplate-model` (proposal, design, spec, tasks): fasteners add ears rather than raising a floor; the "floor raised with notice" requirement and task 1.4 change accordingly; keep floor style as the explicit open frame / solid floor choice. Run `openspec validate 05-baseplate-model`.
-- [ ] 4.2 Update `CLAUDE.md` (fasteners section, no manual mode, ears).
+- [ ] 4.2 Update `CLAUDE.md` (fasteners section: ears, Manual as a slot selection, migration).
 
 ## 5. Verification
 
-- [ ] 5.1 `npm test` and `npm run build` pass; in the browser: Full and Corner show ears around holes and open cells elsewhere, the STL has the expected height (8.65 mm) and fewer triangles/volume than the old floor, the placement control labels fit in en and ru, and old stored state loads.
+- [ ] 5.1 `npm test` and `npm run build` pass; in the browser: Full and Corner show ears around holes and open cells elsewhere, the STL has the expected height (8.65 mm) and fewer triangles/volume than the old floor, toggling positions in Manual mode changes the preview and the STL, the placement control labels fit in en and ru, and old stored state (including coordinate-based manual holes) loads.
