@@ -1,5 +1,6 @@
 import { CUSTOM, defaultConnector, HOLE_PRESETS } from '../../geometry/connectors'
 import { defaultSplitSettings } from '../../geometry/split'
+import { normalizeFasteners } from '../fasteners/normalize'
 import { baseplateLayout, defaultParams, defaultPreview, defaultThickness, type BaseplateCore } from '../../geometry/baseplate'
 import { defaultFasteners, slotsFromPoints, type FastenerKind } from '../../geometry/fasteners'
 import type { Point } from '../../geometry/footprint'
@@ -65,7 +66,7 @@ export function migrateBaseplate(input: Record<string, unknown>): Record<string,
     preview: { ...defaultPreview, ...((rest.preview as object | undefined) ?? {}) },
     split: normalizeSplit(rest.split),
   }
-  if (!oldFlags && !needsPoints) return fasteners === undefined ? withNested : { ...withNested, fasteners }
+  if (!oldFlags && !needsPoints) return fasteners === undefined ? withNested : { ...withNested, fasteners: normalizeFasteners(fasteners) }
   const params = { ...defaultParams, ...withNested } as BaseplateCore
   const cur = (fasteners ?? {}) as Record<string, unknown>
   return {

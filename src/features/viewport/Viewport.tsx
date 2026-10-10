@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import type { ModelResult } from '../../geometry/model'
+import { groundOpacity } from './ground'
 
 export interface BuildPlate { x: number; y: number }
 
@@ -36,10 +37,10 @@ function labelSprite(text: string, color: number, filled: boolean) {
 function makeGrid() {
   const mat = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, side: THREE.DoubleSide,
-    uniforms: { uCenter: { value: new THREE.Vector3() }, uFade: { value: 600 } },
+    uniforms: { uCenter: { value: new THREE.Vector3() }, uFade: { value: 600 }, uAlpha: { value: 1 } },
     vertexShader: `varying vec3 vPos; void main(){ vec4 w = modelMatrix * vec4(position,1.); vPos = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
     fragmentShader: `
-      varying vec3 vPos; uniform vec3 uCenter; uniform float uFade;
+      varying vec3 vPos; uniform vec3 uCenter; uniform float uFade; uniform float uAlpha;
       float line(float size, float w){
         vec2 c = vPos.xy / size; vec2 g = abs(fract(c - .5) - .5) / fwidth(c);
         return 1. - min(min(g.x, g.y) / w, 1.);
@@ -48,7 +49,7 @@ function makeGrid() {
         float d = distance(vPos.xy, uCenter.xy);
         float fade = 1. - smoothstep(uFade * .25, uFade, d);
         float minor = line(10., 1.) * .15, major = line(50., 1.5) * .45;
-        float a = max(minor, major) * fade;
+        float a = max(minor, major) * fade * uAlpha;
         if (a < .01) discard;
         gl_FragColor = vec4(vec3(.17, .45, .75), a);
       }`,
@@ -102,14 +103,18 @@ export function Viewport({ model, plate, gap = 0, onFitReady }: { model: ModelRe
     camera.position.set(160, -220, 160)
     const controls = new OrbitControls(camera, renderer.domElement)
     controls.enableDamping = true
-    controls.maxPolarAngle = Math.PI * 0.499 // не уходим под стол
+    controls.maxPolarAngle = Math.PI // камера может уйти под плоскость XY и смотреть на низ модели; ось Z остаётся вверху
     controls.minDistance = 30
     controls.maxDistance = 1500
 
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 1.4))
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x8794a8, 1.4)) // нижний цвет светлее: грани, смотрящие вниз, читаются
     const sun = new THREE.DirectionalLight(0xffffff, 1.6)
     sun.position.set(120, -180, 300)
     scene.add(sun)
+    // подсветка снизу: углубления на дне (магниты, отверстия) видны при взгляде снизу
+    const under = new THREE.DirectionalLight(0xffffff, 0.9)
+    under.position.set(-120, 180, -300)
+    scene.add(under)
 
     const grid = makeGrid()
     grid.scale.setScalar(6000)
@@ -119,6 +124,7 @@ export function Viewport({ model, plate, gap = 0, onFitReady }: { model: ModelRe
     // стол: полупрозрачная плита + контур
     const plateGroup = new THREE.Group()
     scene.add(plateGroup)
+    let plateMats: { fill: THREE.MeshBasicMaterial; line: THREE.LineBasicMaterial } | null = null
 
     const modelGroup = new THREE.Group()
     scene.add(modelGroup)
@@ -163,11 +169,15 @@ export function Viewport({ model, plate, gap = 0, onFitReady }: { model: ModelRe
       setPlate(p) {
         plateGroup.children.forEach((c) => { const m = c as THREE.Mesh; m.geometry.dispose() })
         plateGroup.clear()
+        plateMats = null
         if (!p) return
-        const fill = new THREE.Mesh(new THREE.PlaneGeometry(p.x, p.y), new THREE.MeshBasicMaterial({ color: 0x1b2028, transparent: true, opacity: 0.85, depthWrite: false }))
+        const fillMat = new THREE.MeshBasicMaterial({ color: 0x1b2028, transparent: true, opacity: 0.85, depthWrite: false })
+        const lineMat = new THREE.LineBasicMaterial({ color: 0x5c6b82, transparent: true })
+        plateMats = { fill: fillMat, line: lineMat }
+        const fill = new THREE.Mesh(new THREE.PlaneGeometry(p.x, p.y), fillMat)
         fill.position.z = -0.05
         const box = new THREE.EdgesGeometry(new THREE.PlaneGeometry(p.x, p.y))
-        const outline = new THREE.LineSegments(box, new THREE.LineBasicMaterial({ color: 0x5c6b82 }))
+        const outline = new THREE.LineSegments(box, lineMat)
         outline.position.z = -0.04
         plateGroup.add(fill, outline)
       },
@@ -251,7 +261,14 @@ export function Viewport({ model, plate, gap = 0, onFitReady }: { model: ModelRe
       grid.position.x = Math.round(controls.target.x / 50) * 50
       grid.position.y = Math.round(controls.target.y / 50) * 50
       ;(grid.material as THREE.ShaderMaterial).uniforms.uCenter.value.set(0, 0, 0)
-      ;(grid.material as THREE.ShaderMaterial).uniforms.uFade.value = Math.max(600, camera.position.distanceTo(controls.target) * 3)
+      const dist = camera.position.distanceTo(controls.target)
+      ;(grid.material as THREE.ShaderMaterial).uniforms.uFade.value = Math.max(600, dist * 3)
+      // сетка и стол плавно гаснут, когда камера уходит под плоскость XY, и возвращаются над ней
+      const ground = groundOpacity(camera.position.z, dist)
+      ;(grid.material as THREE.ShaderMaterial).uniforms.uAlpha.value = ground
+      grid.visible = ground > 0.01
+      plateGroup.visible = ground > 0.01
+      if (plateMats) { plateMats.fill.opacity = 0.85 * ground; plateMats.line.opacity = ground }
       const w = el.clientWidth, h = el.clientHeight
       renderer.setViewport(0, 0, w, h); renderer.setScissorTest(false)
       renderer.clear(); renderer.render(scene, camera)

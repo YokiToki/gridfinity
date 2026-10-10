@@ -62,6 +62,15 @@ describe('миграция сохранённых параметров baseplate
     store({ unit: 42, x: 3, y: 2 })
     expect(load().split).toEqual(defaultParams.split)
   })
+  it('частично сохранённый крепёж (одного вида нет) не ломает загрузку', () => {
+    store({ fasteners: { magnets: { mode: 'full' } } })
+    const p = load()
+    expect(p.fasteners.magnets).toEqual({ mode: 'full', slots: [] })
+    expect(p.fasteners.screws).toEqual({ mode: 'none', slots: [] })
+    expect(p.fasteners.magnetD).toBe(6.5)
+    store({ fasteners: { magnets: { mode: 'weird', slots: 'x' }, screws: null } })
+    expect(load().fasteners.magnets).toEqual({ mode: 'none', slots: [] })
+  })
   it('false → none, смешанный случай', () => {
     store({ magnets: true, screws: false })
     const p = load()

@@ -1,4 +1,5 @@
 import { defaultBox } from '../../geometry/box'
+import { normalizeFasteners } from '../fasteners/normalize'
 
 const obj = (v: unknown) => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {})
 
@@ -16,6 +17,6 @@ export function migrateBox(raw: Record<string, unknown>): Record<string, unknown
       yDividers: Array.isArray(c.yDividers) ? c.yDividers.filter((n) => typeof n === 'number') : [],
       removed: Array.isArray(c.removed) ? c.removed.filter((k) => typeof k === 'string') : [],
     },
-    fasteners: { ...defaultBox.fasteners, ...obj(raw.fasteners) },
+    fasteners: normalizeFasteners(raw.fasteners),
   }
 }

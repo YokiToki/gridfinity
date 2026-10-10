@@ -44,6 +44,8 @@ describe('сохранение параметров', () => {
     expect(p.thickness).toEqual({ ...defaultBox.thickness, floor: 1 })
     expect(p.compartments.xDividers).toEqual([0.5])
     expect(p.scoop).toEqual(defaultBox.scoop)
+    localStorage.setItem('gridfinity.box', JSON.stringify({ fasteners: { magnets: { mode: 'full' } } }))
+    expect(loadPersisted('gridfinity.box', defaultBox, migrateBox).fasteners.screws).toEqual({ mode: 'none', slots: [] })
   })
 })
 
