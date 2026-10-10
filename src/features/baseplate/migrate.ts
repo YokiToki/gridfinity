@@ -1,4 +1,4 @@
-import { defaultConnector } from '../../geometry/connectors'
+import { CUSTOM, defaultConnector, HOLE_PRESETS } from '../../geometry/connectors'
 import { defaultSplitSettings } from '../../geometry/split'
 import { baseplateLayout, defaultParams, defaultPreview, defaultThickness, type BaseplateCore } from '../../geometry/baseplate'
 import { defaultFasteners, slotsFromPoints, type FastenerKind } from '../../geometry/fasteners'
@@ -23,7 +23,9 @@ function migrateKind(old: unknown, current: unknown, params: BaseplateCore): Fas
 function normalizeSplit(raw: unknown) {
   const s = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
   const c = (s.connector && typeof s.connector === 'object' ? s.connector : {}) as Record<string, unknown>
-  return { ...defaultSplitSettings, ...s, connector: { ...defaultConnector, ...c, overrides: { ...((c.overrides as object | undefined) ?? {}) } } }
+  // убранные пресеты (M3, магнит 6×2) читаются как «свой», размеры сохраняются
+  const preset = typeof c.preset === 'string' && (c.preset === CUSTOM || HOLE_PRESETS.some((h) => h.id === c.preset)) ? c.preset : c.preset === undefined ? defaultConnector.preset : CUSTOM
+  return { ...defaultSplitSettings, ...s, connector: { ...defaultConnector, ...c, preset, overrides: { ...((c.overrides as object | undefined) ?? {}) } } }
 }
 
 const num = (v: unknown, d: number) => (typeof v === 'number' && Number.isFinite(v) ? v : d)

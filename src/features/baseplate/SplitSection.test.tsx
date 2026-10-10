@@ -136,16 +136,34 @@ describe('ConnectorsSection', () => {
     await expand()
     await userEvent.click(screen.getByRole('button', { name: 'End-face holes' }))
     expect(latest.split.connector.type).toBe('holes')
-    expect(screen.getByLabelText('Hole Ø')).toHaveValue('3.2')
+    expect(screen.getByLabelText('Hole Ø')).toHaveValue('1.9')
+    expect((screen.getByLabelText('Hole preset') as HTMLSelectElement).value).toBe('filament')
     await userEvent.selectOptions(screen.getByLabelText('Hole preset'), 'pin3')
     expect(latest.split.connector).toMatchObject({ preset: 'pin3', diameter: 3.1 })
     const c = screen.getByLabelText('Per edge')
     await userEvent.clear(c); await userEvent.type(c, '3'); await userEvent.tab()
     expect(latest.split.connector.count).toBe(3)
   })
-  it('магнит 6×2 не помещается в стенку: предупреждение', async () => {
-    render(<Harness start={big({ connector: { ...defaultConnector, type: 'holes', preset: 'm6x2', diameter: 6.1, depth: 2.1 } })} />)
-    expect(screen.getByRole('group', { name: 'Connector warnings' })).toHaveTextContent('the hole does not fit in the wall between the sockets')
+  it('отверстие шире ребра: предупреждение', async () => {
+    render(<Harness start={big({ connector: { ...defaultConnector, type: 'holes', preset: 'custom', diameter: 6 } })} />)
+    expect(screen.getByRole('group', { name: 'Connector warnings' })).toHaveTextContent('the hole is wider than the rib')
+  })
+  it('пресеты: пруток, штифты, два магнита; M3 и 6×2 нет', async () => {
+    render(<Harness start={big({ connector: { ...defaultConnector, type: 'holes' } })} />)
+    const options = [...(screen.getByLabelText('Hole preset') as HTMLSelectElement).options].map((o) => o.textContent)
+    expect(options).toEqual(['1.75 mm filament', '2 mm pin', '3 mm pin', '3 × 2 mm magnet', '2.8 × 0.75 mm magnet', 'Custom'])
+    await userEvent.selectOptions(screen.getByLabelText('Hole preset'), 'magnet2_8x0_75')
+    expect(latest.split.connector).toMatchObject({ diameter: 2.95, depth: 0.85 })
+    expect(screen.getByText('Effective depth: 0.85 mm')).toBeInTheDocument()
+  })
+  it('реальная глубина показывается; ограничение длиной части отмечено', async () => {
+    render(<Harness start={big({ connector: { ...defaultConnector, type: 'holes', depth: 500 } })} />)
+    expect(screen.getByText(/Effective depth: .* \(limited by the part length\)/)).toBeInTheDocument()
+  })
+  it('торец без рёбер: сообщение, что отверстий нет', async () => {
+    const one: BaseplateParams = { ...big({ connector: { ...defaultConnector, type: 'holes' } }), y: { mode: 'units', value: 1, align: 'center' } }
+    render(<Harness start={one} />)
+    expect(screen.getByRole('group', { name: 'Connector warnings' })).toHaveTextContent('no rib ends on this face')
   })
   it('ласточкин хвост: поля размеров и зазор', async () => {
     render(<Harness />)
@@ -154,6 +172,7 @@ describe('ConnectorsSection', () => {
     expect(latest.split.connector.type).toBe('dovetail')
     expect(screen.getByLabelText('Fit clearance')).toHaveValue('0.2')
     expect(screen.getByLabelText('Neck width')).toBeInTheDocument()
+    expect(screen.getByLabelText('Key height')).toHaveValue('2')
     expect(screen.queryByLabelText('Hole Ø')).toBeNull()
   })
   it('тип на отдельном разрезе переопределяется', async () => {

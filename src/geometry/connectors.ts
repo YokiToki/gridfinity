@@ -11,7 +11,7 @@ export const CONNECTOR_TYPES: ConnectorType[] = ['none', 'holes', 'dovetail']
 
 export interface ConnectorConfig {
   type: ConnectorType
-  /** Пресет отверстий: m3 | m6x2 | pin3 | custom. */
+  /** Пресет отверстий: filament | pin2 | pin3 | magnet3x2 | magnet2_8x0_75 | custom. */
   preset: string
   /** Диаметр отверстия, мм. */
   diameter: number
@@ -27,21 +27,25 @@ export interface ConnectorConfig {
   neck: number
   tip: number
   dovetailDepth: number
+  /** Высота ключа от низа детали (ключ лежит на столе), мм. */
+  dovetailHeight: number
   /** Тип отдельных разрезов: ключ `x:3` / `y:1` (номер ячейки, перед которой разрез). */
   overrides: Record<string, ConnectorType>
 }
 
 export interface HolePreset { id: string; diameter: number; depth: number }
-/** Размеры уже с зазором под посадку. */
+/** Размеры уже с зазором под посадку. Глубина — на каждую часть; для магнитов толщина + 0.1 мм. */
 export const HOLE_PRESETS: HolePreset[] = [
-  { id: 'm3', diameter: 3.2, depth: 6 },
-  { id: 'm6x2', diameter: 6.1, depth: 2.1 },
+  { id: 'filament', diameter: 1.9, depth: 6 },
+  { id: 'pin2', diameter: 2.1, depth: 6 },
   { id: 'pin3', diameter: 3.1, depth: 6 },
+  { id: 'magnet3x2', diameter: 3.1, depth: 2.1 },
+  { id: 'magnet2_8x0_75', diameter: 2.95, depth: 0.85 },
 ]
 export const CUSTOM = 'custom'
 
 export const defaultConnector: ConnectorConfig = {
-  type: 'none', preset: 'm3', diameter: 3.2, depth: 6, count: 2, inset: 10, clearance: 0.2, neck: 4, tip: 6, dovetailDepth: 1.2, overrides: {},
+  type: 'none', preset: 'filament', diameter: 1.9, depth: 6, count: 2, inset: 10, clearance: 0.2, neck: 4, tip: 6, dovetailDepth: 1.2, dovetailHeight: 2, overrides: {},
 }
 
 export function withHolePreset(c: ConnectorConfig, id: string): ConnectorConfig {
@@ -73,6 +77,8 @@ export interface Face {
   /** Протяжённость торца в мировых координатах по другой оси. */
   from: number
   to: number
+  /** Рёбра, упирающиеся в торец: положения (мм от начала торца) границ ячеек строго внутри торца. */
+  ribs: number[]
 }
 
 export const faceLength = (f: Face) => f.to - f.from
@@ -80,13 +86,23 @@ export const faceLength = (f: Face) => f.to - f.from
 /** Торцы между соседними частями. */
 export function cutFaces(fp: Footprint, parts: Part[]): Face[] {
   const faces: Face[] = []
+  const boundaryY = (j: number) => -fp.sizeY / 2 + fp.offsetY + j * fp.pitch
+  const boundaryX = (i: number) => -fp.sizeX / 2 + fp.offsetX + i * fp.pitch
   for (const a of parts) {
     for (const b of parts) {
-      if (a.col + 1 === b.col && a.row === b.row) faces.push({ axis: 'x', cut: a.i1, a, b, pos: a.x1, from: a.y0, to: a.y1 })
-      if (a.row + 1 === b.row && a.col === b.col) faces.push({ axis: 'y', cut: a.j1, a, b, pos: a.y1, from: a.x0, to: a.x1 })
+      if (a.col + 1 === b.col && a.row === b.row) {
+        const ribs: number[] = []
+        for (let j = a.j0 + 1; j < a.j1; j++) ribs.push(boundaryY(j) - a.y0)
+        faces.push({ axis: 'x', cut: a.i1, a, b, pos: a.x1, from: a.y0, to: a.y1, ribs })
+      }
+      if (a.row + 1 === b.row && a.col === b.col) {
+        const ribs: number[] = []
+        for (let i = a.i0 + 1; i < a.i1; i++) ribs.push(a.x1 - boundaryX(i))
+        ribs.sort((p, q) => p - q)
+        faces.push({ axis: 'y', cut: a.j1, a, b, pos: a.y1, from: a.x0, to: a.x1, ribs })
+      }
     }
   }
-  void fp
   return faces
 }
 
@@ -119,16 +135,12 @@ export function holeFitsRidge(pitch: number, pocketBottom: number, diameter: num
   return true
 }
 
-/** Ласточкин хвост: глубина вместе с зазором должна уместиться в половину стенки на всей высоте гнезда замка. */
-export function dovetailFits(pitch: number, pocketBottom: number, c: ConnectorConfig, zc: number, height: number): boolean {
-  const half = (zc - height / 2 - c.clearance)
-  if (half < 0) return false
+/** Ласточкин хвост лежит на столе (z от 0): глубина вместе с зазором должна уместиться в половину стенки на всей его высоте. */
+export function dovetailFits(pitch: number, pocketBottom: number, c: ConnectorConfig): boolean {
+  const top = c.dovetailHeight + c.clearance
   let minRidge = Infinity
-  for (let k = 0; k <= 12; k++) {
-    const z = zc - height / 2 - c.clearance + ((height + 2 * c.clearance) * k) / 12
-    minRidge = Math.min(minRidge, ridgeWidthAt(pitch, z - pocketBottom))
-  }
-  return c.dovetailDepth + c.clearance <= minRidge / 2 - MIN_WALL + 1e-9 && c.tip >= c.neck
+  for (let k = 0; k <= 12; k++) minRidge = Math.min(minRidge, ridgeWidthAt(pitch, (top * k) / 12 - pocketBottom))
+  return c.dovetailDepth + c.clearance <= minRidge / 2 - MIN_WALL + 1e-9 && c.tip >= c.neck && c.dovetailHeight > 0
 }
 
 export interface FastenerHole { x: number; y: number; r: number }
@@ -148,6 +160,9 @@ export interface FacePlan {
   /** Положения соединителей вдоль торца, мм от его начала. */
   positions: number[]
   zc: number
+  /** Глубина отверстия в частях A и B с учётом длины части (для отверстий). */
+  depthA: number
+  depthB: number
   issues: ConnectorIssue[]
 }
 
@@ -175,28 +190,57 @@ export function nominalPositions(length: number, count: number, inset: number): 
   return Array.from({ length: count }, (_, k) => inset + (span * k) / (count - 1))
 }
 
-/** Планирует соединители одного торца: сдвигает их от отверстий крепежа и сообщает о нарушениях. */
+/** Длина части вдоль нормали разреза. */
+const extentAlong = (face: Face, part: Part) => (face.axis === 'x' ? part.sizeX : part.sizeY)
+/** Сколько материала оставляем у дальнего края части за дном отверстия, мм. */
+export const END_WALL = 2
+
+/** Планирует соединители одного торца: отверстия — в торцы рёбер, замок — вдоль торца; сдвигает от крепежа, сообщает о нарушениях. */
 export function planFace(face: Face, c: ConnectorConfig, ctx: PlanContext): FacePlan {
   const type = c.overrides[cutKey(face.axis, face.cut)] ?? c.type
   const cutId = cutKey(face.axis, face.cut)
   const parts = `${face.a.label}–${face.b.label}`
   const issues: ConnectorIssue[] = []
-  const plan: FacePlan = { face, type, positions: [], zc: 0, issues }
+  const plan: FacePlan = { face, type, positions: [], zc: 0, depthA: 0, depthB: 0, issues }
   if (type === 'none') return plan
 
   const L = faceLength(face)
   const isHole = type === 'holes'
-  const halfU = (isHole ? c.diameter : c.tip + 2 * c.clearance) / 2 // половина размера вдоль торца
-  const depth = isHole ? c.depth : c.dovetailDepth + c.clearance
-  const dz = isHole ? c.diameter : SOCKET_LAYERS.wall
-  plan.zc = connectorZ(ctx.pocketBottom, dz)
+  const holes = ctx.holes.map((h) => ({ ...toCanonical(face, h), r: h.r }))
 
-  const fits = isHole ? holeFitsRidge(ctx.pitch, ctx.pocketBottom, c.diameter, plan.zc) : dovetailFits(ctx.pitch, ctx.pocketBottom, c, plan.zc, SOCKET_LAYERS.wall)
-  if (!fits) { issues.push({ key: isHole ? 'connector.tooBigForRidge' : 'connector.dovetailTooDeep', cut: cutId, parts }); return plan }
+  if (isHole) {
+    plan.zc = connectorZ(ctx.pocketBottom, c.diameter)
+    plan.depthA = Math.max(0, Math.min(c.depth, extentAlong(face, face.a) - END_WALL))
+    plan.depthB = Math.max(0, Math.min(c.depth, extentAlong(face, face.b) - END_WALL))
+    if (!holeFitsRidge(ctx.pitch, ctx.pocketBottom, c.diameter, plan.zc)) { issues.push({ key: 'connector.tooBigForRidge', cut: cutId, parts }); return plan }
+    if (face.ribs.length === 0) { issues.push({ key: 'connector.noRib', cut: cutId, parts }); return plan }
+    const halfU = c.diameter / 2
+    const free = (u: number) => !holes.some((h) => circleHitsRect(h.n, h.u, h.r + MIN_WALL, -plan.depthA, plan.depthB, u - halfU, u + halfU))
+    const candidates = face.ribs.filter(free)
+    const wanted = Math.min(c.count, face.ribs.length)
+    const nominal = nominalPositions(L, c.count, c.inset)
+    const chosen: number[] = []
+    for (const u0 of nominal.length ? nominal : [L / 2]) {
+      const best = candidates.filter((u) => !chosen.includes(u)).sort((a, b) => Math.abs(a - u0) - Math.abs(b - u0))[0]
+      if (best !== undefined) chosen.push(best)
+    }
+    // номинальных положений меньше, чем рёбер, а надо count: добираем свободными рёбрами по близости к центру
+    for (const u of candidates.filter((u) => !chosen.includes(u)).sort((a, b) => Math.abs(a - L / 2) - Math.abs(b - L / 2))) {
+      if (chosen.length >= wanted) break
+      chosen.push(u)
+    }
+    plan.positions = chosen.slice(0, wanted).sort((a, b) => a - b)
+    if (plan.positions.length < wanted) issues.push({ key: 'connector.collision', cut: cutId, parts })
+    return plan
+  }
 
+  // ласточкин хвост: лежит на столе, размещается вдоль торца
+  const halfU = (c.tip + 2 * c.clearance) / 2
+  const depth = c.dovetailDepth + c.clearance
+  plan.zc = c.dovetailHeight / 2
+  if (!dovetailFits(ctx.pitch, ctx.pocketBottom, c)) { issues.push({ key: 'connector.dovetailTooDeep', cut: cutId, parts }); return plan }
   const nominal = nominalPositions(L, c.count, c.inset)
   if (nominal.length === 0) { issues.push({ key: 'connector.noRoom', cut: cutId, parts }); return plan }
-  const holes = ctx.holes.map((h) => ({ ...toCanonical(face, h), r: h.r }))
   const free = (u: number) =>
     u - halfU >= MIN_WALL && u + halfU <= L - MIN_WALL &&
     !holes.some((h) => circleHitsRect(h.n, h.u, h.r + MIN_WALL, -depth, depth, u - halfU, u + halfU))
@@ -218,15 +262,14 @@ export interface PartExtras { add: Manifold[]; sub: Manifold[] }
 
 const place = (m: Manifold, f: Face) => (f.axis === 'x' ? m.translate([f.pos, f.from, 0]) : m.rotate([0, 0, 90]).translate([f.to, f.pos, 0]))
 
-/** Трапеция ласточкина хвоста в плоскости (n, u): шейка у торца, головка на глубине. grow — расширение (зазор). */
-function dovetail(w: ManifoldToplevel, u: number, c: ConnectorConfig, grow: number, zc: number, height: number): Manifold {
+/** Трапеция ласточкина хвоста в плоскости (n, u): шейка у торца, головка на глубине. grow — расширение (зазор); тело занимает z от zFrom до zTo. */
+function dovetail(w: ManifoldToplevel, u: number, c: ConnectorConfig, grow: number, zFrom: number, zTo: number): Manifold {
   const { CrossSection, Manifold } = w
   const x0 = -0.3 // заходит в свою часть, чтобы ключ срастался с торцом
   const pts: [number, number][] = [[x0, u - c.neck / 2], [c.dovetailDepth, u - c.tip / 2], [c.dovetailDepth, u + c.tip / 2], [x0, u + c.neck / 2]]
-  // фигура хранится как (n, u): extrude вдоль z, координаты x = n, y = u
   let cs = CrossSection.ofPolygons([pts])
   if (grow > 0) cs = cs.offset(grow, 'Miter', 2, 8)
-  return Manifold.extrude(cs, height + 2 * grow).translate([0, 0, zc - height / 2 - grow])
+  return Manifold.extrude(cs, zTo - zFrom).translate([0, 0, zFrom])
 }
 
 /** Что нужно добавить и вычесть из каждой части (по метке) для всех торцов. */
@@ -240,13 +283,14 @@ export function connectorExtras(w: ManifoldToplevel, plans: FacePlan[], c: Conne
       const f = p.face
       if (p.type === 'holes') {
         const r = c.diameter / 2
-        const hole = Manifold.cylinder(c.depth + 0.05, r, r, 32).rotate([0, 90, 0]) // вдоль +n от n = 0
-        of(f.a.label).sub.push(place(hole.translate([-c.depth - 0.05, u, p.zc]), f))
-        of(f.b.label).sub.push(place(hole.translate([0, u, p.zc]), f))
+        // отверстие идёт вдоль ребра от торца в каждую часть и глухое
+        const cyl = (depth: number) => Manifold.cylinder(depth + 0.05, r, r, 24).rotate([0, 90, 0])
+        if (p.depthA > 0) of(f.a.label).sub.push(place(cyl(p.depthA).translate([-p.depthA - 0.05, u, p.zc]), f))
+        if (p.depthB > 0) of(f.b.label).sub.push(place(cyl(p.depthB).translate([0, u, p.zc]), f))
       } else {
-        const h = SOCKET_LAYERS.wall
-        of(f.a.label).add.push(place(dovetail(w, u, c, 0, p.zc, h), f))
-        of(f.b.label).sub.push(place(dovetail(w, u, c, c.clearance, p.zc, h), f))
+        // ключ лежит на столе (z от 0), гнездо открыто снизу и закрыто сверху с зазором
+        of(f.a.label).add.push(place(dovetail(w, u, c, 0, 0, c.dovetailHeight), f))
+        of(f.b.label).sub.push(place(dovetail(w, u, c, c.clearance, -1, c.dovetailHeight + c.clearance), f))
       }
     }
   }

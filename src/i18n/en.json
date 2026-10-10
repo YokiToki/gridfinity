@@ -238,9 +238,11 @@
     "dovetail": "Dovetail",
     "preset": "Hole preset",
     "presets": {
-      "m3": "M3 screw",
-      "m6x2": "6 × 2 mm magnet",
+      "filament": "1.75 mm filament",
+      "pin2": "2 mm pin",
       "pin3": "3 mm pin",
+      "magnet3x2": "3 × 2 mm magnet",
+      "magnet2_8x0_75": "2.8 × 0.75 mm magnet",
       "custom": "Custom"
     },
     "diameter": "Hole Ø",
@@ -254,10 +256,15 @@
     "perCut": "Per cut",
     "useDefault": "As above",
     "cutLabel": "Cut {{axis}}{{n}} ({{parts}})",
-    "tooBigForRidge": "Cut {{cut}} ({{parts}}): the hole does not fit in the wall between the sockets, so no connector was made.",
+    "tooBigForRidge": "Cut {{cut}} ({{parts}}): the hole is wider than the rib, so no connector was made.",
     "dovetailTooDeep": "Cut {{cut}} ({{parts}}): the dovetail is too deep for the wall, so no connector was made.",
     "noRoom": "Cut {{cut}} ({{parts}}): the edge is too short for this count and inset.",
     "collision": "Cut {{cut}} ({{parts}}): no free place next to the fastener holes for a connector.",
-    "issuesTitle": "Connector warnings"
+    "issuesTitle": "Connector warnings",
+    "dovetailHeight": "Key height",
+    "effectiveDepth": "Effective depth: {{value}}",
+    "effectiveDepthClamped": "Effective depth: {{value}} (limited by the part length)",
+    "noRib": "Cut {{cut}} ({{parts}}): no rib ends on this face (it is one cell wide), so no hole was made. Use the dovetail or another cut.",
+    "holesHelp": "Holes go into the end of the rib that meets the cut, along the rib."
   }
 }

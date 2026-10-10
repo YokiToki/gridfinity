@@ -45,8 +45,18 @@ describe('миграция сохранённых параметров baseplate
     const p = load()
     expect(p.split.enabled).toBe(true)
     expect(p.split.margin).toBe(5)
-    expect(p.split.connector).toMatchObject({ type: 'holes', count: 3, diameter: 3.2, overrides: {} })
+    expect(p.split.connector).toMatchObject({ type: 'holes', count: 3, diameter: 1.9, dovetailHeight: 2, overrides: {} })
     expect(p.split.exploded).toBe(true)
+  })
+  it('убранные пресеты M3 и 6×2 читаются как «свой», размеры и остальное сохраняются', () => {
+    store({ split: { connector: { type: 'holes', preset: 'm3', diameter: 3.2, depth: 6, dovetailDepth: 1.3 } } })
+    expect(load().split.connector).toMatchObject({ preset: 'custom', diameter: 3.2, depth: 6, dovetailDepth: 1.3, dovetailHeight: 2 })
+    store({ split: { connector: { preset: 'm6x2', diameter: 6.1 } } })
+    expect(load().split.connector).toMatchObject({ preset: 'custom', diameter: 6.1 })
+  })
+  it('известный пресет и отсутствующий dovetailHeight', () => {
+    store({ split: { connector: { preset: 'pin3', diameter: 3.1 } } })
+    expect(load().split.connector).toMatchObject({ preset: 'pin3', dovetailHeight: 2 })
   })
   it('старое состояние без split получает разделение по умолчанию (выключено)', () => {
     store({ unit: 42, x: 3, y: 2 })
