@@ -3,8 +3,8 @@
 ## 1. Geometry
 
 - [ ] 1.1 Dovetail on the bed: key from z = 0 up to `dovetailHeight` (default 2), socket from below the part to `dovetailHeight + clearance`; update the fit check to sample z from 0; tests: key min z is 0 and its height is the setting, socket is open at the bottom and 0.2 mm above the key, bounding boxes of key and socket, with and without ears and a floor.
-- [ ] 1.2 Filament-sized blind holes: add the presets (filament 1.9, pin 2.1, pin 3.1, M3, magnet), make filament the default, add `holeDepthLimit` and carry the effective depth in the plan; tests: default holes stay 0.4 mm away from both sockets (sample the part's wall around the hole), depth is clamped, M3 still fits, the magnet is reported as not fitting.
-- [ ] 1.3 Verify blindness on real parts: for a split plate with filament holes, the volume removed per hole equals a cylinder of the effective depth and the hole does not connect to a pocket (no change of the part's genus); test it.
+- [ ] 1.2 Filament-sized presets (filament 1.9, pin 2.1, pin 3.1, M3, magnet), filament as the default, and rib-end positions: candidates at the cell boundaries inside the face, nominal positions snapped to them, no duplicates, `connector.noRib` for a face without candidates; tests: 2×2 and 4-row faces, count and inset, single-row face, same positions in both parts.
+- [ ] 1.3 Holes along the rib: the cylinder axis runs along the cut normal at the rib's axis, depth = min(configured, part extent − 2 mm), fastener collision on the new positions, fit check for the diameter; tests: default holes are blind and keep 0.4 mm from both sockets along their whole length, the volume removed per hole equals the cylinder, the genus of the part does not change (no connection to a pocket), M3 fits, the magnet is reported.
 
 ## 2. UI
 

@@ -24,28 +24,47 @@ Connector geometry on one part SHALL line up with its counterpart on the neighbo
 The user SHALL configure hole diameter, depth, count per cut face and inset from the ends of the cut face, with presets (1.75 mm filament, 2 mm pin, 3 mm pin, M3 screw, 6×2 magnet); the default preset SHALL be the 1.75 mm filament rod with a 1.9 mm hole. Dovetail settings are neck and tip width, key depth, key height and fit clearance.
 
 #### Scenario: Count
-- **WHEN** count per face is 2 and a cut face is 84 mm long
-- **THEN** two connectors are placed symmetrically along the face
+- **WHEN** count per face is 2 and the cut face has three rib ends
+- **THEN** two of them are used, the two closest to the evenly spaced positions between the insets, and the same rib ends are used in both parts
 
 #### Scenario: Filament preset
 - **WHEN** the user picks the 1.75 mm filament preset
 - **THEN** the hole diameter is 1.9 mm
 
-#### Scenario: Effective depth
-- **WHEN** the configured depth is more than the wall allows
-- **THEN** the hole is made only as deep as the wall allows and the effective depth is shown next to the setting
+#### Scenario: Depth
+- **WHEN** the configured depth is 6 mm
+- **THEN** each part gets a hole 6 mm deep along the rib, and the effective depth is shown next to the setting
+
+#### Scenario: Depth limited by the part
+- **WHEN** the configured depth is more than the part's length along the hole allows
+- **THEN** the hole is made only as deep as the part allows (leaving 2 mm of material) and the effective depth is shown
 
 ### Requirement: Connectors do not break parts
-Connector placement SHALL avoid sockets and fastener holes and SHALL keep a minimum wall to the nearest socket; violations SHALL be reported. End-face holes SHALL be blind: they SHALL NOT reach a socket, so no hole goes through the wall between sockets.
+Connector placement SHALL avoid sockets and fastener holes and SHALL keep a minimum wall to the nearest socket; violations SHALL be reported. End-face holes SHALL be drilled into the end of a rib that meets the cut, along the rib, and SHALL be blind: they SHALL NOT reach a socket, so no hole goes through the wall between sockets.
 
 #### Scenario: Collision
 - **WHEN** a connector would intersect a magnet hole
-- **THEN** it is shifted along the face to the nearest free position or reported if none exists
+- **THEN** it is moved to another rib end on the face or reported if none is free
 
 #### Scenario: Blind hole
 - **WHEN** a hole is generated at the default filament preset
-- **THEN** it stays at least 0.4 mm away from the sockets on both sides and ends inside the part
+- **THEN** it stays at least 0.4 mm away from the sockets on both sides along its whole length and ends inside the part
 
 #### Scenario: Hole too large
-- **WHEN** a preset such as the 6×2 magnet does not fit in the wall between sockets
+- **WHEN** a preset such as the 6×2 magnet does not fit in the rib
 - **THEN** no connector is generated and the user is told why
+
+#### Scenario: Face without a rib end
+- **WHEN** a cut face is one cell wide and has no rib ending on it
+- **THEN** no end-face hole is generated and the user is told why
+
+### Requirement: Connector types
+Each internal cut SHALL be joinable using one of: none, end-face holes (for screws, magnets or pins) drilled into the ends of the ribs that meet the cut, or a printed dovetail/key; the type SHALL be selectable globally and overridable per cut.
+
+#### Scenario: End-face holes
+- **WHEN** connector type is end-face holes
+- **THEN** matching holes are created in the rib ends on both sides of the cut, on the same axes, at the configured depth
+
+#### Scenario: None
+- **WHEN** connector type is none
+- **THEN** the faces are flat and no extra geometry is added
