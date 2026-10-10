@@ -3,7 +3,8 @@ import { getWasm } from './wasm'
 import { socketPocket } from './profiles'
 import { DEFAULT_PITCH, FLOOR, SOCKET_HEIGHT } from './spec'
 import { cellCenters, type Footprint } from './footprint'
-import { allPositions, cellWindows, defaultFasteners, fastenerCuts, needsFloor, type FastenerConfig } from './fasteners'
+import { allPositions, cellWindows, defaultFasteners, fastenerCuts, magnetSize, needsFloor, type FastenerConfig } from './fasteners'
+import { connectorExtras, cutFaces, planFace, type FacePlan, type FastenerHole, type PartExtras } from './connectors'
 import { resolveAxis, type Align } from './sizing'
 import { defaultSplit, MAX_PARTS, resolveCuts, splitParts, type CellRegion, type Part, type SplitGeometry } from './split'
 import type { ManifoldToplevel } from 'manifold-3d'
@@ -130,9 +131,23 @@ export function validateBaseplate(g: BaseplateGeometry): { ok: boolean; errors: 
 /** Часть плиты, собранная в координатах целой плиты. */
 export interface BuiltPart { part: Part; solid: Manifold }
 
-export interface PartExtras { add: Manifold[]; sub: Manifold[] }
-
 /** Плита целиком или одна её часть (регион ячеек и прямоугольник); крайние части сохраняют бортик, отступ и скругления. */
+/** Части плиты и план соединителей для всех торцов; без разделения пусто. */
+export function planSplit(g: BaseplateGeometry): { parts: Part[]; plans: FacePlan[] } {
+  const { fp } = baseplateLayout(g)
+  const cuts = resolveCuts(fp, g.split)
+  const parts = splitParts(fp, cuts.xCuts, cuts.yCuts, g.split.maxX, g.split.maxY)
+  if (!g.split.enabled || parts.length === 1) return { parts, plans: [] }
+  const pos = allPositions(g.fasteners, fp)
+  const holes: FastenerHole[] = [
+    ...pos.magnets.map((p) => ({ x: p.x, y: p.y, r: magnetSize(g.fasteners).d / 2 })),
+    ...pos.screws.map((p) => ({ x: p.x, y: p.y, r: g.fasteners.screwD / 2 })),
+  ]
+  const { pocketBottom } = baseplateHeights(g, fp)
+  const ctx = { pitch: g.pitch, pocketBottom, holes }
+  return { parts, plans: cutFaces(fp, parts).map((f) => planFace(f, g.split.connector, ctx)) }
+}
+
 export function buildPlate(w: ManifoldToplevel, g: BaseplateGeometry, part?: Part, extras?: PartExtras): Manifold {
   const { Manifold, CrossSection } = w
   const { fp, sizeX, sizeY, padX, padY, truncX, truncY } = baseplateLayout(g)
@@ -179,12 +194,12 @@ export async function buildBaseplate(g: BaseplateGeometry, wasmUrl?: string): Pr
 /** Части плиты по настройкам разделения; без разделения — одна часть A1 с целой плитой. */
 export async function buildBaseplateParts(g: BaseplateGeometry, wasmUrl?: string): Promise<BuiltPart[]> {
   const w = await getWasm(wasmUrl)
-  const { fp, sizeX, sizeY } = baseplateLayout(g)
-  const cuts = resolveCuts(fp, g.split)
-  const parts = splitParts(fp, cuts.xCuts, cuts.yCuts, g.split.maxX, g.split.maxY)
+  const { sizeX, sizeY } = baseplateLayout(g)
+  const { parts, plans } = planSplit(g)
   if (!g.split.enabled || parts.length === 1) {
     const only: Part = { ...parts[0], x0: -sizeX / 2, x1: sizeX / 2, y0: -sizeY / 2, y1: sizeY / 2, sizeX, sizeY }
     return [{ part: only, solid: buildPlate(w, g) }]
   }
-  return parts.map((part) => ({ part, solid: buildPlate(w, g, part) }))
+  const extras = connectorExtras(w, plans, g.split.connector)
+  return parts.map((part) => ({ part, solid: buildPlate(w, g, part, extras.get(part.label)) }))
 }

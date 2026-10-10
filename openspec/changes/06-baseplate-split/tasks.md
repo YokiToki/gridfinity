@@ -8,9 +8,9 @@
 
 ## 2. Connectors
 
-- [ ] 2.1 Cut-face frame + end-face hole generator with count/inset/diameter; test hole alignment between neighbours.
-- [ ] 2.2 Dovetail key/socket with clearance; test socket larger by clearance per side.
-- [ ] 2.3 Collision avoidance with sockets and fastener holes; test shift and report cases.
+- [x] 2.1 Cut-face frame + end-face hole generator with count/inset/diameter; test hole alignment between neighbours.
+- [x] 2.2 Dovetail key/socket with clearance; test socket larger by clearance per side.
+- [x] 2.3 Collision avoidance with sockets and fastener holes; test shift and report cases.
 
 ## 3. UI
 
