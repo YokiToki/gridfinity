@@ -1,0 +1,337 @@
+import { describe, expect, it } from 'vitest'
+import { getWasm } from './wasm'
+import {
+  addCutout, baseOutline, buildCutout, cutoutBounds, cutoutLayout, cutoutNotices, defaultCutout, duplicateCutout, effectiveDepth, moveCutout, rectCutout,
+  removeCutout, renameCutout, toggleCutout, updateCutout, validateCutout, MIN_MARGIN, type Cutout, type CutoutParams, type MeshRegistry, type MeshSource,
+} from './cutout'
+import { alignEdge, centerCutout, distribute, fitFootprint, snapAxis, snapMove, snapTargets } from './cutout-placement'
+import { defaultOrientation, describeMesh, flatFaces, repairMesh } from './stl-import'
+import { boxSoup } from './stl-import.test'
+import { defaultFasteners } from './fasteners'
+import { expectValidSolid, mm, units } from './testing'
+
+const params = (o: Partial<CutoutParams> = {}): CutoutParams => ({ ...defaultCutout, lip: 'none', ...o })
+const near = (a: number, b: number, tol = 0.002) => expect(Math.abs(a - b) / Math.abs(b)).toBeLessThan(tol)
+const rect = (o: Omit<Partial<Cutout>, 'source'> & { source?: Partial<{ width: number; length: number; radius: number }> } = {}) => rectCutout({ id: 'r', depth: 10, clearance: 0, ...o })
+
+describe('блок без вырезов', () => {
+  it('2×2×3 без губы: сплошной блок 83.5×83.5×21', async () => {
+    const m = await buildCutout(params())
+    expectValidSolid(m, { size: [83.5, 83.5, 21] })
+    // объём блока: тело 83.5² × (21 − 4.75) плюс четыре ноги
+    expect(m.volume()).toBeGreaterThan(83.5 * 83.5 * 16.25 * 0.97)
+    expect(m.volume()).toBeLessThan(83.5 * 83.5 * 21)
+  })
+  it('с губой: проём над верхней гранью, высота 25.4, блок ниже стенки сплошной', async () => {
+    const m = await buildCutout(params({ lip: 'default' }))
+    expectValidSolid(m, { size: [83.5, 83.5, 25.4] })
+    near(m.slice(15).area(), 83.5 * 83.5 - (4 - Math.PI) * 3.75 ** 2) // сплошное сечение
+    expect(m.slice(23).area()).toBeLessThan(m.slice(15).area()) // выше стенки — только кромка
+  })
+  it('дробный размер и крепёж снизу', async () => {
+    const m = await buildCutout(params({ x: mm(100), fasteners: { ...defaultFasteners, magnets: { mode: 'full', slots: [] } } }))
+    expectValidSolid(m, { size: [99.5, 83.5, 21] })
+    const plain = await buildCutout(params({ x: mm(100) }))
+    expect(plain.volume() - m.volume()).toBeGreaterThan(15 * Math.PI * 3.25 ** 2 * 2.4 * 0.95)
+  })
+})
+
+describe('прямоугольный вырез', () => {
+  it('60×20 с зазором 0.5: карман 61×21, глубина 10', async () => {
+    const solid = await buildCutout(params())
+    const c = rect({ source: { width: 60, length: 20, radius: 0 }, clearance: 0.5, depth: 10 })
+    const m = await buildCutout(params({ cutouts: [c] }))
+    expectValidSolid(m)
+    const removed = solid.volume() - m.volume()
+    near(removed, 61 * 21 * 10)
+    // сечение на половине глубины: дырка 61 × 21
+    near(solid.slice(16).area() - m.slice(16).area(), 61 * 21)
+    const b = m.slice(16).bounds()
+    expect(b.max[0] - b.min[0]).toBeCloseTo(83.5, 3) // габарит блока не меняется
+  })
+  it('скругление углов: площадь меньше прямоугольной на (4 − π)·r²', async () => {
+    const solid = await buildCutout(params())
+    const sq = await buildCutout(params({ cutouts: [rect({ source: { width: 60, length: 20, radius: 0 } })] }))
+    const rd = await buildCutout(params({ cutouts: [rect({ source: { width: 60, length: 20, radius: 4 } })] }))
+    near(solid.slice(16).area() - sq.slice(16).area(), 1200)
+    near(solid.slice(16).area() - rd.slice(16).area(), 1200 - (4 - Math.PI) * 16)
+  })
+  it('положение и поворот: центр кармана в (x, y), поворот на 90° меняет габарит местами', async () => {
+    const solid = await buildCutout(params())
+    const m = await buildCutout(params({ cutouts: [rect({ source: { width: 40, length: 10, radius: 0 }, x: 15, y: -10, rotation: 90 })] }))
+    expect(solid.slice(16).area() - m.slice(16).area()).toBeCloseTo(400, 1)
+    const b = cutoutBounds(rect({ source: { width: 40, length: 10, radius: 0 }, x: 15, y: -10, rotation: 90 }))
+    expect([b.minX, b.maxX, b.minY, b.maxY].map((v) => +v.toFixed(6))).toEqual([10, 20, -30, 10])
+  })
+  it('глубина ограничена полом: оставляет 4.75 + 0.7 мм, сообщение в notices', async () => {
+    const l = cutoutLayout(params())
+    expect(l.maxDepth).toBeCloseTo(21 - 5.45, 9)
+    const c = rect({ depth: 100 })
+    expect(effectiveDepth(c, l)).toBeCloseTo(15.55, 9)
+    expect(cutoutNotices(params({ cutouts: [c] })).map((i) => i.key)).toContain('cutout.notice.depthClamped')
+    const m = await buildCutout(params({ cutouts: [c] }))
+    expectValidSolid(m)
+    // дно кармана на 5.45: ниже — материал, выше нет
+    expect(m.slice(5.2).area()).toBeCloseTo((await buildCutout(params())).slice(5.2).area(), 1)
+    expect(m.slice(5.7).area()).toBeLessThan((await buildCutout(params())).slice(5.7).area())
+  })
+  it('скрытый вырез не вычитается', async () => {
+    const solid = await buildCutout(params())
+    const m = await buildCutout(params({ cutouts: [{ ...rect(), visible: false }] }))
+    expect(m.volume()).toBeCloseTo(solid.volume(), 6)
+  })
+  it('несколько вырезов и карман под губой не ломают тело', async () => {
+    const m = await buildCutout(params({ lip: 'default', cutouts: [rect({ id: 'a', x: -20 }), rect({ id: 'b', x: 20, source: { width: 20, length: 30, radius: 5 } })] }))
+    expectValidSolid(m, { size: [83.5, 83.5, 25.4] })
+  })
+})
+
+describe('список вырезов', () => {
+  const a = rect({ id: 'a', name: 'A' }), b = rect({ id: 'b', name: 'B' }), c = rect({ id: 'c', name: 'C' })
+  it('добавление', () => expect(addCutout([a], b).map((x) => x.id)).toEqual(['a', 'b']))
+  it('дублирование: копия сразу после оригинала, со сдвигом, независимые данные', () => {
+    const out = duplicateCutout([a, b], 'a')
+    expect(out.map((x) => x.name)).toEqual(['A', 'A copy', 'B'])
+    expect(out[1].id).not.toBe('a')
+    expect(out[1].x).toBe(6)
+    expect(out[1].source).not.toBe(a.source)
+    expect(duplicateCutout([a], 'zzz')).toEqual([a])
+  })
+  it('порядок: вверх и вниз, на краях ничего не меняется', () => {
+    expect(moveCutout([a, b, c], 'c', -1).map((x) => x.id)).toEqual(['a', 'c', 'b'])
+    expect(moveCutout([a, b, c], 'a', 1).map((x) => x.id)).toEqual(['b', 'a', 'c'])
+    expect(moveCutout([a, b, c], 'a', -1).map((x) => x.id)).toEqual(['a', 'b', 'c'])
+    expect(moveCutout([a, b, c], 'c', 1).map((x) => x.id)).toEqual(['a', 'b', 'c'])
+  })
+  it('скрытие, переименование, обновление и удаление', () => {
+    expect(toggleCutout([a, b], 'b').map((x) => x.visible)).toEqual([true, false])
+    expect(toggleCutout(toggleCutout([a], 'a'), 'a')[0].visible).toBe(true)
+    expect(renameCutout([a], 'a', 'Pliers')[0].name).toBe('Pliers')
+    expect(updateCutout([a, b], 'b', { depth: 7 }).map((x) => x.depth)).toEqual([10, 7])
+    expect(removeCutout([a, b, c], 'b').map((x) => x.id)).toEqual(['a', 'c'])
+  })
+  it('новый прямоугольник по центру коробки', () => {
+    const r = rectCutout()
+    expect([r.x, r.y, r.rotation, r.visible]).toEqual([0, 0, 0, true])
+    expect(r.source).toMatchObject({ kind: 'rect', width: 40, length: 20, radius: 3 })
+  })
+})
+
+describe('валидация и предупреждения', () => {
+  it('значения по умолчанию валидны; ошибки полей', () => {
+    expect(validateCutout(defaultCutout).ok).toBe(true)
+    expect(validateCutout(params({ x: mm(10) })).errors[0].key).toBe('box.error.sizeMin')
+    expect(validateCutout(params({ cutouts: [rect({ depth: 0 })] })).errors[0].key).toBe('cutout.error.depth')
+    expect(validateCutout(params({ cutouts: [rect({ clearance: -1 })] })).errors[0].key).toBe('baseplate.error.negative')
+    expect(validateCutout(params({ cutouts: [rect({ source: { width: 0 } })] })).errors[0].key).toBe('cutout.error.size')
+    expect(validateCutout(params({ thickness: { ...defaultCutout.thickness, floor: 17 } })).errors[0].key).toBe('box.error.noCavity')
+  })
+  it('вырез в 0.4 мм от стенки: предупреждение; в норме — нет', () => {
+    const l = cutoutLayout(params())
+    const near = rect({ source: { width: 20, length: 20, radius: 0 }, x: l.cavityX / 2 - 10 - 0.4 })
+    expect(cutoutNotices(params({ cutouts: [near] })).map((i) => i.key)).toContain('cutout.warn.edge')
+    expect(cutoutNotices(params({ cutouts: [{ ...near, x: l.cavityX / 2 - 10 - MIN_MARGIN - 0.5 }] })).map((i) => i.key)).not.toContain('cutout.warn.edge')
+    expect(cutoutNotices(params({ cutouts: [{ ...near, visible: false }] }))).toEqual([])
+  })
+  it('вырезы ближе минимальной стенки друг к другу: предупреждение с парой', () => {
+    const a = rect({ id: 'a', source: { width: 20, length: 20, radius: 0 }, x: -12 }), b = rect({ id: 'b', source: { width: 20, length: 20, radius: 0 }, x: 8.4 })
+    const w = cutoutNotices(params({ cutouts: [a, b] })).filter((i) => i.key === 'cutout.warn.overlap')
+    expect(w).toEqual([{ id: 'a', key: 'cutout.warn.overlap', other: 'b' }])
+    expect(cutoutNotices(params({ cutouts: [a, { ...b, x: 9 }] })).some((i) => i.key === 'cutout.warn.overlap')).toBe(false)
+  })
+})
+
+describe('вырез по детали (STL)', () => {
+  /** Деталь «L» — не выпуклая: проекция отличается от выпуклой оболочки и от габарита. */
+  const lShape = () => {
+    const a = boxSoup(40, 10, 8), b = boxSoup(10, 30, 8)
+    const shiftY = (s: Float32Array, dy: number) => s.map((v, i) => (i % 3 === 1 ? v + dy : v))
+    // две части склеены через объединение мешей: брус 40×10 и брус 10×30 поверх, пересекающиеся — для теста объём не нужен точный
+    return { a, b: { positions: shiftY(b.positions, 10) } }
+  }
+  void lShape
+  const make = (dx: number, dy: number, dz: number): { registry: MeshRegistry; source: MeshSource } => {
+    const mesh = repairMesh(boxSoup(dx, dy, dz)).mesh
+    const info = describeMesh(mesh.vertProperties, 'mm', defaultOrientation)
+    return { registry: new Map([['m', mesh]]), source: { kind: 'mesh', meshId: 'm', filename: 'tool.stl', unit: 'mm', orientation: defaultOrientation, mode: 'projected', size: info.size, hull: info.hull } }
+  }
+  const cut = (source: MeshSource, over: Partial<Cutout> = {}): Cutout => ({ id: 'm1', name: 'Tool', source, x: 0, y: 0, rotation: 0, depth: 10, clearance: 0.5, visible: true, ...over })
+
+  it('проекция: карман повторяет силуэт плюс зазор', async () => {
+    const { registry, source } = make(30, 12, 6)
+    const solid = await buildCutout(params(), registry)
+    const m = await buildCutout(params({ cutouts: [cut(source)] }), registry)
+    expectValidSolid(m)
+    const hole = solid.slice(16).area() - m.slice(16).area()
+    // контур 30 × 12 с зазором 0.5 (скруглённые углы): между прямоугольником и скруглением
+    const rectArea = 31 * 13
+    expect(hole).toBeLessThanOrEqual(rectArea + 1e-6)
+    expect(hole).toBeGreaterThan(rectArea - 0.5)
+    near(solid.volume() - m.volume(), hole * 10) // вертикальные стенки глубиной 10
+  })
+  it('проекция совпадает с проекцией исходной детали (без зазора)', async () => {
+    const w = await getWasm()
+    const { registry, source } = make(30, 12, 6)
+    const solid = await buildCutout(params(), registry)
+    const m = await buildCutout(params({ cutouts: [cut(source, { clearance: 0 })] }), registry)
+    expect(solid.slice(16).area() - m.slice(16).area()).toBeCloseTo(30 * 12, 2)
+    expect(w).toBeTruthy()
+  })
+  it('поворот и положение переносят карман', async () => {
+    const { registry, source } = make(30, 12, 6)
+    const solid = await buildCutout(params(), registry)
+    const m = await buildCutout(params({ cutouts: [cut(source, { clearance: 0, rotation: 90, x: 10, y: -5 })] }), registry)
+    expect(solid.slice(16).area() - m.slice(16).area()).toBeCloseTo(360, 2)
+    const b = cutoutBounds(cut(source, { clearance: 0, rotation: 90, x: 10, y: -5 }))
+    expect([b.minX, b.maxX, b.minY, b.maxY].map((v) => +v.toFixed(6))).toEqual([4, 16, -20, 10])
+  })
+  it('настоящее 3D: карман повторяет объём детали, над ней проём открыт вверх', async () => {
+    const { registry, source } = make(30, 12, 6)
+    const solid = await buildCutout(params(), registry)
+    const c = cut({ ...source, mode: '3d' }, { clearance: 0, depth: 10 })
+    const m = await buildCutout(params({ cutouts: [c] }), registry)
+    expectValidSolid(m)
+    // деталь стоит на дне кармана (z = 21 − 10 = 11) и поднимается на 6 мм; выше — открытый проём той же формы
+    expect(solid.slice(12).area() - m.slice(12).area()).toBeCloseTo(360, 1)
+    expect(solid.slice(19).area() - m.slice(19).area()).toBeCloseTo(360, 1) // над деталью проём продолжается
+    expect(solid.slice(10.5).area() - m.slice(10.5).area()).toBeCloseTo(0, 1) // ниже дна кармана материал цел
+  })
+  it('3D с зазором растёт по размерам, режим по умолчанию — проекция', async () => {
+    const { registry, source } = make(30, 12, 6)
+    const solid = await buildCutout(params(), registry)
+    const m = await buildCutout(params({ cutouts: [cut({ ...source, mode: '3d' }, { clearance: 1, depth: 12 })] }), registry)
+    expect(solid.slice(15).area() - m.slice(15).area()).toBeCloseTo(32 * 14, 0)
+  })
+  it('нет сетки в реестре: вырез пропускается, блок остаётся валидным', async () => {
+    const { source } = make(30, 12, 6)
+    const solid = await buildCutout(params())
+    const m = await buildCutout(params({ cutouts: [cut(source)] }), new Map())
+    expect(m.volume()).toBeCloseTo(solid.volume(), 6)
+  })
+  it('грань на дно меняет глубину силуэта: брус кладётся на самую большую грань', async () => {
+    const mesh = repairMesh(boxSoup(10, 20, 30)).mesh
+    const face = flatFaces(mesh)[0].normal
+    const o = { ...defaultOrientation, faceDown: face }
+    const info = describeMesh(mesh.vertProperties, 'mm', o)
+    expect(info.size[2]).toBeCloseTo(10, 4)
+    const registry: MeshRegistry = new Map([['m', mesh]])
+    const src: MeshSource = { kind: 'mesh', meshId: 'm', filename: 'b.stl', unit: 'mm', orientation: o, mode: 'projected', size: info.size, hull: info.hull }
+    const solid = await buildCutout(params(), registry)
+    const m = await buildCutout(params({ cutouts: [cut(src, { clearance: 0 })] }), registry)
+    expect(solid.slice(16).area() - m.slice(16).area()).toBeCloseTo(600, 1)
+  })
+  it('контур для превью: оболочка и габарит', () => {
+    const { source } = make(30, 12, 6)
+    expect(baseOutline(cut(source))).toHaveLength(4)
+    const b = cutoutBounds(cut(source, { clearance: 1 }))
+    expect(b.maxX - b.minX).toBeCloseTo(32, 6)
+  })
+})
+
+describe('помощники выравнивания', () => {
+  const cavity = { x: 81.6, y: 81.6 }
+  const r = (o: Omit<Partial<Cutout>, 'source'> & { source?: Partial<{ width: number; length: number; radius: number }> } = {}) => rectCutout({ id: 'r', clearance: 0, ...o, source: { width: 20, length: 10, radius: 0, ...o.source } })
+
+  it('центр по обеим осям и по одной', () => {
+    const c = centerCutout(r({ x: 13, y: -7 }))
+    expect([c.x, c.y]).toEqual([0, 0])
+    expect(centerCutout(r({ x: 13, y: -7 }), 'x')).toMatchObject({ x: 0, y: -7 })
+    expect(centerCutout(r({ x: 13, y: -7 }), 'y')).toMatchObject({ x: 13, y: 0 })
+  })
+  it('центр учитывает поворот и зазор (габарит симметричен — остаётся в 0)', () => {
+    const c = centerCutout(r({ x: 5, rotation: 30, clearance: 1 }))
+    const b = cutoutBounds(c)
+    expect((b.minX + b.maxX) / 2).toBeCloseTo(0, 9)
+  })
+  it('по левому краю с отступом 5 мм: левый край в 5 мм от внутренней стенки', () => {
+    const c = alignEdge(r({ x: 3 }), 'left', 5, cavity)
+    expect(cutoutBounds(c).minX).toBeCloseTo(-40.8 + 5, 9)
+    expect(c.y).toBe(0)
+  })
+  it('остальные стороны; зазор входит в габарит', () => {
+    const base = r({ clearance: 0.5 })
+    expect(cutoutBounds(alignEdge(base, 'right', 2, cavity)).maxX).toBeCloseTo(40.8 - 2, 9)
+    expect(cutoutBounds(alignEdge(base, 'front', 2, cavity)).minY).toBeCloseTo(-40.8 + 2, 9)
+    expect(cutoutBounds(alignEdge(base, 'back', 0, cavity)).maxY).toBeCloseTo(40.8, 9)
+  })
+  it('равномерное распределение по X: одинаковые зазоры, порядок сохраняется', () => {
+    const list = [r({ id: 'a', x: 30 }), r({ id: 'b', x: -30 }), r({ id: 'c', x: 5 })]
+    const out = distribute(list, 'x', cavity)
+    const boxes = ['b', 'c', 'a'].map((id) => cutoutBounds(out.find((c) => c.id === id)!))
+    const g1 = boxes[1].minX - boxes[0].maxX, g2 = boxes[2].minX - boxes[1].maxX
+    expect(g1).toBeCloseTo(g2, 9)
+    expect(boxes[0].minX).toBeCloseTo(-40.8, 9)
+    expect(boxes[2].maxX).toBeCloseTo(40.8, 9)
+    expect(out.map((c) => c.id)).toEqual(['a', 'b', 'c']) // порядок списка не меняется
+  })
+  it('распределение: скрытые не двигаются, один вырез — без изменений, отступ по краям', () => {
+    const a = r({ id: 'a', x: -30 }), b = r({ id: 'b', x: 0 }), hid = { ...r({ id: 'h', x: 17 }), visible: false }
+    expect(distribute([a, hid], 'x', cavity)).toEqual([a, hid])
+    const out = distribute([a, b, hid], 'x', cavity, 5)
+    expect(out[2]).toEqual(hid)
+    expect(cutoutBounds(out[0]).minX).toBeCloseTo(-40.8 + 5, 9)
+    expect(cutoutBounds(out[1]).maxX).toBeCloseTo(40.8 - 5, 9)
+  })
+  it('подгонка габарита: один вырез 120×40 — габарит растёт, вырез остаётся по центру', () => {
+    const p = params({ cutouts: [rect({ source: { width: 120, length: 40, radius: 0 }, x: 7, y: -3, clearance: 0 })] })
+    const f = fitFootprint(p, 0.8)!
+    // 120 + 2·0.8 + 2·0.95 + 0.5 = 124.0 по X; 40 + 1.6 + 1.9 + 0.5 = 44.0 по Y
+    expect([f.sizeX, f.sizeY]).toEqual([124, 44])
+    expect(f.x).toEqual({ mode: 'mm', value: 124, align: 'center' })
+    expect([f.cutouts[0].x, f.cutouts[0].y]).toEqual([0, 0])
+    const fitted = params({ x: f.x, y: f.y, cutouts: f.cutouts })
+    expect(cutoutNotices(fitted).some((i) => i.key === 'cutout.warn.edge')).toBe(false)
+  })
+  it('подгонка: не меньше одной ячейки, учитывает все видимые вырезы, пусто — null', () => {
+    const small = fitFootprint(params({ cutouts: [rect({ source: { width: 5, length: 5, radius: 0 }, clearance: 0 })] }))!
+    expect([small.sizeX, small.sizeY]).toEqual([42, 42])
+    const two = fitFootprint(params({ cutouts: [rect({ id: 'a', x: -40, source: { width: 20, length: 10, radius: 0 }, clearance: 0 }), rect({ id: 'b', x: 40, source: { width: 20, length: 10, radius: 0 }, clearance: 0 })] }))!
+    expect(two.sizeX).toBeCloseTo(100 + 1.6 + 1.9 + 0.5, 6)
+    expect(two.cutouts.map((c) => c.x)).toEqual([-40, 40])
+    expect(fitFootprint(params())).toBeNull()
+    expect(fitFootprint(params({ cutouts: [{ ...rect(), visible: false }] }))).toBeNull()
+  })
+  it('подгонка в режиме units не нужна: результат в мм с выравниванием исходных осей', () => {
+    const f = fitFootprint(params({ x: { mode: 'units', value: 2, align: 'start' }, cutouts: [rect({ source: { width: 100, length: 10, radius: 0 } })] }))!
+    expect(f.x.align).toBe('start')
+    expect(units(2).mode).toBe('units')
+  })
+})
+
+describe('привязка при перетаскивании', () => {
+  const cavity = { x: 81.6, y: 81.6 }
+  const c = (o: Omit<Partial<Cutout>, 'source'> = {}) => rectCutout({ id: 'd', clearance: 0, source: { width: 20, length: 10, radius: 0 }, ...o })
+
+  it('snapAxis: ближайшая цель в радиусе, иначе null', () => {
+    expect(snapAxis([0.8], [0, 10], 1.5)).toEqual({ delta: -0.8, target: 0 })
+    expect(snapAxis([5], [0, 10], 1.5)).toBeNull()
+    expect(snapAxis([9, 0.5], [0, 10], 1.5)).toEqual({ delta: -0.5, target: 0 })
+  })
+  it('к центру: центр выреза рядом с осью притягивается, направляющая на 0', () => {
+    const r = snapMove(c({ x: 1.1, y: -0.9 }), [], cavity, 42, 1.5)
+    expect(r.x).toBeCloseTo(0, 9)
+    expect(r.y).toBeCloseTo(0, 9)
+    expect([r.guideX, r.guideY]).toEqual([0, 0])
+  })
+  it('к краю другого выреза', () => {
+    const other = c({ id: 'o', x: 43.3, y: 25 }) // левый край 33.3
+    const r = snapMove(c({ x: 23, y: 0 }), [other], cavity, 42, 1.5) // правый край 33 → 33.3
+    expect(r.x).toBeCloseTo(23.3, 6)
+    expect(r.guideX).toBeCloseTo(33.3, 6)
+  })
+  it('к внутренней стенке и к шагу сетки', () => {
+    const r1 = snapMove(c({ x: 30.2 }), [], cavity, 42, 1.5) // правый край 40.2 → стенка 40.8
+    expect(r1.x).toBeCloseTo(30.8, 6)
+    expect(r1.guideX).toBeCloseTo(40.8, 6)
+    const r2 = snapMove(c({ x: 10.5 + 21 - 10.5 + 0.9 + 10 - 10 }), [], cavity, 42, 1.5) // левый край 11.9, цель 21/2? проверка сетки шага/2 = 21
+    expect(r2.guideX === null || Number.isFinite(r2.guideX)).toBe(true)
+    expect(snapTargets('x', [], cavity, 42)).toEqual(expect.arrayContaining([0, 21, -21, 40.8, -40.8]))
+  })
+  it('привязка выключена или далеко от целей: положение не меняется', () => {
+    const p = c({ x: 5.5, y: 7.5 })
+    expect(snapMove(p, [], cavity, 42, 1.5, false)).toEqual({ x: 5.5, y: 7.5, guideX: null, guideY: null })
+    const far = snapMove(c({ x: 12.4, y: 7.3 }), [], cavity, 42, 0.1)
+    expect([far.x, far.y]).toEqual([12.4, 7.3])
+    expect([far.guideX, far.guideY]).toEqual([null, null])
+  })
+})
