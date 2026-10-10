@@ -1,0 +1,12 @@
+html, body, #root { height: 100%; margin: 0; background: #151a22; color: #dde; font: 14px system-ui, sans-serif; }
+.app { display: flex; height: 100%; }
+aside { width: 260px; padding: 12px 14px; background: #1b222d; border-right: 1px solid #2a3342; box-sizing: border-box; }
+aside h3 { margin: 14px 0 8px; font-size: 13px; color: #8fa; opacity: .8; }
+.row { display: flex; justify-content: space-between; align-items: center; margin: 8px 0; }
+.row input[type=number] { width: 70px; background: #11161d; color: inherit; border: 1px solid #2a3342; border-radius: 4px; padding: 4px; }
+.meas { font-size: 12px; color: #8a99ad; margin: 8px 0; }
+button { width: 100%; margin-top: 18px; padding: 9px; background: #2a7fd4; color: #fff; border: 0; border-radius: 6px; cursor: pointer; }
+button:disabled { opacity: .5; cursor: default; }
+main { flex: 1; position: relative; }
+.busy { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); background: #1b222dcc; padding: 6px 14px; border-radius: 6px; }
+.fit { position: absolute; bottom: 16px; left: 16px; width: auto; margin: 0; padding: 6px 12px; background: #1b222d; border: 1px solid #2a3342; }
