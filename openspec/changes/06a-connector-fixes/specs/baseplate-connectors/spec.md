@@ -21,7 +21,7 @@ Connector geometry on one part SHALL line up with its counterpart on the neighbo
 - **THEN** the socket reaches the underside of that part and ends 0.2 mm (the clearance) above the key's top
 
 ### Requirement: Connector settings
-The user SHALL configure hole diameter, depth, count per cut face and inset from the ends of the cut face, with presets (1.75 mm filament, 2 mm pin, 3 mm pin, 3×2 mm magnet, M3 screw); the default preset SHALL be the 1.75 mm filament rod with a 1.9 mm hole. Dovetail settings are neck and tip width, key depth, key height and fit clearance.
+The user SHALL configure hole diameter, depth, count per cut face and inset from the ends of the cut face, with presets (1.75 mm filament, 2 mm pin, 3 mm pin, 3×2 mm magnet, 2.8×0.75 mm magnet); the default preset SHALL be the 1.75 mm filament rod with a 1.9 mm hole. Dovetail settings are neck and tip width, key depth, key height and fit clearance.
 
 #### Scenario: Count
 - **WHEN** count per face is 2 and the cut face has three rib ends
@@ -30,6 +30,10 @@ The user SHALL configure hole diameter, depth, count per cut face and inset from
 #### Scenario: Magnet preset
 - **WHEN** the user picks the 3×2 mm magnet preset
 - **THEN** the hole diameter is 3.1 mm and its depth is 2.1 mm in each part, so a disc magnet sits in each part facing the other
+
+#### Scenario: Thin magnet preset
+- **WHEN** the user picks the 2.8×0.75 mm magnet preset
+- **THEN** the hole diameter is 2.95 mm and its depth is 0.85 mm in each part
 
 #### Scenario: Filament preset
 - **WHEN** the user picks the 1.75 mm filament preset
@@ -63,7 +67,7 @@ Connector placement SHALL avoid sockets and fastener holes and SHALL keep a mini
 - **THEN** no end-face hole is generated and the user is told why
 
 ### Requirement: Connector types
-Each internal cut SHALL be joinable using one of: none, end-face holes (for screws, magnets or pins) drilled into the ends of the ribs that meet the cut, or a printed dovetail/key; the type SHALL be selectable globally and overridable per cut.
+Each internal cut SHALL be joinable using one of: none, end-face holes (for magnets or pins) drilled into the ends of the ribs that meet the cut, or a printed dovetail/key; the type SHALL be selectable globally and overridable per cut.
 
 #### Scenario: End-face holes
 - **WHEN** connector type is end-face holes
