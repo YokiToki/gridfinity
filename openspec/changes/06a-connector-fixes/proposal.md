@@ -8,7 +8,7 @@ Two problems with the split connectors from `06-baseplate-split`. The dovetail k
 
 - Dovetail: key and socket start at the bottom (z = 0), so the key is printed flat on the bed. Key height is configurable (2 mm by default). The socket is open at the bottom face and closed at the top, so one part is lowered onto the other to join them.
 - End-face holes move to the **ends of the ribs that meet the cut**: the hole is drilled along the rib, into its end face, in both parts. The rib is 4.3 mm wide and runs a full cell, so the hole fits and can be a normal 6 mm deep without reaching any socket.
-- Holes are sized for a filament rod: the default preset is 1.75 mm filament (1.9 mm hole); 2 mm and 3 mm pin presets are offered. M3 screw and 6×2 magnet presets stay; the magnet is reported as not fitting the rib.
+- Holes are sized for a filament rod: the default preset is 1.75 mm filament (1.9 mm hole); 2 mm and 3 mm pin presets are offered. A 3×2 mm disc magnet preset (hole 3.1 mm, 2.1 mm deep) and an M3 screw preset are offered; anything wider than the rib allows, such as a custom 6 mm hole, is reported as not fitting.
 - Positions are the rib ends along the cut face (cell boundaries inside the face), chosen as close as possible to the evenly spaced positions from count and inset. A face with no rib end (a one-cell-wide face) gets no hole and the user is told why; the dovetail stays available there.
 - Hole depth per part is limited by the length of the part, not by the wall; the effective depth is shown next to the setting.
 - **BREAKING** The default hole preset changes from M3 to filament (stored settings keep their values; only new settings get the new default).
