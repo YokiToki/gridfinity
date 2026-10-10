@@ -6,7 +6,7 @@ import {
 } from './cutout'
 import { alignEdge, centerCutout, distribute, fitFootprint, snapAxis, snapMove, snapTargets } from './cutout-placement'
 import { defaultOrientation, describeMesh, flatFaces, repairMesh } from './stl-import'
-import { boxSoup } from './stl-import.test'
+import { boxSoup } from './stl-fixtures'
 import { defaultFasteners } from './fasteners'
 import { expectValidSolid, mm, units } from './testing'
 
@@ -201,6 +201,19 @@ describe('вырез по детали (STL)', () => {
     const solid = await buildCutout(params(), registry)
     const m = await buildCutout(params({ cutouts: [cut({ ...source, mode: '3d' }, { clearance: 1, depth: 12 })] }), registry)
     expect(solid.slice(15).area() - m.slice(15).area()).toBeCloseTo(32 * 14, 0)
+  })
+  it('открытая сетка (нет одной грани): вырез по силуэту остаётся, и в режиме 3D тоже', async () => {
+    const s = boxSoup(30, 12, 6)
+    const mesh = repairMesh({ positions: s.positions.slice(0, 11 * 9) }).mesh
+    const info = describeMesh(mesh.vertProperties, 'mm', defaultOrientation)
+    const registry: MeshRegistry = new Map([['open', mesh]])
+    const source: MeshSource = { kind: 'mesh', meshId: 'open', filename: 'open.stl', unit: 'mm', orientation: defaultOrientation, mode: 'projected', size: info.size, hull: info.hull }
+    const solid = await buildCutout(params(), registry)
+    for (const mode of ['projected', '3d'] as const) {
+      const m = await buildCutout(params({ cutouts: [cut({ ...source, mode }, { clearance: 0 })] }), registry)
+      expectValidSolid(m)
+      expect(solid.slice(16).area() - m.slice(16).area()).toBeCloseTo(360, 1)
+    }
   })
   it('нет сетки в реестре: вырез пропускается, блок остаётся валидным', async () => {
     const { source } = make(30, 12, 6)

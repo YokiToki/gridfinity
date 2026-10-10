@@ -1,11 +1,15 @@
 import type { ModeId, ModeParams, ModelResult } from './model'
+import type { IndexedMesh } from './stl-import'
 
 export interface WorkerRequest { id: number; mode: ModeId; params: ModeParams[ModeId] }
+/** Регистрация импортированной сетки в воркере: дальше вырезы ссылаются на неё по id. */
+export interface WorkerMeshMessage { kind: 'mesh'; meshId: string; mesh: IndexedMesh }
+export type WorkerMessage = WorkerRequest | WorkerMeshMessage
 export type WorkerResponse = { id: number; result: ModelResult } | { id: number; error: string }
 
 /** Минимальный интерфейс воркера: нужен, чтобы подменять его в тестах. */
 export interface WorkerLike {
-  postMessage(msg: WorkerRequest): void
+  postMessage(msg: WorkerMessage, transfer?: Transferable[]): void
   addEventListener(type: 'message', cb: (e: { data: WorkerResponse }) => void): void
   terminate?(): void
 }
@@ -43,6 +47,12 @@ export class ModelClient {
     if (r.id !== this.latest) return p.resolve(null)
     if ('error' in r) p.reject(new Error(r.error))
     else p.resolve(r.result)
+  }
+
+  /** Сообщает воркеру сетку; сообщения идут по порядку, поэтому следующая генерация её уже видит. Копию передаём, исходная остаётся у вызывающего. */
+  registerMesh(meshId: string, mesh: IndexedMesh) {
+    const copy: IndexedMesh = { vertProperties: mesh.vertProperties.slice(), triVerts: mesh.triVerts.slice() }
+    this.worker.postMessage({ kind: 'mesh', meshId, mesh: copy }, [copy.vertProperties.buffer, copy.triVerts.buffer])
   }
 
   dispose() { this.worker.terminate?.(); this.pending.clear() }

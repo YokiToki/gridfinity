@@ -1,33 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { getWasm } from './wasm'
+import { asciiStl, binaryStl, boxSoup } from './stl-fixtures'
 import { convexHull, defaultOrientation, describeMesh, flatFaces, orientVertices, parseStl, repairMesh, StlError, toManifold, type IndexedMesh, type TriSoup } from './stl-import'
-
-/** Треугольный «суп» прямоугольного бруса dx × dy × dz с наружными нормалями. */
-export function boxSoup(dx: number, dy: number, dz: number): TriSoup {
-  const v = [[0, 0, 0], [dx, 0, 0], [dx, dy, 0], [0, dy, 0], [0, 0, dz], [dx, 0, dz], [dx, dy, dz], [0, dy, dz]]
-  const f = [[0, 2, 1], [0, 3, 2], [4, 5, 6], [4, 6, 7], [0, 1, 5], [0, 5, 4], [1, 2, 6], [1, 6, 5], [2, 3, 7], [2, 7, 6], [3, 0, 4], [3, 4, 7]]
-  return { positions: Float32Array.from(f.flatMap((t) => t.flatMap((i) => v[i]))) }
-}
-
-export function binaryStl(soup: TriSoup, header = 'binary test'): ArrayBuffer {
-  const n = soup.positions.length / 9
-  const buf = new ArrayBuffer(84 + 50 * n)
-  const view = new DataView(buf)
-  for (let i = 0; i < header.length; i++) view.setUint8(i, header.charCodeAt(i))
-  view.setUint32(80, n, true)
-  for (let t = 0; t < n; t++) for (let k = 0; k < 9; k++) view.setFloat32(84 + t * 50 + 12 + k * 4, soup.positions[t * 9 + k], true)
-  return buf
-}
-
-export function asciiStl(soup: TriSoup): ArrayBuffer {
-  let s = 'solid test\n'
-  for (let t = 0; t < soup.positions.length / 9; t++) {
-    s += 'facet normal 0 0 0\n outer loop\n'
-    for (let k = 0; k < 3; k++) s += `  vertex ${soup.positions[t * 9 + k * 3]} ${soup.positions[t * 9 + k * 3 + 1]} ${soup.positions[t * 9 + k * 3 + 2]}\n`
-    s += ' endloop\nendfacet\n'
-  }
-  return new TextEncoder().encode(s + 'endsolid test\n').buffer as ArrayBuffer
-}
 
 const code = (f: () => unknown) => { try { f() } catch (e) { return e instanceof StlError ? e.code : 'other' } return 'none' }
 

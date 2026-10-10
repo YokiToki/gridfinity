@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { axisMm, type AxisSize } from '../../geometry/baseplate'
-import { boxHeightMm, boxLayout, MAX_BOX_SIZE, type BoxError, type BoxParams } from '../../geometry/box'
+import { boxHeightMm, MAX_BOX_SIZE } from '../../geometry/box'
+import { binLayout, type BinParams } from '../../geometry/bin'
 import { HEIGHT_UNIT } from '../../geometry/spec'
 import { Section } from '../../ui/Section'
 import { LengthField } from '../../ui/LengthField'
@@ -8,13 +9,14 @@ import { NumberField } from '../../ui/NumberField'
 import { SizeInput, type SizeSource } from '../../ui/SizeInput'
 import { formatLength, useUnit } from '../../ui/units'
 
-type Patch = (f: (p: BoxParams) => BoxParams) => void
+type Patch<T> = (f: (p: T) => T) => void
+interface FieldError { field: string; key: string }
 
-/** Размер коробки: шаг сетки, X/Y в дробных ячейках или мм с выравниванием, высота в единицах по 7 мм или мм. */
-export function BoxSizeSection({ params: p, errors, update }: { params: BoxParams; errors: BoxError[]; update: Patch }) {
+/** Размер коробки или выреза: шаг сетки, X/Y в дробных ячейках или мм с выравниванием, высота в единицах по 7 мм или мм. */
+export function BoxSizeSection<T extends BinParams>({ params: p, errors, update }: { params: T; errors: FieldError[]; update: Patch<T> }) {
   const { t } = useTranslation()
   const { unit } = useUnit()
-  const l = boxLayout(p)
+  const l = binLayout(p)
   const err = (field: string) => {
     const e = errors.find((x) => x.field === field)
     return e ? t(e.key, { max: MAX_BOX_SIZE }) : undefined

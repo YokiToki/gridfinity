@@ -12,7 +12,10 @@ import { recordSession } from './lastSession'
 vi.mock('../features/viewport/Viewport', () => ({ Viewport: () => <div data-testid="viewport" /> }))
 
 // воркер в jsdom недоступен: режимы получают пустую модель
-vi.mock('./useModel', () => ({ useModel: () => ({ model: null, busy: false, pending: false, error: null }) }))
+vi.mock('./useModel', () => ({
+  useModel: () => ({ model: null, busy: false, pending: false, error: null }),
+  getModelClient: () => ({ registerMesh: () => {}, generate: async () => null }),
+}))
 
 const renderAt = (path: string) => render(
   <I18nextProvider i18n={i18n}><RouterProvider router={createMemoryRouter(routes, { initialEntries: [path] })} /></I18nextProvider>,
@@ -39,7 +42,7 @@ describe('StartPage', () => {
   it('клавиша 3 открывает Cutout', async () => {
     renderAt('/')
     await userEvent.keyboard('3')
-    expect(await screen.findByText('Cutout is coming soon')).toBeInTheDocument()
+    expect(await screen.findByText('Cutouts')).toBeInTheDocument()
   })
   it('плашка «Продолжить» скрыта без сохранённой сессии и видна с ней', () => {
     const { unmount } = renderAt('/')

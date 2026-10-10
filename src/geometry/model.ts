@@ -1,9 +1,15 @@
 import { buildBaseplateParts, type BaseplateGeometry } from './baseplate'
 import { buildBox, type BoxParams } from './box'
+import { buildCutout, type CutoutParams, type MeshRegistry } from './cutout'
+import type { IndexedMesh } from './stl-import'
 import { meshOf, type MeshData } from './mesh'
 
 /** Параметры по режимам. Новые режимы (box, cutout) добавляются сюда. */
-export interface ModeParams { baseplate: BaseplateGeometry; box: BoxParams }
+export interface ModeParams { baseplate: BaseplateGeometry; box: BoxParams; cutout: CutoutParams }
+
+/** Импортированные сетки этого потока (воркера): вырезы ссылаются на них по id. */
+export const meshRegistry: MeshRegistry = new Map()
+export const registerMesh = (id: string, mesh: IndexedMesh) => { meshRegistry.set(id, mesh) }
 export type ModeId = keyof ModeParams
 
 /** Одна часть модели: сетка и описание для превью. Без разделения часть одна (A1). */
@@ -29,6 +35,10 @@ export async function generate<M extends ModeId>(mode: M, params: ModeParams[M],
     }
     case 'box': {
       const m = await buildBox(params as BoxParams, wasmUrl)
+      try { return { parts: [{ label: 'A1', col: 0, row: 0, oversize: false, mesh: meshOf(m) }] } } finally { m.delete() }
+    }
+    case 'cutout': {
+      const m = await buildCutout(params as CutoutParams, meshRegistry, wasmUrl)
       try { return { parts: [{ label: 'A1', col: 0, row: 0, oversize: false, mesh: meshOf(m) }] } } finally { m.delete() }
     }
     default:

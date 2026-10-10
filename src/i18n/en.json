@@ -326,5 +326,97 @@
       "invalid": "Fix the highlighted values: the preview shows the last valid model"
     },
     "export": "Export STL"
+  },
+  "cutout": {
+    "list": {
+      "title": "Cutouts",
+      "add": "Add rectangle",
+      "import": "Import STL",
+      "drop": "or drop an STL file anywhere on this section",
+      "empty": "No cutouts yet. Add a rectangle or import an STL.",
+      "summary": "{{n}} cutouts",
+      "duplicate": "Duplicate",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "remove": "Delete",
+      "show": "Show",
+      "hide": "Hide",
+      "select": "Select {{name}}",
+      "label": "Cutouts",
+      "defaultName": "Rectangle"
+    },
+    "props": {
+      "title": "Selected cutout",
+      "name": "Name",
+      "width": "Width",
+      "length": "Length",
+      "radius": "Corner radius",
+      "x": "X from the centre",
+      "y": "Y from the centre",
+      "rotation": "Rotation, °",
+      "depth": "Depth",
+      "clearance": "Clearance",
+      "mode": "Cutting mode",
+      "projected": "Projected",
+      "full3d": "True 3D",
+      "mode3dNote": "True 3D clearance is approximate: the shape is scaled.",
+      "unit": "File units",
+      "mm": "mm",
+      "in": "inch",
+      "layFlat": "Lay flat on",
+      "freeFace": "As in the file",
+      "face": "Face {{n}} · {{area}} mm²",
+      "rotateX": "Rotate X 90°",
+      "rotateY": "Rotate Y 90°",
+      "rotateZ": "Rotate Z 90°",
+      "size": "Size: {{x}} × {{y}} × {{z}}",
+      "file": "File: {{name}}",
+      "meshMissing": "The mesh of this cutout is not stored on this device, so it is skipped until you import the file again."
+    },
+    "place": {
+      "title": "Placement",
+      "center": "Centre",
+      "centerX": "Centre X",
+      "centerY": "Centre Y",
+      "alignLeft": "Left",
+      "alignRight": "Right",
+      "alignFront": "Front",
+      "alignBack": "Back",
+      "margin": "Margin",
+      "alignTo": "Align to the wall",
+      "distributeX": "Distribute along X",
+      "distributeY": "Distribute along Y",
+      "fit": "Fit footprint",
+      "fitHint": "Grows the bin to fit all cutouts with the wall margin and centres them.",
+      "snap": "Snap while dragging"
+    },
+    "view": {
+      "title": "Top view",
+      "label": "Top view of the bin",
+      "hint": "Drag a cutout to move it; hold Alt to turn snapping off. The model updates on release."
+    },
+    "import": {
+      "invalid": "This is not a readable STL file.",
+      "empty": "The STL file has no triangles.",
+      "noVolume": "The STL file has no volume: it is not a closed solid.",
+      "open": "The mesh has holes, so the pocket follows the part's outline (its convex hull) and true 3D cutting is not possible.",
+      "large": "The file is large ({{mb}} MB), so the model may be slow to build.",
+      "notPersisted": "This browser cannot store the file, so it will be lost when you reload the page.",
+      "importing": "Reading {{name}}…"
+    },
+    "warn": {
+      "edge": "{{name}}: less than {{min}} of wall to the outer wall.",
+      "overlap": "{{name}} and {{other}} are closer than {{min}}."
+    },
+    "notice": {
+      "depthClamped": "{{name}}: depth is limited to {{value}} to keep the floor."
+    },
+    "error": {
+      "tooMany": "Too many cutouts (up to 30).",
+      "invalid": "A cutout has an invalid value.",
+      "depth": "Depth must be greater than zero.",
+      "size": "Width and length must be greater than zero.",
+      "generation": "Could not build the model: {{message}}"
+    }
   }
 }

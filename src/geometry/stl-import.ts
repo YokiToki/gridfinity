@@ -44,7 +44,7 @@ export function parseStl(buf: ArrayBuffer): TriSoup {
   return soup
 }
 
-export interface RepairReport { welded: number; degenerate: number; flipped: number; closed: boolean }
+export interface RepairReport { welded: number; degenerate: number; flipped: number; closed: boolean; /** Объём по модулю, мм³ (в единицах файла). */ volume: number }
 
 /** Сварка совпадающих вершин, удаление вырожденных треугольников, согласование ориентации, при отрицательном объёме — переворот. */
 export function repairMesh(soup: TriSoup): { mesh: IndexedMesh; report: RepairReport } {
@@ -118,7 +118,7 @@ export function repairMesh(soup: TriSoup): { mesh: IndexedMesh; report: RepairRe
   }
   if (vol < 0) for (let t = 0; t < nT; t++) { const b = tris[t * 3 + 1]; tris[t * 3 + 1] = tris[t * 3 + 2]; tris[t * 3 + 2] = b }
   const closed = [...edgeTris.values()].every((l) => l.length === 2)
-  return { mesh: { vertProperties: Float32Array.from(verts), triVerts: Uint32Array.from(tris) }, report: { welded, degenerate, flipped: vol < 0 ? nT - flipped : flipped, closed } }
+  return { mesh: { vertProperties: Float32Array.from(verts), triVerts: Uint32Array.from(tris) }, report: { welded, degenerate, flipped: vol < 0 ? nT - flipped : flipped, closed, volume: Math.abs(vol) } }
 }
 
 /** Manifold из сетки: ошибка noVolume, если сетка не образует тела. */

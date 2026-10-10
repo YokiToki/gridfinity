@@ -207,7 +207,14 @@ export function pocketSolid(w: ManifoldToplevel, c: Cutout, l: CutoutLayout, reg
   }
   const mesh = registry.get(c.source.meshId)
   if (!mesh) return null
-  const m = orientedManifold(w, c.source, mesh)
+  let m: Manifold
+  try {
+    m = orientedManifold(w, c.source, mesh)
+  } catch {
+    // сетка не образует замкнутого тела: вырез по её силуэту (выпуклой оболочке), настоящее 3D для такой сетки невозможно
+    if (c.source.hull.length < 3) return null
+    return extrude(placeCS(grow(w.CrossSection.ofPolygons([c.source.hull]), c.clearance), c))
+  }
   if (c.source.mode === 'projected') return extrude(placeCS(grow(m.project(), c.clearance), c))
   // настоящее 3D: деталь стоит на дне кармана; зазор — масштабирование (приближённо), над деталью проём открыт вверх
   const [sx, sy, sz] = c.source.size
