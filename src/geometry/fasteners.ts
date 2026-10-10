@@ -1,5 +1,6 @@
 import type { Manifold, ManifoldToplevel } from 'manifold-3d'
 import { cellCenters, cellCenter, type Footprint, type Point } from './footprint'
+import type { CellRegion } from './split'
 import { FLOOR, HOLE_OFFSET, MAGNET_D, MAGNET_H, SCREW_D } from './spec'
 import { socketWindow, socketWindowWidth } from './profiles'
 
@@ -168,6 +169,12 @@ export function cellOfPoint(fp: Footprint, p: Point) {
   return { i, j, center: c, sx: p.x >= c.x ? 1 : -1, sy: p.y >= c.y ? 1 : -1 }
 }
 
+/** Точка принадлежит ячейкам региона. */
+export function inRegion(fp: Footprint, p: Point, r: CellRegion) {
+  const { i, j } = cellOfPoint(fp, p)
+  return i >= r.i0 && i < r.i1 && j >= r.j0 && j < r.j1
+}
+
 /**
  * Ухо: оболочка круга вокруг отверстия и круга в углу окна ячейки, поэтому оно сливается со стенками.
  * Тело занимает z от zFrom до zTo; вычитается из окна ячейки, и ухо остаётся материалом.
@@ -182,9 +189,11 @@ export function fastenerEar(w: ManifoldToplevel, hole: Point, cell: Point, sx: n
  * Объёмы для вычитания. floor — высота материала под гнёздом (низ гнезда): магнитное гнездо
  * уходит от этой высоты вниз, винт проходит снизу насквозь.
  */
-export function fastenerCuts(w: ManifoldToplevel, c: FastenerConfig, fp: Footprint, floor = FLOOR): FastenerCuts {
+export function fastenerCuts(w: ManifoldToplevel, c: FastenerConfig, fp: Footprint, floor = FLOOR, region?: CellRegion): FastenerCuts {
   const { Manifold } = w
-  const positions = allPositions(c, fp)
+  const all = allPositions(c, fp)
+  const keep = (p: Point) => !region || inRegion(fp, p, region)
+  const positions = { magnets: all.magnets.filter(keep), screws: all.screws.filter(keep) }
   const cuts: Manifold[] = []
   const m = magnetSize(c)
   const sr = c.screwD / 2
@@ -209,7 +218,7 @@ export function fastenerCuts(w: ManifoldToplevel, c: FastenerConfig, fp: Footpri
  * Окно занимает z от zFrom (толщина сплошного пола, 0 — открытая рама) до zTo (низ гнезда, верх ушей).
  * Если окну нет места (zTo не выше zFrom), список пуст.
  */
-export function cellWindows(w: ManifoldToplevel, c: FastenerConfig, fp: Footprint, zTo = FLOOR, zFrom = 0): Manifold[] {
+export function cellWindows(w: ManifoldToplevel, c: FastenerConfig, fp: Footprint, zTo = FLOOR, zFrom = 0, region?: CellRegion): Manifold[] {
   if (zTo - Math.max(zFrom, 0) < 1e-6) return []
   const zCut = zFrom > 0 ? zFrom : -1 // открытая рама режется с запасом ниже плиты
   const pos = allPositions(c, fp)
@@ -225,8 +234,8 @@ export function cellWindows(w: ManifoldToplevel, c: FastenerConfig, fp: Footprin
   }
   const template = socketWindow(w, fp.pitch, zCut, zTo + 0.002)
   const out: Manifold[] = []
-  for (let i = 0; i < fp.nx; i++) {
-    for (let j = 0; j < fp.ny; j++) {
+  for (let i = region?.i0 ?? 0; i < (region?.i1 ?? fp.nx); i++) {
+    for (let j = region?.j0 ?? 0; j < (region?.j1 ?? fp.ny); j++) {
       const center = cellCenter(fp, i, j)
       let cutter = template.translate([center.x, center.y, 0])
       const own = byCell.get(`${i},${j}`) ?? []

@@ -2,9 +2,9 @@
 
 ## 1. Split logic
 
-- [ ] 1.1 Implement `autoCuts(cells, pitch, maxSize)`; table tests (fits, 294/256, single cell too big error).
-- [ ] 1.2 Implement part descriptors (cell range, padding ownership, label); test assembled outline equals unsplit footprint.
-- [ ] 1.3 Build each part from its range; test union of parts volume ≈ unsplit volume.
+- [x] 1.1 Implement `autoCuts(cells, pitch, maxSize)`; table tests (fits, 294/256, single cell too big error).
+- [x] 1.2 Implement part descriptors (cell range, padding ownership, label); test assembled outline equals unsplit footprint.
+- [x] 1.3 Build each part from its range; test union of parts volume ≈ unsplit volume.
 
 ## 2. Connectors
 

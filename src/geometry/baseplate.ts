@@ -5,6 +5,8 @@ import { DEFAULT_PITCH, FLOOR, SOCKET_HEIGHT } from './spec'
 import { cellCenters, type Footprint } from './footprint'
 import { allPositions, cellWindows, defaultFasteners, fastenerCuts, needsFloor, type FastenerConfig } from './fasteners'
 import { resolveAxis, type Align } from './sizing'
+import { defaultSplit, MAX_PARTS, resolveCuts, splitParts, type CellRegion, type Part, type SplitGeometry } from './split'
+import type { ManifoldToplevel } from 'manifold-3d'
 
 /** Размер по оси: в ячейках (дробных) или в мм, плюс выравнивание блока ячеек. */
 export interface AxisSize { mode: 'units' | 'mm'; value: number; align: Align }
@@ -31,6 +33,7 @@ export interface BaseplateGeometry {
   y: AxisSize
   thickness: BaseplateThickness
   fasteners: FastenerConfig
+  split: SplitGeometry
 }
 
 export interface BaseplatePreview { showPlate: boolean; plateX: number; plateY: number }
@@ -45,6 +48,7 @@ export const defaultParams: BaseplateParams = {
   y: { mode: 'units', value: 2, align: 'center' },
   thickness: defaultThickness,
   fasteners: defaultFasteners,
+  split: defaultSplit,
   preview: defaultPreview,
 }
 
@@ -114,38 +118,73 @@ export function validateBaseplate(g: BaseplateGeometry): { ok: boolean; errors: 
     const { fp } = baseplateLayout(g)
     if (fp.nx > MAX_CELLS_PER_AXIS || fp.ny > MAX_CELLS_PER_AXIS) bad(fp.nx > MAX_CELLS_PER_AXIS ? 'x' : 'y', 'baseplate.error.tooManyCells')
     if (t.paddingDrop > baseplateHeights(g, fp).total) bad('thickness.paddingDrop', 'baseplate.error.paddingDropTooLarge')
+    if (g.split.enabled) {
+      const cuts = resolveCuts(fp, g.split)
+      if (cuts.error) bad('split', 'baseplate.error.splitCellTooBig')
+      else if (splitParts(fp, cuts.xCuts, cuts.yCuts).length > MAX_PARTS) bad('split', 'baseplate.error.splitTooManyParts')
+    }
   }
   return { ok: errors.length === 0, errors }
 }
 
-export async function buildBaseplate(g: BaseplateGeometry, wasmUrl?: string): Promise<Manifold> {
-  const w = await getWasm(wasmUrl)
+/** Часть плиты, собранная в координатах целой плиты. */
+export interface BuiltPart { part: Part; solid: Manifold }
+
+export interface PartExtras { add: Manifold[]; sub: Manifold[] }
+
+/** Плита целиком или одна её часть (регион ячеек и прямоугольник); крайние части сохраняют бортик, отступ и скругления. */
+export function buildPlate(w: ManifoldToplevel, g: BaseplateGeometry, part?: Part, extras?: PartExtras): Manifold {
   const { Manifold, CrossSection } = w
   const { fp, sizeX, sizeY, padX, padY, truncX, truncY } = baseplateLayout(g)
   const { total, pocketBottom, hasHoles } = baseplateHeights(g, fp)
   const { floor, rim, paddingDrop, cornerRadius } = g.thickness
+  const region: CellRegion | undefined = part ? { i0: part.i0, i1: part.i1, j0: part.j0, j1: part.j1 } : undefined
 
-  // внешний контур со скруглёнными углами, выдавленный на полную высоту
+  // внешний контур со скруглёнными углами; у части он ограничен её прямоугольником
   const r = Math.min(cornerRadius, sizeX / 2, sizeY / 2)
-  const outline = r > 0.001
+  let outline = r > 0.001
     ? CrossSection.square([sizeX - 2 * r, sizeY - 2 * r], true).offset(r, 'Round', 2, 32)
     : CrossSection.square([sizeX, sizeY], true)
-  const plate = Manifold.extrude(outline, total)
+  if (part) outline = outline.intersect(CrossSection.square([part.sizeX, part.sizeY], true).translate([(part.x0 + part.x1) / 2, (part.y0 + part.y1) / 2]))
+  let plate = Manifold.extrude(outline, total)
 
   const cell = socketPocket(w, g.pitch).translate([0, 0, pocketBottom])
-  const cuts: Manifold[] = cellCenters(fp).map((c) => cell.translate([c.x, c.y, 0]))
+  const cells = cellCenters(fp).filter((_, n) => {
+    if (!region) return true
+    const i = Math.floor(n / fp.ny), j = n % fp.ny
+    return i >= region.i0 && i < region.i1 && j >= region.j0 && j < region.j1
+  })
+  const cuts: Manifold[] = cells.map((c) => cell.translate([c.x, c.y, 0]))
   // под гнёздами ячейки открыты насквозь (выше сплошного пола), материал остаётся только в «ушах» вокруг отверстий
-  cuts.push(...cellWindows(w, g.fasteners, fp, pocketBottom, floor))
-  if (hasHoles) cuts.push(...fastenerCuts(w, g.fasteners, fp, pocketBottom).cuts)
+  cuts.push(...cellWindows(w, g.fasteners, fp, pocketBottom, floor, region))
+  if (hasHoles) cuts.push(...fastenerCuts(w, g.fasteners, fp, pocketBottom, region).cuts)
 
   // отступ (остаток вокруг блока ячеек, внутри бортика) можно занизить относительно кромки
   if (paddingDrop > 0 && (padX > 1e-6 || padY > 1e-6 || truncX || truncY)) {
     const z = total - paddingDrop
     const inner = Manifold.cube([sizeX - 2 * rim, sizeY - 2 * rim, paddingDrop + 1]).translate([-(sizeX - 2 * rim) / 2, -(sizeY - 2 * rim) / 2, z])
-    const bx = fp.nx * g.pitch, by = fp.ny * g.pitch
-    const x0 = -sizeX / 2 + fp.offsetX, y0 = -sizeY / 2 + fp.offsetY
-    const block = Manifold.cube([bx, by, paddingDrop + 3]).translate([x0, y0, z - 1])
+    const block = Manifold.cube([fp.nx * g.pitch, fp.ny * g.pitch, paddingDrop + 3]).translate([-sizeX / 2 + fp.offsetX, -sizeY / 2 + fp.offsetY, z - 1])
     cuts.push(inner.subtract(block))
   }
+  if (extras?.add.length) plate = plate.add(Manifold.union(extras.add))
+  if (extras?.sub.length) cuts.push(...extras.sub)
   return plate.subtract(Manifold.union(cuts))
+}
+
+/** Вся плита одним телом (разделение не учитывается): для экспорта целиком, тестов и сравнения объёма. */
+export async function buildBaseplate(g: BaseplateGeometry, wasmUrl?: string): Promise<Manifold> {
+  return buildPlate(await getWasm(wasmUrl), g)
+}
+
+/** Части плиты по настройкам разделения; без разделения — одна часть A1 с целой плитой. */
+export async function buildBaseplateParts(g: BaseplateGeometry, wasmUrl?: string): Promise<BuiltPart[]> {
+  const w = await getWasm(wasmUrl)
+  const { fp, sizeX, sizeY } = baseplateLayout(g)
+  const cuts = resolveCuts(fp, g.split)
+  const parts = splitParts(fp, cuts.xCuts, cuts.yCuts, g.split.maxX, g.split.maxY)
+  if (!g.split.enabled || parts.length === 1) {
+    const only: Part = { ...parts[0], x0: -sizeX / 2, x1: sizeX / 2, y0: -sizeY / 2, y1: sizeY / 2, sizeX, sizeY }
+    return [{ part: only, solid: buildPlate(w, g) }]
+  }
+  return parts.map((part) => ({ part, solid: buildPlate(w, g, part) }))
 }
