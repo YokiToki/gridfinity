@@ -8,7 +8,7 @@ import { recordSession } from '../../app/lastSession'
 import { Workspace } from '../../app/Workspace'
 import { migrateBaseplate } from './migrate'
 import { BaseplatePanel } from './BaseplatePanel'
-import { ExportBlock } from './ExportBlock'
+import { ExportBlock } from '../../app/ExportBlock'
 
 const PARAMS_KEY = 'gridfinity.baseplate'
 

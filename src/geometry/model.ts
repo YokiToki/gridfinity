@@ -1,8 +1,9 @@
 import { buildBaseplateParts, type BaseplateGeometry } from './baseplate'
+import { buildBox, type BoxParams } from './box'
 import { meshOf, type MeshData } from './mesh'
 
 /** Параметры по режимам. Новые режимы (box, cutout) добавляются сюда. */
-export interface ModeParams { baseplate: BaseplateGeometry }
+export interface ModeParams { baseplate: BaseplateGeometry; box: BoxParams }
 export type ModeId = keyof ModeParams
 
 /** Одна часть модели: сетка и описание для превью. Без разделения часть одна (A1). */
@@ -25,6 +26,10 @@ export async function generate<M extends ModeId>(mode: M, params: ModeParams[M],
         try { return { label: part.label, col: part.col, row: part.row, oversize: part.oversize, mesh: meshOf(solid) } } finally { solid.delete() }
       })
       return { parts }
+    }
+    case 'box': {
+      const m = await buildBox(params as BoxParams, wasmUrl)
+      try { return { parts: [{ label: 'A1', col: 0, row: 0, oversize: false, mesh: meshOf(m) }] } } finally { m.delete() }
     }
     default:
       throw new Error(`Unknown mode: ${String(mode)}`)

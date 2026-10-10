@@ -11,6 +11,9 @@ import { recordSession } from './lastSession'
 // WebGL в jsdom недоступен
 vi.mock('../features/viewport/Viewport', () => ({ Viewport: () => <div data-testid="viewport" /> }))
 
+// воркер в jsdom недоступен: режимы получают пустую модель
+vi.mock('./useModel', () => ({ useModel: () => ({ model: null, busy: false, pending: false, error: null }) }))
+
 const renderAt = (path: string) => render(
   <I18nextProvider i18n={i18n}><RouterProvider router={createMemoryRouter(routes, { initialEntries: [path] })} /></I18nextProvider>,
 )
@@ -46,8 +49,10 @@ describe('StartPage', () => {
     renderAt('/')
     expect(screen.getByText(/Continue: Baseplate 6 × 4/)).toBeInTheDocument()
   })
-  it('заглушка Box показывает вьюпорт', async () => {
+  it('режим Box открывается с панелью параметров и вьюпортом', async () => {
     renderAt('/box')
     expect(await screen.findByLabelText('3D preview')).toBeInTheDocument()
+    expect(screen.getByRole('complementary', { name: 'Parameters' })).toBeInTheDocument()
+    expect(screen.getByText('Compartments')).toBeInTheDocument()
   })
 })

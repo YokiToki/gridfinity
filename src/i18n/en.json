@@ -266,5 +266,65 @@
     "effectiveDepthClamped": "Effective depth: {{value}} (limited by the part length)",
     "noRib": "Cut {{cut}} ({{parts}}): no rib ends on this face (it is one cell wide), so no hole was made. Use the dovetail or another cut.",
     "holesHelp": "Holes go into the end of the rib that meets the cut, along the rib."
+  },
+  "box": {
+    "size": {
+      "title": "Size",
+      "height": "Height",
+      "heightUnits": "Height, units",
+      "heightLength": "Height, length",
+      "summary": "{{x}} × {{y}} × {{h}} u"
+    },
+    "walls": {
+      "title": "Walls and floor",
+      "outer": "Outer wall",
+      "inner": "Divider wall",
+      "floor": "Floor",
+      "summary": "Wall {{w}} · Floor {{f}}"
+    },
+    "lip": {
+      "title": "Lip",
+      "style": "Lip style",
+      "default": "Default",
+      "thin": "Thin",
+      "none": "None",
+      "summary": "{{style}} lip",
+      "help": "The lip is the rim at the top of the bin that mates with the foot of a bin stacked above it. None gives a flat top. The lip adds to the height."
+    },
+    "scoop": {
+      "title": "Scoop",
+      "off": "Off",
+      "summary": "R {{r}} · {{sides}}",
+      "sides": "Sides",
+      "radius": "Radius",
+      "front": "Front",
+      "back": "Back",
+      "left": "Left",
+      "right": "Right"
+    },
+    "compartments": {
+      "title": "Compartments",
+      "cols": "Columns",
+      "rows": "Rows",
+      "summary": "{{n}} compartments",
+      "editor": "Compartment layout",
+      "hint": "Click a divider segment to merge or split compartments. Drag a divider to move it.",
+      "narrow": "Compartment {{n}} is only {{w}} wide after the dividers.",
+      "divider": "Divider {{axis}}{{k}}, {{part}}",
+      "dragDivider": "Move divider {{axis}}{{k}}",
+      "reset": "Equal division"
+    },
+    "notice": {
+      "scoopClamped": "The scoop radius is limited to {{value}} by the cavity depth."
+    },
+    "error": {
+      "sizeMin": "Not smaller than one cell",
+      "height": "Enter a height greater than zero",
+      "noCavity": "Walls, floor and height leave no room inside",
+      "dividersTooThick": "Dividers are too thick for this many compartments",
+      "compartments": "Use 1 to 20 columns and rows",
+      "invalid": "Fix the highlighted values: the preview shows the last valid model"
+    },
+    "export": "Export STL"
   }
 }

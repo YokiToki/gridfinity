@@ -10,7 +10,7 @@ import { defaultConnector } from '../../geometry/connectors'
 import { result } from '../../geometry/testing'
 import { UnitContext } from '../../ui/units'
 import { BaseplatePanel } from './BaseplatePanel'
-import { ExportBlock } from './ExportBlock'
+import { ExportBlock } from '../../app/ExportBlock'
 
 let latest: BaseplateParams = defaultParams
 

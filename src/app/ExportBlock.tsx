@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import { IconDownload } from '@tabler/icons-react'
-import { toBinaryStl } from '../../geometry/stl'
-import type { ModelResult } from '../../geometry/model'
-import { Button } from '../../ui/Button'
+import { toBinaryStl } from '../geometry/stl'
+import type { ModelResult } from '../geometry/model'
+import { Button } from '../ui/Button'
 
 function download(blob: Blob, name: string) {
   const a = document.createElement('a')
