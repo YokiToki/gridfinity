@@ -9,8 +9,8 @@
 
 ## 2. Manual placement as a selection
 
-- [ ] 2.1 Replace `manual` points with `slots` (cell index + corner) in `geometry/fasteners.ts`: `resolvePositions`, `switchMode` (to Manual: Corner selects the four corner slots, Full selects all, None selects none; leaving Manual keeps the slots), pruning of slots outside the grid; tests for a 2×2 and a 3×2 grid, shrinking the grid and a plate with no selected slot (no ears, height 4.65).
-- [ ] 2.2 Simplify `PlacementEditor` to toggle buttons at standard positions (`role="switch"`, keyboard operable, per-position labels); remove drag, free add, the coordinate list, the "Add hole" button and the unused helpers in `placement.ts`; update i18n keys in `en.json` and `ru.json`; component tests for toggle on, toggle off, keyboard, Corner→Manual and Full→Manual keeping their positions, None→Manual starting empty, and the magnet/screw switcher. Design: `design/artboards/Baseplate.dc.html`.
+- [ ] 2.1 Replace `manual` points with `slots` (cell index + corner) in `geometry/fasteners.ts`: `resolvePositions`, `switchMode` (switching to Manual from any mode clears the slots), pruning of slots outside the grid; tests for a 2×2 and a 3×2 grid, shrinking the grid and a plate with no selected slot (no ears, height 4.65).
+- [ ] 2.2 Simplify `PlacementEditor` to toggle buttons at standard positions (`role="switch"`, keyboard operable, per-position labels); remove drag, free add, the coordinate list, the "Add hole" button and the unused helpers in `placement.ts`; update i18n keys in `en.json` and `ru.json`; component tests for toggle on, toggle off, keyboard, an empty start when switching to Manual from None, Corner and Full, and the magnet/screw switcher. Design: `design/artboards/Baseplate.dc.html`.
 - [ ] 2.3 Migration: stored coordinate points snap to the nearest standard position within 3 mm and the rest are dropped; boolean flags still load as Full; tests for exact, near, far and duplicate points, and for old and new JSON.
 
 ## 3. UI
