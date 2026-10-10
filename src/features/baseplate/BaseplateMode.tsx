@@ -5,6 +5,7 @@ import { usePersistedState } from '../../app/usePersistedState'
 import { useModel } from '../../app/useModel'
 import { recordSession } from '../../app/lastSession'
 import { Workspace } from '../../app/Workspace'
+import { migrateBaseplate } from './migrate'
 import { BaseplatePanel } from './BaseplatePanel'
 import { ExportBlock } from './ExportBlock'
 
@@ -12,7 +13,7 @@ const PARAMS_KEY = 'gridfinity.baseplate'
 
 export function BaseplateMode() {
   const { t } = useTranslation()
-  const [p, setP] = usePersistedState<BaseplateParams>(PARAMS_KEY, defaultParams)
+  const [p, setP] = usePersistedState<BaseplateParams>(PARAMS_KEY, defaultParams, migrateBaseplate)
   const { mesh, busy, pending } = useModel('baseplate', p)
 
   useEffect(() => {

@@ -15,7 +15,7 @@ Printer beds are limited (e.g. 256 mm), but drawers are not. A large baseplate m
 ## Capabilities
 
 ### New Capabilities
-- `06-baseplate-split`: dividing a plate into build-volume-sized parts.
+- `baseplate-split`: dividing a plate into build-volume-sized parts.
 - `baseplate-connectors`: edge/end-face joints between parts.
 
 ### Modified Capabilities

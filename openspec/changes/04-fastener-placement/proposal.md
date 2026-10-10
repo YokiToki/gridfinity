@@ -14,7 +14,7 @@ Magnets and screw holes are needed in Box, Baseplate and Cutout, with the same p
 ## Capabilities
 
 ### New Capabilities
-- `04-fastener-placement`: magnet and screw hole modes, dimensions and manual placement shared by all modes.
+- `fastener-placement`: magnet and screw hole modes, dimensions and manual placement shared by all modes.
 
 ### Modified Capabilities
 

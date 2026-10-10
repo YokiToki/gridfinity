@@ -17,7 +17,7 @@ The prototype baseplate only supports whole-unit sizes, fixed thicknesses and a 
 ## Capabilities
 
 ### New Capabilities
-- `05-baseplate-model`: parametric baseplate geometry, size handling and preview/measurements.
+- `baseplate-model`: parametric baseplate geometry, size handling and preview/measurements.
 
 ### Modified Capabilities
 

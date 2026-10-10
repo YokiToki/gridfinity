@@ -1,21 +1,24 @@
 import type { Dispatch, SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
-import { defaultParams, type BaseplateParams } from '../../geometry/baseplate'
+import { baseplateFootprint, defaultParams, type BaseplateParams } from '../../geometry/baseplate'
+import { allPositions, needsFloor } from '../../geometry/fasteners'
+import { FastenerSection } from '../fasteners/FastenerSection'
 import { Section } from '../../ui/Section'
 import { NumberField } from '../../ui/NumberField'
 import { LengthField } from '../../ui/LengthField'
 import { Toggle } from '../../ui/Toggle'
 import { Banner } from '../../ui/Banner'
+import { FLOOR } from '../../geometry/spec'
 import { formatLength, useUnit } from '../../ui/units'
 
-const FLOOR_MM = 4
+const FLOOR_MM = FLOOR
 
 export function BaseplatePanel({ params: p, onChange }: { params: BaseplateParams; onChange: Dispatch<SetStateAction<BaseplateParams>> }) {
   const { t } = useTranslation()
   const { unit } = useUnit()
   const set = <K extends keyof BaseplateParams>(k: K, v: BaseplateParams[K]) => onChange((o) => ({ ...o, [k]: v }))
   const reset = (...keys: (keyof BaseplateParams)[]) => onChange((o) => ({ ...o, ...Object.fromEntries(keys.map((k) => [k, defaultParams[k]])) }))
-  const fasteners = p.magnets && p.screws ? 'both' : p.magnets ? 'magnets' : p.screws ? 'screws' : 'none'
+  const fp = baseplateFootprint(p)
 
   return (
     <>
@@ -36,11 +39,9 @@ export function BaseplatePanel({ params: p, onChange }: { params: BaseplateParam
           </div>
         )}
       </Section>
-      <Section title={t('baseplate.fasteners.title')} summary={t(`baseplate.fasteners.summary.${fasteners}`)} onReset={() => reset('magnets', 'screws')}>
-        <Toggle label={t('baseplate.fasteners.magnets')} checked={p.magnets} onChange={(v) => set('magnets', v)} />
-        <Toggle label={t('baseplate.fasteners.screws')} checked={p.screws} onChange={(v) => set('screws', v)} />
-        {fasteners !== 'none' && <Banner>{t('baseplate.fasteners.floorNote', { value: `${formatLength(FLOOR_MM, unit)} ${t(`units.${unit}`)}` })}</Banner>}
-      </Section>
+      <FastenerSection config={p.fasteners} footprint={fp} onChange={(f) => set('fasteners', f)}>
+        {needsFloor(allPositions(p.fasteners, fp)) && <Banner>{t('fastener.floorNote', { value: `${formatLength(FLOOR_MM, unit)} ${t(`units.${unit}`)}` })}</Banner>}
+      </FastenerSection>
       <Section title={t('baseplate.plate.title')} defaultOpen={p.showPlate} onReset={() => reset('showPlate', 'plateX', 'plateY')}>
         <Toggle label={t('baseplate.plate.show')} checked={p.showPlate} onChange={(v) => set('showPlate', v)} />
         {p.showPlate && (

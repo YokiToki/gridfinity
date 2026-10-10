@@ -61,18 +61,6 @@
       "width": "Width",
       "depth": "Depth"
     },
-    "fasteners": {
-      "title": "Fasteners",
-      "magnets": "Magnet holes",
-      "screws": "Screw holes",
-      "summary": {
-        "none": "None",
-        "magnets": "Magnets",
-        "screws": "Screws",
-        "both": "Magnets + screws"
-      },
-      "floorNote": "Fasteners add a {{value}} floor under the pockets."
-    },
     "plate": {
       "title": "Build plate",
       "show": "Show build plate",
@@ -109,5 +97,58 @@
     "end": "End",
     "padding": "Padding {{value}}",
     "truncated": "Smaller than one cell: the cell is truncated."
+  },
+  "fastener": {
+    "title": "Fasteners",
+    "magnets": "Magnets",
+    "screws": "Screws",
+    "mode": {
+      "label": "Placement",
+      "none": "None",
+      "corner": "Corners",
+      "full": "Every cell",
+      "manual": "Manual"
+    },
+    "summary": {
+      "none": "none",
+      "corner": "corners",
+      "full": "every cell",
+      "manual": "{{n}} manual"
+    },
+    "preset": "Preset",
+    "custom": "Custom",
+    "magnetD": "Magnet Ø",
+    "magnetDepth": "Depth",
+    "screwD": "Screw Ø",
+    "tolerance": "Fit tolerance",
+    "head": {
+      "label": "Screw head",
+      "none": "None",
+      "countersink": "Countersink",
+      "counterbore": "Counterbore"
+    },
+    "headD": "Head Ø",
+    "headDepth": "Head depth",
+    "nearEdge": "{{kind}} hole {{n}} is closer than 0.8 mm to the edge.",
+    "overlap": "{{kind}} hole {{n}} overlaps another hole.",
+    "kinds": {
+      "magnets": "Magnet",
+      "screws": "Screw"
+    },
+    "editor": {
+      "title": "Placement editor",
+      "hint": "click to add, drag to move",
+      "label": "Fastener placement editor",
+      "edit": "Editing",
+      "add": "Add hole",
+      "remove": "Remove hole {{n}}",
+      "empty": "No holes yet. Click a snap point to add one.",
+      "x": "X",
+      "y": "Y",
+      "list": "Holes",
+      "fromCorner": "from the corner",
+      "hole": "Hole {{n}}"
+    },
+    "floorNote": "Fasteners add a {{value}} floor under the pockets."
   }
 }
