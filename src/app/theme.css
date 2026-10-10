@@ -1,0 +1,48 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/manrope';
+@import '@fontsource-variable/unbounded';
+@import '@fontsource-variable/jetbrains-mono';
+
+/* Токены из design/theme.reference.css */
+@theme {
+  --font-sans: "Manrope Variable", system-ui, sans-serif;
+  --font-display: "Unbounded Variable", sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+  --color-bg: #0e1013;
+  --color-surface-1: #161a1f;
+  --color-surface-2: #1d2229;
+  --color-surface-3: #272d36;
+  --color-border: #2b323c;
+  --color-border-strong: #414b59;
+  --color-text: #e6e9ee;
+  --color-text-muted: #a9b2bf;
+  --color-text-subtle: #8893a2;
+  --color-accent: #7c9cff;
+  --color-accent-muted: #25356b;
+  --color-accent-on: #0b1330;
+  --color-info-bg: #17213f;
+  --color-info-border: #34457f;
+  --color-info-text: #c3d0ff;
+  --color-success: #4cc38a;
+  --color-success-text: #a9e5c6;
+  --color-success-bg: #13261d;
+  --color-warn: #e5b04b;
+  --color-warn-text: #f1d79b;
+  --color-warn-bg: #2a2314;
+  --color-warn-border: #6b5524;
+  --color-error: #f0707b;
+  --color-error-text: #f8b9bf;
+  --color-error-bg: #2c1719;
+  --color-error-border: #7a3037;
+  --radius-xs: 4px;
+  --radius-control: 6px;
+  --radius-group: 8px;
+  --radius-card: 10px;
+  --spacing: 4px;
+  --shadow-float: 0 8px 24px rgb(0 0 0 / .5);
+  --shadow-sticky: 0 -8px 16px rgb(0 0 0 / .25);
+}
+
+html, body, #root { height: 100%; margin: 0; }
+body { background: var(--color-bg); color: var(--color-text); font: 13px/1.4 var(--font-sans); }
+*:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }

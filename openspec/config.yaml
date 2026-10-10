@@ -11,7 +11,7 @@ context: |
 rules:
   proposal:
     - Change folders are numbered NN-name in implementation order; the NN prefix is the build order.
-    - End the Impact section with a "Depends on:" line listing the numbered changes it requires (e.g. `03-geometry-core`), or "Depends on: none". Only depend on lower numbers.
+    - "End the Impact section with a \"Depends on:\" line listing the numbered changes it requires (e.g. `03-geometry-core`), or \"Depends on: none\". Only depend on lower numbers."
     - State what is out of scope.
   tasks:
     - Number tasks as `<section>.<n>` and keep each task independently committable, with its test or verification named in the task.

@@ -1,0 +1,30 @@
+{
+  "app": { "title": "Gridfinity Generator", "logoLabel": "Gridfinity Generator, back to start" },
+  "common": {
+    "reset": "Reset", "collapse": "Collapse", "expand": "Expand", "increase": "Increase", "decrease": "Decrease",
+    "generating": "Generating model…", "ready": "Updated", "fit": "Fit to view", "download": "Download"
+  },
+  "units": { "label": "Units", "mm": "mm", "in": "in", "cells": "cells" },
+  "language": { "label": "Language" },
+  "modes": {
+    "label": "Mode", "box": "Box", "baseplate": "Baseplate", "cutout": "Cutout",
+    "comingSoon": "{{mode}} is coming soon", "comingSoonHint": "This mode is not implemented yet. The 3D view still works."
+  },
+  "start": {
+    "tagline": "runs in your browser · no account · STL and 3MF",
+    "title": "What are you printing?",
+    "box": { "desc": "Bin or tray on the Gridfinity grid, with lip, scoop and dividers.", "tag1": "cells × height", "tag2": "compartments" },
+    "baseplate": { "desc": "Grid plate for your bins. Magnets, screws, split to fit your bed.", "tag1": "fractional cells", "tag2": "split" },
+    "cutout": { "desc": "Bin with a pocket shaped to your tool. Import an STL or use a simple shape.", "tag1": "STL import", "tag2": "snap" },
+    "continue": "Continue: {{mode}} {{size}}, saved {{when}}"
+  },
+  "baseplate": {
+    "size": { "title": "Size", "unit": "Cell size", "x": "Width (X)", "y": "Depth (Y)", "custom": "Custom size", "width": "Width", "depth": "Depth" },
+    "fasteners": { "title": "Fasteners", "magnets": "Magnet holes", "screws": "Screw holes", "summary": { "none": "None", "magnets": "Magnets", "screws": "Screws", "both": "Magnets + screws" }, "floorNote": "Fasteners add a {{value}} floor under the pockets." },
+    "plate": { "title": "Build plate", "show": "Show build plate", "x": "Plate X", "y": "Plate Y" },
+    "export": "Export STL"
+  },
+  "viewport": { "label": "3D preview", "fit": "Fit to view" },
+  "shell": { "parameters": "Parameters", "dragDrawer": "Drag to resize the drawer", "collapseDrawer": "Collapse drawer" },
+  "time": { "justNow": "just now" }
+}

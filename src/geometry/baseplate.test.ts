@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildBaseplate, defaultParams } from './baseplate'
+import { toBinaryStl } from './stl'
 
 describe('baseplate', () => {
   it('2x2 — валидная модель нужного размера', async () => {
@@ -13,5 +14,10 @@ describe('baseplate', () => {
     const m = await buildBaseplate({ ...defaultParams, magnets: true, screws: true })
     expect(m.status()).toBe('NoError')
     expect(m.boundingBox().max[2]).toBeCloseTo(8.65, 3)
+  })
+  it('экспорт STL детерминирован: одинаковые параметры дают одинаковые байты', async () => {
+    const a = await toBinaryStl(await buildBaseplate(defaultParams)).arrayBuffer()
+    const b = await toBinaryStl(await buildBaseplate({ ...defaultParams })).arrayBuffer()
+    expect(Array.from(new Uint8Array(a))).toEqual(Array.from(new Uint8Array(b)))
   })
 })

@@ -69,7 +69,7 @@ export function Viewport({ model, plate, onFitReady }: { model: Manifold | null;
     el.appendChild(renderer.domElement)
 
     const scene = new THREE.Scene()
-    scene.background = new THREE.Color(0x12161d)
+    scene.background = new THREE.Color(0x0e1013)
     const camera = new THREE.PerspectiveCamera(35, 1, 0.5, 20000)
     camera.up.set(0, 0, 1)
     camera.position.set(160, -220, 160)
@@ -134,10 +134,10 @@ export function Viewport({ model, plate, onFitReady }: { model: Manifold | null;
         plateGroup.children.forEach((c) => { const m = c as THREE.Mesh; m.geometry.dispose() })
         plateGroup.clear()
         if (!p) return
-        const fill = new THREE.Mesh(new THREE.PlaneGeometry(p.x, p.y), new THREE.MeshBasicMaterial({ color: 0x1d2735, transparent: true, opacity: 0.85, depthWrite: false }))
+        const fill = new THREE.Mesh(new THREE.PlaneGeometry(p.x, p.y), new THREE.MeshBasicMaterial({ color: 0x1b2028, transparent: true, opacity: 0.85, depthWrite: false }))
         fill.position.z = -0.05
         const box = new THREE.EdgesGeometry(new THREE.PlaneGeometry(p.x, p.y))
-        const outline = new THREE.LineSegments(box, new THREE.LineBasicMaterial({ color: 0x5aa9ff }))
+        const outline = new THREE.LineSegments(box, new THREE.LineBasicMaterial({ color: 0x5c6b82 }))
         outline.position.z = -0.04
         plateGroup.add(fill, outline)
       },
@@ -159,11 +159,11 @@ export function Viewport({ model, plate, onFitReady }: { model: Manifold | null;
         const g = indexed.toNonIndexed()
         g.computeVertexNormals()
         const body = new THREE.Mesh(g, new THREE.MeshStandardMaterial({
-          color: 0x3a9ae0, roughness: 0.6, metalness: 0.05, flatShading: true,
+          color: 0x8fa3c4, roughness: 0.6, metalness: 0.05, flatShading: true,
           polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1,
         }))
         // контуры: только резкие рёбра (угол > 25°)
-        const edges = new THREE.LineSegments(new THREE.EdgesGeometry(indexed, 25), new THREE.LineBasicMaterial({ color: 0x082338 }))
+        const edges = new THREE.LineSegments(new THREE.EdgesGeometry(indexed, 25), new THREE.LineBasicMaterial({ color: 0x4a5a78 }))
         modelGroup.add(body, edges)
         indexed.computeBoundingSphere()
         radius = indexed.boundingSphere!.radius
