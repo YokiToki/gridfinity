@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Component library</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700&family=Unbounded:wght@500;600&display=swap">
+<style>
+body{margin:0;background:#0E1013}
+*{box-sizing:border-box}
+.app{--bg:#0E1013;--s1:#161A1F;--s2:#1D2229;--s3:#272D36;--ln:#2B323C;--ln2:#414B59;--tx:#E6E9EE;--tx2:#A9B2BF;--tx3:#8893A2;--ac:#7C9CFF;--acd:#25356B;--ok:#4CC38A;--warn:#E5B04B;--err:#F0707B;font:13px/1.4 'Manrope',system-ui,sans-serif;color:var(--tx);background:var(--bg)}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.seg{display:inline-flex;gap:2px;padding:2px;background:var(--bg);border:1px solid var(--ln);border-radius:8px}
+.seg.w{display:flex}.seg.w button{flex:1}
+.seg button{height:32px;min-width:32px;padding:0 12px;border:0;border-radius:6px;background:none;color:var(--tx2);font:inherit;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;white-space:nowrap}
+.seg button.on{background:var(--s3);color:var(--tx);box-shadow:inset 0 0 0 1px var(--ln2)}
+.seg button.ac.on{background:var(--acd);box-shadow:inset 0 0 0 1px var(--ac);color:#fff}
+.seg button.off{opacity:.4;cursor:not-allowed}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+.fr{outline:2px solid var(--ac);outline-offset:1px}
+.ib{width:32px;height:32px;flex:none;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:6px;background:none;color:var(--tx2);cursor:pointer}
+.ib:hover,.ib.on{background:var(--s3);color:var(--tx)}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.l{font-size:12px;color:var(--tx2)}
+.num{display:flex;align-items:center;height:32px;background:var(--bg);border:1px solid var(--ln2);border-radius:6px}
+.num.fo{border-color:var(--ac);box-shadow:0 0 0 2px var(--acd)}
+.num.er{border-color:var(--err)}
+.num.di{opacity:.45}
+.num input{flex:1;min-width:0;height:30px;padding:0 8px;border:0;background:none;color:var(--tx);font:500 13px 'JetBrains Mono',monospace;outline:0}
+.num .u{padding:0 8px 0 0;color:var(--tx3);font:12px 'JetBrains Mono',monospace}
+.num .s{width:30px;height:30px;border:0;border-left:1px solid var(--ln);background:none;color:var(--tx2);cursor:pointer}
+.hint{font-size:12px;color:var(--tx3)}
+.hint.er{color:#F8B9BF;display:flex;gap:4px;align-items:center}
+.bn{display:flex;gap:8px;padding:8px 10px;border-radius:6px;border:1px solid;font-size:12px;line-height:1.4;align-items:flex-start}
+.bn.w{background:#2A2314;border-color:#6B5524;color:#F1D79B}
+.bn.e{background:#2C1719;border-color:#7A3037;color:#F8B9BF}
+.bn.n{background:#17213F;border-color:#34457F;color:#C3D0FF}
+.bn.o{background:#13261D;border-color:#27573F;color:#A9E5C6}
+.btn{height:36px;padding:0 14px;border-radius:6px;border:1px solid var(--ln2);background:var(--s2);color:var(--tx);font:inherit;font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;white-space:nowrap}
+.btn.p{background:var(--ac);border-color:var(--ac);color:#0B1330;font-weight:600}
+.btn.g{background:none;border-color:transparent;color:var(--tx2)}
+.btn.d{opacity:.45;cursor:not-allowed}
+.chip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 8px;border-radius:12px;background:var(--s3);font-size:12px;white-space:nowrap}
+.card{background:var(--s1);border:1px solid var(--ln);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.card h3{margin:0;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);font-weight:600}
+.sub{font-size:11px;color:var(--tx3);font-family:'JetBrains Mono',monospace}
+.sec{border:1px solid var(--ln);border-radius:8px;background:var(--s1)}
+.sh{display:flex;align-items:center;gap:6px;min-height:44px;padding:6px 8px 6px 12px}
+.sh .t{font-weight:600;white-space:nowrap}
+.sh .sm{color:var(--tx3);font-size:12px;margin-left:auto;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.sw{display:inline-flex;align-items:center;gap:8px}
+.sw i{width:34px;height:20px;border-radius:10px;background:var(--s3);border:1px solid var(--ln2);position:relative;flex:none}
+.sw i:after{content:"";position:absolute;left:2px;top:2px;width:14px;height:14px;border-radius:50%;background:var(--tx2)}
+.sw.on i{background:var(--acd);border-color:var(--ac)}.sw.on i:after{left:16px;background:#fff}
+.li{display:flex;align-items:center;gap:2px;min-height:44px;padding:4px;border:1px solid var(--ln);border-radius:8px;background:var(--s2)}
+.li.sel{border-color:var(--ac);background:#1B2442}
+.li.hid{opacity:.55}
+.li.bad{border-color:#7A3037}
+.li .n{flex:1;min-width:0}.li .n b{display:block;font-weight:500}.li .n span{font:12px 'JetBrains Mono',monospace;color:var(--tx3)}
+.bar{height:4px;border-radius:2px;background:var(--s3);overflow:hidden;position:relative}.bar i{position:absolute;left:0;top:0;height:100%;width:35%;background:var(--ac);border-radius:2px}
+.tip{padding:10px 12px;background:#2E3540;border:1px solid var(--ln2);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.5);font-size:12px;line-height:1.5;max-width:300px}
+input[type=range]{accent-color:#7C9CFF;width:100%;margin:0;height:24px}
+.dz{display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px;border:1.5px dashed var(--ln2);border-radius:8px;color:var(--tx2);text-align:center}
+.vpm{height:150px;border-radius:8px;background:radial-gradient(ellipse at 50% 40%,#1A2029 0%,#0B0D10 75%);border:1px solid var(--ln);position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--tx2);text-align:center;overflow:hidden}
+</style>
+</helmet>
+<div class="app" style="width:100%;min-height:1800px;padding:40px">
+  <div style="max-width:1360px;margin:0 auto;display:flex;flex-direction:column;gap:24px">
+    <div><h1 style="margin:0;font-family:'Unbounded',sans-serif;font-size:22px;font-weight:600">Component library</h1><p style="margin:4px 0 0;color:var(--tx2)">Every control sits on the tokens from the Tokens board. Dark theme only. Focus ring: 2 px accent, 1 px offset.</p></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start">
+
+      <div class="card"><h3>LengthField</h3>
+        <div class="f"><span class="l">Default</span><div class="num"><input aria-label="Default" value="42.0"><span class="u">mm</span><button class="s" aria-label="Decrease">−</button><button class="s" aria-label="Increase">+</button></div></div>
+        <div class="f"><span class="l">Focus</span><div class="num fo"><input aria-label="Focus" value="42.0"><span class="u">mm</span><button class="s" aria-label="Decrease">−</button><button class="s" aria-label="Increase">+</button></div><span class="hint">Arrow keys ±0.1 mm, Shift ±1 mm.</span></div>
+        <div class="f"><span class="l">Error</span><div class="num er"><input aria-label="Error" value="-3"><span class="u">mm</span><button class="s" aria-label="Decrease">−</button><button class="s" aria-label="Increase">+</button></div><span class="hint er"><svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0M10 10l4 4m0 -4l-4 4"/></svg>Must be 0.4 mm or more.</span></div>
+        <div class="f"><span class="l">Disabled</span><div class="num di"><input aria-label="Disabled" value="0.0" disabled><span class="u">mm</span><button class="s" disabled aria-label="Decrease">−</button><button class="s" disabled aria-label="Increase">+</button></div></div>
+        <div class="f"><span class="l">Inches accept fractions</span><div class="num fo"><input aria-label="Inches" value="1 1/2"><span class="u">in</span><button class="s" aria-label="Decrease">−</button><button class="s" aria-label="Increase">+</button></div><span class="hint" style="font-family:'JetBrains Mono',monospace">= 1.500 in · stored as 38.1 mm</span></div>
+      </div>
+
+      <div class="card"><h3>Segmented control</h3>
+        <div class="f"><span class="l">Fastener placement</span><div class="seg w"><button aria-pressed="false">None</button><button class="on" aria-pressed="true">Corners</button><button aria-pressed="false">Every cell</button><button aria-pressed="false">Manual</button></div></div>
+        <div class="f"><span class="l">Lip style</span><div class="seg w"><button class="on" aria-pressed="true">Standard</button><button aria-pressed="false">Reduced</button><button aria-pressed="false">None</button></div></div>
+        <div class="f"><span class="l">Units (compact, header)</span><div><div class="seg"><button class="on" aria-pressed="true">mm</button><button aria-pressed="false">in</button></div></div></div>
+        <div class="f"><span class="l">Format (accent selected)</span><div><div class="seg"><button aria-pressed="false">STL</button><button class="on ac" aria-pressed="true">3MF</button></div></div></div>
+        <div class="f"><span class="l">Keyboard focus and disabled option</span><div class="seg w"><button class="fr" aria-pressed="false">Left</button><button class="on" aria-pressed="true">Centered</button><button class="off" disabled>Right</button></div></div>
+        <div class="f"><span class="l">Toggle</span><div style="display:flex;gap:24px"><label class="sw on"><i></i>On</label><label class="sw"><i></i>Off</label></div></div>
+      </div>
+
+      <div class="card"><h3>Slider + field</h3>
+        <div class="f"><span class="l">Wall thickness</span><div style="display:flex;gap:12px;align-items:center"><input type="range" aria-label="Wall thickness" min="0.4" max="4" step="0.05" value="1.2"><div class="num" style="flex:none;width:104px"><input aria-label="Wall thickness value" value="1.20"><span class="u">mm</span></div></div><div style="display:flex;justify-content:space-between" class="sub"><span>0.40</span><span>4.00 mm</span></div></div>
+        <div class="f"><span class="l">Floor thickness, in inches</span><div style="display:flex;gap:12px;align-items:center"><input type="range" aria-label="Floor thickness" min="0.4" max="4" step="0.05" value="0.8"><div class="num" style="flex:none;width:104px"><input aria-label="Floor thickness value" value="0.031"><span class="u">in</span></div></div></div>
+        <h3 style="margin-top:8px">Buttons</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn p">Download 3MF</button><button class="btn">Add cut</button><button class="btn g">Cancel</button></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn p fr">Focused</button><button class="btn p d" disabled>Disabled</button><button class="ib" aria-label="Reset"><svg class="i" viewBox="0 0 24 24"><path d="M19.95 11a8 8 0 1 0 -.5 4m.5 5v-5h-5"/></svg></button><button class="ib on" aria-label="Active icon"><svg class="i" viewBox="0 0 24 24"><path d="M4 4h16v16h-16zM4 12h16M12 4v16"/></svg></button></div>
+        <h3 style="margin-top:8px">Chips</h3>
+        <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip" style="color:#A9E5C6"><svg class="i" viewBox="0 0 24 24"><path d="M5 12l5 5l10 -10"/></svg>Fits the bed</span><span class="chip" style="color:#F1D79B;background:#2A2314"><svg class="i" viewBox="0 0 24 24"><path d="M12 9v4M12 16h.01M10.36 3.59l-8.1 13.53a1.9 1.9 0 0 0 1.64 2.88h16.2a1.9 1.9 0 0 0 1.64 -2.88l-8.1 -13.53a1.9 1.9 0 0 0 -3.28 0z"/></svg>Padding 21 mm</span><span class="chip" style="color:#F8B9BF;background:#2C1719"><svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0M10 10l4 4m0 -4l-4 4"/></svg>1 error</span></div>
+      </div>
+
+      <div class="card"><h3>Section accordion</h3>
+        <div class="sec"><div class="sh"><button class="ib" aria-label="Collapse"><svg class="i" viewBox="0 0 24 24"><path d="M6 9l6 6l6 -6"/></svg></button><span class="t">Size</span><span class="sm">Open</span><button class="ib" aria-label="Reset section"><svg class="i" viewBox="0 0 24 24"><path d="M19.95 11a8 8 0 1 0 -.5 4m.5 5v-5h-5"/></svg></button></div><div style="padding:4px 16px 16px" class="hint">Section content. The reset arrow restores this section only.</div></div>
+        <div class="sec"><div class="sh"><button class="ib" aria-label="Expand"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6l-6 6"/></svg></button><span class="t">Fasteners</span><span class="sm">3 × 2, magnets: corners</span></div></div>
+        <div class="sec" style="border-color:var(--ln2);background:var(--s2)"><div class="sh"><button class="ib on" aria-label="Expand"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6l-6 6"/></svg></button><span class="t">Hover state</span><span class="sm">Base 1.2 mm</span></div></div>
+        <div class="sec"><div class="sh"><button class="ib fr" aria-label="Expand"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6l-6 6"/></svg></button><span class="t">Focus state</span><span class="sm">Enter toggles</span></div></div>
+        <div class="sec"><div class="sh"><button class="ib" aria-label="Expand"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6l-6 6"/></svg></button><span class="t">Section with error</span><span class="sm" style="color:#F8B9BF;display:flex;gap:4px;align-items:center"><svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0M10 10l4 4m0 -4l-4 4"/></svg>1 error</span></div></div>
+      </div>
+
+      <div class="card"><h3>Banners</h3>
+        <div class="bn w"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4M12 16h.01M10.36 3.59l-8.1 13.53a1.9 1.9 0 0 0 1.64 2.88h16.2a1.9 1.9 0 0 0 1.64 -2.88l-8.1 -13.53a1.9 1.9 0 0 0 -3.28 0z"/></svg><span><b>Warning.</b> Plate is 262 mm wide. The bed allows 246 mm.</span></div>
+        <div class="bn e"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0M10 10l4 4m0 -4l-4 4"/></svg><span><b>Error.</b> The model is not valid: the pocket cuts through a wall.</span></div>
+        <div class="bn e"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0M10 10l4 4m0 -4l-4 4"/></svg><span><b>Bad STL.</b> 143 open edges. Repair it or choose another file.</span></div>
+        <div class="bn n"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0M12 9h.01M11 12h1v4h1"/></svg><span><b>Note.</b> Remainder becomes padding on the right.</span></div>
+        <div class="bn o"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5l10 -10"/></svg><span><b>Ready.</b> baseplate-4x4.3mf · 1.2 MB</span></div>
+        <span class="hint">Each status has an icon and a text label, never colour alone.</span>
+      </div>
+
+      <div class="card"><h3>Tooltip</h3>
+        <div style="display:flex;align-items:center;gap:6px"><span class="l" style="font-size:13px">Ledge</span><button class="ib fr" style="width:24px;height:24px" aria-label="What is a ledge?"><svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0M12 9h.01M11 12h1v4h1"/></svg></button></div>
+        <div class="tip" role="tooltip"><b>Ledge</b><br>A shelf cut into the inside of the top rim. A lid or a shallow insert sits on it.</div>
+        <div class="tip" role="tooltip" style="max-width:260px"><b>Clearance</b><br>Extra gap around your tool. 0.3–0.5 mm suits most printers.</div>
+        <span class="hint">Opens on hover and keyboard focus, closes on Esc. Max width 300 px.</span>
+        <h3 style="margin-top:8px">Cutout list item</h3>
+        <div class="li sel"><button class="ib" aria-label="Hide"><svg class="i" viewBox="0 0 24 24"><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6"/></svg></button><div class="n"><b>pliers.stl</b><span>Selected</span></div><button class="ib" aria-label="Duplicate"><svg class="i" viewBox="0 0 24 24"><path d="M8 8m0 2a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2zM16 8v-2a2 2 0 0 0 -2 -2h-8a2 2 0 0 0 -2 2v8a2 2 0 0 0 2 2h2"/></svg></button><button class="ib" aria-label="Delete"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/></svg></button></div>
+        <div class="li hid"><button class="ib" aria-label="Show"><svg class="i" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.4 5.1A9 9 0 0 1 12 5c3.6 0 6.6 2 9 7a14 14 0 0 1 -2.2 3.2M6.6 6.6C4.9 7.8 3.5 9.7 3 12c2.4 4.5 5.4 6.5 9 6.5 1.5 0 2.9-.4 4.1-1"/></svg></button><div class="n"><b>Circle</b><span>Hidden</span></div></div>
+        <div class="li bad"><span style="width:32px;display:inline-flex;justify-content:center;color:#F0707B"><svg class="i" viewBox="0 0 24 24"><path d="M12 9v4M12 16h.01M10.36 3.59l-8.1 13.53a1.9 1.9 0 0 0 1.64 2.88h16.2a1.9 1.9 0 0 0 1.64 -2.88l-8.1 -13.53a1.9 1.9 0 0 0 -3.28 0z"/></svg></span><div class="n"><b>Circle Ø24</b><span style="color:#F8B9BF">Outside the bin</span></div></div>
+      </div>
+
+      <div class="card"><h3>Drop zone (STL)</h3>
+        <div class="dz"><svg class="i" viewBox="0 0 24 24" style="width:24px;height:24px"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2M7 9l5 -5l5 5M12 4v12"/></svg><span>Drop an STL here, or <u>browse</u></span><span class="hint">Default</span></div>
+        <div class="dz" style="border-color:var(--ac);background:#1B2442;color:#C3D0FF"><svg class="i" viewBox="0 0 24 24" style="width:24px;height:24px"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2M7 9l5 -5l5 5M12 4v12"/></svg><span>Release to import</span><span class="hint" style="color:#C3D0FF">Drag over</span></div>
+        <div class="dz" style="border-color:#7A3037;background:#2C1719;color:#F8B9BF"><svg class="i" viewBox="0 0 24 24" style="width:24px;height:24px"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0M10 10l4 4m0 -4l-4 4"/></svg><span>This is not an STL file</span><span class="hint" style="color:#F8B9BF">Error</span></div>
+      </div>
+
+      <div class="card"><h3>Empty states</h3>
+        <div class="vpm"><svg class="i" viewBox="0 0 24 24" style="width:28px;height:28px;color:var(--tx3)"><path d="M12 3l8 4.5v9l-8 4.5l-8 -4.5v-9l8 -4.5M12 12l8 -4.5M12 12v9M12 12l-8 -4.5"/></svg><b>No model yet</b><span class="hint">Change a parameter, or add a cutout to see the part.</span></div>
+        <div class="vpm" style="height:110px"><b>No cutouts yet</b><span class="hint">Add an STL or a simple shape.</span><div style="display:flex;gap:6px"><button class="btn" style="height:28px;padding:0 10px">STL</button><button class="btn" style="height:28px;padding:0 10px">Rectangle</button><button class="btn" style="height:28px;padding:0 10px">Circle</button></div></div>
+        <div class="vpm" style="height:110px"><svg class="i" viewBox="0 0 24 24" style="color:#F0707B"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0M10 10l4 4m0 -4l-4 4"/></svg><b>Could not load the geometry engine</b><span class="hint">Check your connection and reload.</span><button class="btn" style="height:28px;padding:0 10px">Reload</button></div>
+      </div>
+
+      <div class="card"><h3>Compute indicator</h3>
+        <div class="vpm" style="height:120px"><div class="bar" style="position:absolute;left:0;right:0;top:0;border-radius:0"><i></i></div><span class="hint" style="position:absolute;left:12px;bottom:10px;display:flex;gap:6px;align-items:center;color:var(--tx2)"><svg class="i" viewBox="0 0 24 24" style="color:var(--ac)"><path d="M12 3a9 9 0 1 0 9 9"/></svg>Computing… The previous model stays visible.</span></div>
+        <div style="display:flex;flex-direction:column;gap:6px;font:12px 'JetBrains Mono',monospace;color:var(--tx2)">
+          <div style="display:flex;gap:8px;align-items:center;height:32px;padding:0 12px;background:#0B0D10;border:1px solid var(--ln);border-radius:6px;color:#A9E5C6"><svg class="i" viewBox="0 0 24 24"><path d="M5 12l5 5l10 -10"/></svg>Updated in 0.4 s</div>
+          <div style="display:flex;gap:8px;align-items:center;height:32px;padding:0 12px;background:#0B0D10;border:1px solid var(--ln);border-radius:6px"><svg class="i" viewBox="0 0 24 24" style="color:var(--ac)"><path d="M12 3a9 9 0 1 0 9 9"/></svg>Computing… 1.2 s</div>
+          <div style="display:flex;gap:8px;align-items:center;height:32px;padding:0 12px;background:#0B0D10;border:1px solid #7A3037;border-radius:6px;color:#F8B9BF"><svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0M10 10l4 4m0 -4l-4 4"/></svg>Invalid model · wall is thinner than 0.4 mm</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1800}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -15,6 +15,7 @@ rules:
     - State what is out of scope.
   tasks:
     - Number tasks as `<section>.<n>` and keep each task independently committable, with its test or verification named in the task.
+    - UI tasks cite the matching artboard in `design/artboards/` (map in `design/README.md`) and are done only when the result is compared with it in the browser, in en and ru. If no artboard exists, say so in the task and build from the component library (`Components.dc.html`).
     - Mark the last section of every change as verification (npm test, npm run build, check in the browser).
 
 operations:

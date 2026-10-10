@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Design tokens</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700&family=Unbounded:wght@500;600&display=swap">
+<style>
+body{margin:0;background:#0E1013}
+*{box-sizing:border-box}
+.app{--bg:#0E1013;--s1:#161A1F;--s2:#1D2229;--s3:#272D36;--ln:#2B323C;--ln2:#414B59;--tx:#E6E9EE;--tx2:#A9B2BF;--tx3:#8893A2;font:13px/1.4 'Manrope',system-ui,sans-serif;color:var(--tx);background:var(--bg)}
+.card{background:var(--s1);border:1px solid var(--ln);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.card h3{margin:0;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);font-weight:600}
+.sw{display:flex;align-items:center;gap:10px;min-width:0}
+.sw i{width:36px;height:36px;border-radius:6px;border:1px solid rgba(255,255,255,.14);flex:none}
+.sw b{display:block;font:500 12px 'JetBrains Mono',monospace}
+.sw span{display:block;font:11px 'JetBrains Mono',monospace;color:var(--tx3)}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px}
+.mono{font-family:'JetBrains Mono',monospace}
+pre{margin:0;padding:12px;background:#0B0D10;border:1px solid var(--ln);border-radius:8px;font:11.5px/1.55 'JetBrains Mono',monospace;color:#C9D1DC;overflow:auto;white-space:pre}
+.ty{display:flex;align-items:baseline;gap:16px;border-bottom:1px solid var(--ln);padding-bottom:8px}
+.ty span{width:150px;flex:none;font:11px 'JetBrains Mono',monospace;color:var(--tx3)}
+</style>
+</helmet>
+<div class="app" style="width:100%;min-height:1100px;padding:40px">
+  <div style="max-width:1360px;margin:0 auto;display:flex;flex-direction:column;gap:24px">
+    <div><h1 style="margin:0;font-family:'Unbounded',sans-serif;font-size:22px;font-weight:600">Tokens</h1><p style="margin:4px 0 0;color:var(--tx2)">Names follow Tailwind v4 <span class="mono">@theme</span> variables. One accent, three status colours. Dark theme only.</p></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start">
+
+      <div class="card"><h3>Surfaces and text</h3>
+        <div class="g2">
+          <div class="sw"><i style="background:#0E1013"></i><div><b>--color-bg</b><span>#0E1013 canvas</span></div></div>
+          <div class="sw"><i style="background:#161A1F"></i><div><b>--color-surface-1</b><span>#161A1F panel, header</span></div></div>
+          <div class="sw"><i style="background:#1D2229"></i><div><b>--color-surface-2</b><span>#1D2229 card, input hover</span></div></div>
+          <div class="sw"><i style="background:#272D36"></i><div><b>--color-surface-3</b><span>#272D36 selected, chip</span></div></div>
+          <div class="sw"><i style="background:#2B323C"></i><div><b>--color-border</b><span>#2B323C hairline</span></div></div>
+          <div class="sw"><i style="background:#414B59"></i><div><b>--color-border-strong</b><span>#414B59 inputs</span></div></div>
+          <div class="sw"><i style="background:#E6E9EE"></i><div><b>--color-text</b><span>#E6E9EE 14.6:1 on bg</span></div></div>
+          <div class="sw"><i style="background:#A9B2BF"></i><div><b>--color-text-muted</b><span>#A9B2BF 8.6:1</span></div></div>
+          <div class="sw"><i style="background:#8893A2"></i><div><b>--color-text-subtle</b><span>#8893A2 5.6:1 on panel</span></div></div>
+        </div>
+      </div>
+
+      <div class="card"><h3>Accent</h3>
+        <div class="g2">
+          <div class="sw"><i style="background:#7C9CFF"></i><div><b>--color-accent</b><span>#7C9CFF 7.2:1 on bg</span></div></div>
+          <div class="sw"><i style="background:#25356B"></i><div><b>--color-accent-muted</b><span>#25356B selected fill</span></div></div>
+          <div class="sw"><i style="background:#0B1330"></i><div><b>--color-accent-on</b><span>#0B1330 on accent 6.9:1</span></div></div>
+          <div class="sw"><i style="background:#17213F"></i><div><b>--color-info-bg</b><span>#17213F note fill</span></div></div>
+        </div>
+        <h3 style="margin-top:6px">Status</h3>
+        <div class="g2">
+          <div class="sw"><i style="background:#4CC38A"></i><div><b>--color-success</b><span>text #A9E5C6 · bg #13261D</span></div></div>
+          <div class="sw"><i style="background:#E5B04B"></i><div><b>--color-warn</b><span>text #F1D79B · bg #2A2314</span></div></div>
+          <div class="sw"><i style="background:#F0707B"></i><div><b>--color-error</b><span>text #F8B9BF · bg #2C1719</span></div></div>
+          <div class="sw"><i style="background:#6B5524"></i><div><b>--color-warn-border</b><span>#6B5524 · error #7A3037</span></div></div>
+        </div>
+        <span style="font-size:12px;color:var(--tx2)">Warn and error always carry an icon and a text label. Amber and rose also differ in lightness.</span>
+      </div>
+
+      <div class="card"><h3>Typography</h3>
+        <div class="ty"><span>caption 11 / 1.4 caps</span><b style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)">Section label</b></div>
+        <div class="ty"><span>small 12 / 1.4</span><span style="font:12px 'Manrope';width:auto;color:var(--tx2)">Hints, units, field labels</span></div>
+        <div class="ty"><span>base 13 / 1.4</span><span style="font:13px 'Manrope';width:auto;color:var(--tx)">Panel text and controls</span></div>
+        <div class="ty"><span>title 15 / 1.3 · 600</span><b style="font-size:15px">Section and dialog title</b></div>
+        <div class="ty"><span>heading 18 / 1.3 · 600</span><b style="font:600 16px 'Unbounded',sans-serif">Start card title</b></div>
+        <div class="ty"><span>display 24 / 1.2 · 600</span><b style="font:600 22px 'Unbounded',sans-serif;letter-spacing:-.01em">What are you printing?</b></div>
+        <div class="ty"><span>mono 13 · 500</span><b class="mono" style="font-size:13px">147.0 × 84.0 mm</b></div>
+        <span style="font-size:12px;color:var(--tx2)"><b>Manrope</b> for UI text, <b>Unbounded</b> for logo and display titles, <b>JetBrains Mono</b> for every number and unit. All three have Cyrillic.</span>
+      </div>
+
+      <div class="card"><h3>Radii, spacing, sizes</h3>
+        <div style="display:flex;gap:14px;align-items:flex-end">
+          <div style="text-align:center"><div style="width:44px;height:44px;border:1.5px solid var(--ln2);border-radius:4px"></div><span class="mono" style="font-size:11px;color:var(--tx3)">xs 4</span></div>
+          <div style="text-align:center"><div style="width:44px;height:44px;border:1.5px solid var(--ln2);border-radius:6px"></div><span class="mono" style="font-size:11px;color:var(--tx3)">control 6</span></div>
+          <div style="text-align:center"><div style="width:44px;height:44px;border:1.5px solid var(--ln2);border-radius:8px"></div><span class="mono" style="font-size:11px;color:var(--tx3)">group 8</span></div>
+          <div style="text-align:center"><div style="width:44px;height:44px;border:1.5px solid var(--ln2);border-radius:10px"></div><span class="mono" style="font-size:11px;color:var(--tx3)">card 10</span></div>
+          <div style="text-align:center"><div style="width:44px;height:44px;border:1.5px solid var(--ln2);border-radius:12px"></div><span class="mono" style="font-size:11px;color:var(--tx3)">tile 12</span></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-end;margin-top:4px">
+          <div style="text-align:center"><div style="width:4px;height:4px;background:var(--ac,#7C9CFF);margin:0 auto"></div><span class="mono" style="font-size:11px;color:var(--tx3)">1</span></div>
+          <div style="text-align:center"><div style="width:8px;height:8px;background:#7C9CFF;margin:0 auto"></div><span class="mono" style="font-size:11px;color:var(--tx3)">2</span></div>
+          <div style="text-align:center"><div style="width:12px;height:12px;background:#7C9CFF;margin:0 auto"></div><span class="mono" style="font-size:11px;color:var(--tx3)">3</span></div>
+          <div style="text-align:center"><div style="width:16px;height:16px;background:#7C9CFF;margin:0 auto"></div><span class="mono" style="font-size:11px;color:var(--tx3)">4</span></div>
+          <div style="text-align:center"><div style="width:24px;height:24px;background:#7C9CFF;margin:0 auto"></div><span class="mono" style="font-size:11px;color:var(--tx3)">6</span></div>
+          <div style="text-align:center"><div style="width:32px;height:32px;background:#7C9CFF;margin:0 auto"></div><span class="mono" style="font-size:11px;color:var(--tx3)">8</span></div>
+        </div>
+        <span style="font-size:12px;color:var(--tx2)">Spacing unit 4 px (<span class="mono">--spacing: 4px</span>). Panel padding 16, field gap 12, label gap 4.</span>
+        <div class="g2" style="font:12px 'JetBrains Mono',monospace;color:var(--tx2)"><span>control height 32</span><span>button height 36</span><span>section header 44</span><span>touch target 40</span><span>panel width 380</span><span>header height 52</span></div>
+      </div>
+
+      <div class="card"><h3>Shadows and focus</h3>
+        <div style="display:flex;gap:16px">
+          <div style="flex:1;height:64px;border-radius:10px;background:#161A1F;border:1px solid var(--ln);box-shadow:0 8px 24px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;font:11px 'JetBrains Mono',monospace;color:var(--tx3)">float</div>
+          <div style="flex:1;height:64px;border-radius:10px;background:#161A1F;border:1px solid var(--ln);box-shadow:0 -8px 16px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;font:11px 'JetBrains Mono',monospace;color:var(--tx3)">sticky export</div>
+        </div>
+        <div style="display:flex;gap:16px;align-items:center"><div style="width:96px;height:32px;border-radius:6px;background:#1D2229;outline:2px solid #7C9CFF;outline-offset:1px"></div><span style="font-size:12px;color:var(--tx2)">Focus ring: 2 px accent, 1 px offset. Inputs add a 2 px accent-muted glow.</span></div>
+        <span style="font-size:12px;color:var(--tx2)">No shadow on controls. Depth comes from surface steps 1, 2, 3 and hairlines.</span>
+      </div>
+
+      <div class="card" style="grid-column:span 1"><h3>Tailwind v4 theme.css</h3>
+<pre>@theme {
+  --font-sans: "Manrope", system-ui, sans-serif;
+  --font-display: "Unbounded", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --color-bg: #0e1013;
+  --color-surface-1: #161a1f;
+  --color-surface-2: #1d2229;
+  --color-surface-3: #272d36;
+  --color-border: #2b323c;
+  --color-border-strong: #414b59;
+  --color-text: #e6e9ee;
+  --color-text-muted: #a9b2bf;
+  --color-text-subtle: #8893a2;
+  --color-accent: #7c9cff;
+  --color-accent-muted: #25356b;
+  --color-accent-on: #0b1330;
+  --color-success: #4cc38a;
+  --color-warn: #e5b04b;
+  --color-error: #f0707b;
+  --radius-xs: 4px;  --radius-control: 6px;
+  --radius-group: 8px; --radius-card: 10px;
+  --spacing: 4px;
+  --shadow-float: 0 8px 24px rgb(0 0 0 / .5);
+  --shadow-sticky: 0 -8px 16px rgb(0 0 0 / .25);
+}</pre>
+      </div>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

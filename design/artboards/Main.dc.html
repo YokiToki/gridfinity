@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Gridfinity start page</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700&family=Unbounded:wght@500;600&display=swap">
+<style>
+body{margin:0;background:#0E1013}
+*{box-sizing:border-box}
+.app{--bg:#0E1013;--s1:#161A1F;--s2:#1D2229;--s3:#272D36;--ln:#2B323C;--ln2:#414B59;--tx:#E6E9EE;--tx2:#A9B2BF;--tx3:#8893A2;--ac:#7C9CFF;--acd:#25356B;font:13px/1.4 'Manrope',system-ui,sans-serif;color:var(--tx);background:var(--bg);display:flex;flex-direction:column;position:relative;overflow:hidden}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.hd{height:52px;flex:none;display:flex;align-items:center;gap:16px;padding:0 16px;background:var(--s1);border-bottom:1px solid var(--ln);position:relative;z-index:2}
+.logo{display:flex;align-items:center;gap:8px;font:600 13px 'Unbounded',sans-serif;letter-spacing:-.01em;color:var(--tx);text-decoration:none;height:32px}
+.sp{flex:1}
+.seg{display:inline-flex;gap:2px;padding:2px;background:var(--bg);border:1px solid var(--ln);border-radius:8px}
+.seg button{height:32px;min-width:32px;padding:0 12px;border:0;border-radius:6px;background:none;color:var(--tx2);font:inherit;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;white-space:nowrap}
+.seg button.on{background:var(--s3);color:var(--tx);box-shadow:inset 0 0 0 1px var(--ln2)}
+button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.bgp{position:absolute;inset:52px 0 0 0;background-image:repeating-linear-gradient(30deg,rgba(124,156,255,.09) 0 1px,transparent 1px 56px),repeating-linear-gradient(150deg,rgba(124,156,255,.09) 0 1px,transparent 1px 56px);-webkit-mask-image:radial-gradient(ellipse at 50% 55%,#000 15%,transparent 70%);mask-image:radial-gradient(ellipse at 50% 55%,#000 15%,transparent 70%)}
+.card{position:relative;width:360px;height:470px;padding:20px;display:flex;flex-direction:column;gap:14px;background:linear-gradient(180deg,#1A1F26,#14181D);border:1px solid var(--ln);border-radius:16px;color:var(--tx);text-decoration:none;transition:all .15s}
+.card .art{flex:1;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 60%,#222A36 0%,#0E1115 75%);border:1px solid var(--ln);border-radius:10px;position:relative;overflow:hidden}
+.card .art svg{transition:transform .2s}
+.card:hover,.card.hov{border-color:var(--ac);box-shadow:0 0 0 1px var(--ac),0 24px 60px -20px rgba(124,156,255,.5);transform:translateY(-4px)}
+.card:hover .art svg,.card.hov .art svg{transform:translateY(-4px) scale(1.04)}
+.card.foc{outline:2px solid var(--ac);outline-offset:4px}
+.idx{position:absolute;left:12px;top:10px;font:500 12px 'JetBrains Mono',monospace;color:var(--tx3)}
+.kb{position:absolute;right:12px;top:10px;min-width:22px;height:22px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--ln2);border-bottom-width:2px;border-radius:5px;font:500 12px 'JetBrains Mono',monospace;color:var(--tx2);background:var(--s1)}
+.ttl{font:600 20px 'Unbounded',sans-serif;letter-spacing:-.02em}
+.go{width:36px;height:36px;border-radius:50%;border:1px solid var(--ln2);display:inline-flex;align-items:center;justify-content:center;color:var(--tx2);flex:none}
+.card:hover .go,.card.hov .go{background:var(--ac);border-color:var(--ac);color:#0B1330}
+.tag{display:inline-flex;height:22px;align-items:center;padding:0 8px;border-radius:11px;background:var(--s3);color:var(--tx2);font:12px 'JetBrains Mono',monospace}
+</style>
+</helmet>
+<div class="app" style="width:100%;height:900px;min-width:1100px">
+  <header class="hd">
+    <a class="logo" href="Main.dc.html" aria-label="Gridfinity Generator, home">
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 8.5 12 14v5L2 13.5z" fill="#4A63B8"/><path d="M22 8.5 12 14v5l10-5.5z" fill="#34478F"/><g stroke="#161A1F" stroke-width=".8" stroke-linejoin="round"><path d="M12 3l5 2.75-5 2.75-5-2.75z" fill="#7C9CFF"/><path d="M17 5.75l5 2.75-5 2.75-5-2.75z" fill="#7C9CFF" opacity=".6"/><path d="M12 8.5l5 2.75-5 2.75-5-2.75z" fill="#7C9CFF"/><path d="M7 5.75l5 2.75-5 2.75-5-2.75z" fill="#7C9CFF" opacity=".6"/></g></svg>
+      Gridfinity
+    </a>
+    <span class="sp"></span>
+    <div class="seg" role="group" aria-label="Units"><button class="on" aria-pressed="true">mm</button><button aria-pressed="false">in</button></div>
+    <div class="seg" role="group" aria-label="Language"><button class="on" aria-pressed="true">EN</button><button aria-pressed="false">RU</button></div>
+  </header>
+  <div class="bgp" aria-hidden="true"></div>
+  <main style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:20px 24px 28px;position:relative;z-index:1">
+    <div style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px">
+      <span style="font:500 12px 'JetBrains Mono',monospace;color:var(--tx2);padding:4px 10px;border:1px solid var(--ln2);border-radius:12px;background:rgba(22,26,31,.8)">runs in your browser · no account · STL and 3MF</span>
+      <h1 style="margin:0;font:600 38px/1.1 'Unbounded',sans-serif;letter-spacing:-.03em">What are you printing?</h1>
+    </div>
+    <div style="display:flex;gap:24px">
+      <a class="card hov" href="Box.dc.html">
+        <div class="art">
+          <span class="idx">01</span><span class="kb" aria-hidden="true">1</span>
+          <svg width="240" height="165" viewBox="0 0 250 165" aria-hidden="true">
+            <g transform="translate(100 32)">
+              <g transform="matrix(.866 .5 -.866 .5 0 0)"><rect width="150" height="100" rx="6" fill="#222B3B"/></g>
+              <g transform="matrix(.866 .5 -.866 .5 0 0)" fill="none"><rect x="5" y="5" width="140" height="90" rx="4" stroke="#3D4A63" stroke-width="10"/></g>
+              <g transform="translate(0 -3)"><g transform="matrix(.866 .5 -.866 .5 0 0)" fill="none"><rect x="5" y="5" width="140" height="90" rx="4" stroke="#43516C" stroke-width="10"/><path d="M75 5V95" stroke="#43516C" stroke-width="5"/></g></g>
+              <g transform="translate(0 -6)"><g transform="matrix(.866 .5 -.866 .5 0 0)" fill="none"><rect x="5" y="5" width="140" height="90" rx="4" stroke="#4A5A78" stroke-width="10"/><path d="M75 5V95" stroke="#4A5A78" stroke-width="5"/></g></g>
+              <g transform="translate(0 -9)"><g transform="matrix(.866 .5 -.866 .5 0 0)" fill="none"><rect x="5" y="5" width="140" height="90" rx="4" stroke="#53648A" stroke-width="10"/><path d="M75 5V95" stroke="#53648A" stroke-width="5"/></g></g>
+              <g transform="translate(0 -12)"><g transform="matrix(.866 .5 -.866 .5 0 0)" fill="none"><rect x="5" y="5" width="140" height="90" rx="4" stroke="#5E7194" stroke-width="10"/><path d="M75 5V95" stroke="#5E7194" stroke-width="5"/></g></g>
+              <g transform="translate(0 -15)"><g transform="matrix(.866 .5 -.866 .5 0 0)" fill="none"><rect x="5" y="5" width="140" height="90" rx="4" stroke="#6A7EA2" stroke-width="10"/><path d="M75 5V95" stroke="#6A7EA2" stroke-width="5"/></g></g>
+              <g transform="translate(0 -18)"><g transform="matrix(.866 .5 -.866 .5 0 0)" fill="none"><rect x="5" y="5" width="140" height="90" rx="4" stroke="#7889AE" stroke-width="10"/><path d="M75 5V95" stroke="#7889AE" stroke-width="5"/></g></g>
+              <g transform="translate(0 -21)"><g transform="matrix(.866 .5 -.866 .5 0 0)" fill="none"><rect x="5" y="5" width="140" height="90" rx="4" stroke="#8FA3C4" stroke-width="10"/><path d="M75 5V95" stroke="#8FA3C4" stroke-width="5"/></g></g>
+            </g>
+          </svg>
+        </div>
+        <div><div class="ttl">Box</div><div style="color:var(--tx2);margin-top:6px;font-size:14px">Bin or tray on the Gridfinity grid, with lip, scoop and dividers.</div></div>
+        <div style="display:flex;align-items:center;gap:6px"><span class="tag">cells × height</span><span class="tag">compartments</span><span class="sp"></span><span class="go"><svg class="i" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6l-6 6"/></svg></span></div>
+      </a>
+      <a class="card" href="Baseplate.dc.html">
+        <div class="art">
+          <span class="idx">02</span><span class="kb" aria-hidden="true">2</span>
+          <svg width="240" height="150" viewBox="0 0 250 150" aria-hidden="true">
+            <g transform="translate(100 6)">
+              <g transform="translate(0 10)"><g transform="matrix(.866 .5 -.866 .5 0 0)"><rect width="150" height="100" rx="6" fill="#39465E"/></g></g>
+              <g transform="translate(0 8)"><g transform="matrix(.866 .5 -.866 .5 0 0)"><rect width="150" height="100" rx="6" fill="#3F4D67"/></g></g>
+              <g transform="translate(0 6)"><g transform="matrix(.866 .5 -.866 .5 0 0)"><rect width="150" height="100" rx="6" fill="#43516C"/></g></g>
+              <g transform="translate(0 4)"><g transform="matrix(.866 .5 -.866 .5 0 0)"><rect width="150" height="100" rx="6" fill="#46546F"/></g></g>
+              <g transform="translate(0 2)"><g transform="matrix(.866 .5 -.866 .5 0 0)"><rect width="150" height="100" rx="6" fill="#4A5A78"/></g></g>
+              <g transform="matrix(.866 .5 -.866 .5 0 0)">
+                <rect width="150" height="100" rx="6" fill="#8FA3C4" stroke="#B3C2DB" stroke-width="1.2"/>
+                <g fill="#5E7295"><rect x="6" y="6" width="38" height="38" rx="6"/><rect x="56" y="6" width="38" height="38" rx="6"/><rect x="106" y="6" width="38" height="38" rx="6"/><rect x="6" y="56" width="38" height="38" rx="6"/><rect x="56" y="56" width="38" height="38" rx="6"/><rect x="106" y="56" width="38" height="38" rx="6"/></g>
+                <g fill="#1B2232" stroke="#B3C2DB" stroke-width="1"><circle cx="13" cy="13" r="3.5"/><circle cx="137" cy="13" r="3.5"/><circle cx="13" cy="87" r="3.5"/><circle cx="137" cy="87" r="3.5"/></g>
+              </g>
+            </g>
+          </svg>
+        </div>
+        <div><div class="ttl">Baseplate</div><div style="color:var(--tx2);margin-top:6px;font-size:14px">Grid plate for your bins. Magnets, screws, split to fit your bed.</div></div>
+        <div style="display:flex;align-items:center;gap:6px"><span class="tag">fractional cells</span><span class="tag">split</span><span class="sp"></span><span class="go"><svg class="i" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6l-6 6"/></svg></span></div>
+      </a>
+      <a class="card foc" href="Cutout.dc.html">
+        <div class="art">
+          <span class="idx">03</span><span class="kb" aria-hidden="true">3</span>
+          <svg width="240" height="150" viewBox="0 0 250 150" aria-hidden="true">
+            <defs><clipPath id="cpo"><rect x="22" y="35" width="74" height="30" rx="15"/><circle cx="104" cy="50" r="19"/></clipPath></defs>
+            <g transform="translate(100 6)">
+              <g transform="translate(0 10)"><g transform="matrix(.866 .5 -.866 .5 0 0)"><rect width="150" height="100" rx="6" fill="#39465E"/></g></g>
+              <g transform="translate(0 8)"><g transform="matrix(.866 .5 -.866 .5 0 0)"><rect width="150" height="100" rx="6" fill="#3F4D67"/></g></g>
+              <g transform="translate(0 6)"><g transform="matrix(.866 .5 -.866 .5 0 0)"><rect width="150" height="100" rx="6" fill="#43516C"/></g></g>
+              <g transform="translate(0 4)"><g transform="matrix(.866 .5 -.866 .5 0 0)"><rect width="150" height="100" rx="6" fill="#46546F"/></g></g>
+              <g transform="translate(0 2)"><g transform="matrix(.866 .5 -.866 .5 0 0)"><rect width="150" height="100" rx="6" fill="#4A5A78"/></g></g>
+              <g transform="matrix(.866 .5 -.866 .5 0 0)">
+                <rect width="150" height="100" rx="6" fill="#8FA3C4" stroke="#B3C2DB" stroke-width="1.2"/>
+                <path d="M50 3V97M100 3V97M3 50H147" stroke="#7388AC" stroke-width="1"/>
+                <g fill="#2A3350"><rect x="22" y="35" width="74" height="30" rx="15"/><circle cx="104" cy="50" r="19"/></g>
+                <g clip-path="url(#cpo)"><g transform="translate(6 6)" fill="#0B0F18"><rect x="22" y="35" width="74" height="30" rx="15"/><circle cx="104" cy="50" r="19"/></g></g>
+                <g fill="none" stroke="#7C9CFF" stroke-width="1.8"><rect x="22" y="35" width="74" height="30" rx="15"/><circle cx="104" cy="50" r="19"/></g>
+              </g>
+            </g>
+          </svg>
+        </div>
+        <div><div class="ttl">Cutout</div><div style="color:var(--tx2);margin-top:6px;font-size:14px">Bin with a pocket shaped to your tool. Import an STL or use a simple shape.</div></div>
+        <div style="display:flex;align-items:center;gap:6px"><span class="tag">STL import</span><span class="tag">snap</span><span class="sp"></span><span class="go"><svg class="i" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6l-6 6"/></svg></span></div>
+      </a>
+    </div>
+    <a href="Baseplate.dc.html" style="display:inline-flex;align-items:center;gap:10px;height:40px;padding:0 14px;border:1px solid var(--ln);border-radius:20px;background:rgba(22,26,31,.85);color:var(--tx2);text-decoration:none"><svg class="i" viewBox="0 0 24 24"><path d="M12 8v4l3 3M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/></svg>Continue: Baseplate <span style="font-family:'JetBrains Mono',monospace;color:var(--tx)">6 × 4</span>, saved 12 min ago</a>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

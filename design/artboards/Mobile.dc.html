@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mobile parameters drawer</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700&family=Unbounded:wght@500;600&display=swap">
+<style>
+body{margin:0;background:#0E1013}
+*{box-sizing:border-box}
+.app{--bg:#0E1013;--s1:#161A1F;--s2:#1D2229;--s3:#272D36;--ln:#2B323C;--ln2:#414B59;--tx:#E6E9EE;--tx2:#A9B2BF;--tx3:#8893A2;--ac:#7C9CFF;--acd:#25356B;--ok:#4CC38A;--warn:#E5B04B;--err:#F0707B;font:14px/1.4 'Manrope',system-ui,sans-serif;color:var(--tx);background:var(--bg);position:relative;overflow:hidden}
+.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.seg{display:inline-flex;gap:2px;padding:2px;background:var(--bg);border:1px solid var(--ln);border-radius:8px}
+.seg.w{display:flex}.seg.w button{flex:1}
+.seg button{height:40px;min-width:40px;padding:0 12px;border:0;border-radius:6px;background:none;color:var(--tx2);font:inherit;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;white-space:nowrap}
+.seg button.on{background:var(--s3);color:var(--tx);box-shadow:inset 0 0 0 1px var(--ln2)}
+.seg button.ac.on{background:var(--acd);box-shadow:inset 0 0 0 1px var(--ac);color:#fff}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+.ib{width:40px;height:40px;flex:none;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:8px;background:none;color:var(--tx2);cursor:pointer}
+.ib.on{background:var(--s3);color:var(--tx)}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.l{font-size:12px;color:var(--tx2)}
+.num{display:flex;align-items:center;height:40px;background:var(--bg);border:1px solid var(--ln2);border-radius:6px}
+.num input{flex:1;min-width:0;height:38px;padding:0 10px;border:0;background:none;color:var(--tx);font:500 14px 'JetBrains Mono',monospace;outline:0}
+.num .u{padding:0 6px 0 0;color:var(--tx3);font:12px 'JetBrains Mono',monospace}
+.num .s{width:40px;height:38px;border:0;border-left:1px solid var(--ln);background:none;color:var(--tx2);font-size:16px}
+.row{display:flex;gap:8px}.row>*{flex:1;min-width:0}
+.btn{height:44px;padding:0 14px;border-radius:8px;border:1px solid var(--ln2);background:var(--s2);color:var(--tx);font:inherit;font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+.btn.p{background:var(--ac);border-color:var(--ac);color:#0B1330;font-weight:600}
+.sec{border-top:1px solid var(--ln)}
+.sh{display:flex;align-items:center;gap:6px;min-height:48px;padding:4px 8px 4px 8px}
+.sh .t{font-weight:600}
+.sh .sm{color:var(--tx3);font-size:12px;margin-left:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.bn{display:flex;gap:8px;padding:8px 10px;border-radius:6px;border:1px solid #34457F;background:#17213F;color:#C3D0FF;font-size:12px;line-height:1.4}
+.iso{position:absolute;left:50%;top:174px;margin:-120px 0 0 -140px;transform:rotateX(58deg) rotateZ(-38deg) scale(.62);transform-style:preserve-3d}
+.cells{position:relative;display:grid;grid-template-columns:repeat(3,80px) 40px;grid-template-rows:repeat(2,80px);transform-style:preserve-3d;background:#8FA3C4;border-radius:10px}
+.cells:before{content:"";position:absolute;inset:0;background:#4A5A78;border-radius:10px;transform:translateZ(-12px)}
+.cell{position:relative}
+.cell:after{content:"";position:absolute;inset:7px;border-radius:9px;background:#5E7295;box-shadow:inset 0 4px 8px rgba(0,0,0,.4)}
+.pad{grid-row:1/3;grid-column:4;border-radius:0 10px 10px 0;background:repeating-linear-gradient(45deg,rgba(229,176,75,.55) 0 5px,rgba(229,176,75,.12) 5px 10px);border:2px solid rgba(229,176,75,.85)}
+</style>
+</helmet>
+<div class="app" style="width:390px;height:844px">
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 22%,#1A2029 0%,#0B0D10 75%)"></div>
+  <header style="position:absolute;left:0;right:0;top:0;height:52px;display:flex;align-items:center;gap:6px;padding:0 8px;background:var(--s1);border-bottom:1px solid var(--ln)">
+    <a href="Main.dc.html" aria-label="Gridfinity Generator, back to start" style="width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 8.5 12 14v5L2 13.5z" fill="#4A63B8"/><path d="M22 8.5 12 14v5l10-5.5z" fill="#34478F"/><g stroke="#161A1F" stroke-width=".8" stroke-linejoin="round"><path d="M12 3l5 2.75-5 2.75-5-2.75z" fill="#7C9CFF"/><path d="M17 5.75l5 2.75-5 2.75-5-2.75z" fill="#7C9CFF" opacity=".6"/><path d="M12 8.5l5 2.75-5 2.75-5-2.75z" fill="#7C9CFF"/><path d="M7 5.75l5 2.75-5 2.75-5-2.75z" fill="#7C9CFF" opacity=".6"/></g></svg></a>
+    <button class="btn" style="height:40px;flex:1;justify-content:space-between" aria-haspopup="listbox"><span style="display:inline-flex;gap:8px;align-items:center"><svg class="i" viewBox="0 0 24 24"><path d="M4 4h6v6h-6zM14 4h6v6h-6zM4 14h6v6h-6zM14 14h6v6h-6z"/></svg>Baseplate</span><svg class="i" viewBox="0 0 24 24"><path d="M6 9l6 6l6 -6"/></svg></button>
+    <div class="seg"><button class="on" style="min-width:36px;padding:0 8px">mm</button></div>
+    <div class="seg"><button class="on" style="min-width:36px;padding:0 8px">EN</button></div>
+  </header>
+  <div style="position:absolute;right:12px;top:64px;display:flex;flex-direction:column;gap:2px;padding:4px;background:rgba(22,26,31,.9);border:1px solid var(--ln);border-radius:10px">
+    <button class="ib on" aria-label="Isometric view"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l8 4.5v9l-8 4.5l-8 -4.5v-9l8 -4.5M12 12l8 -4.5M12 12v9M12 12l-8 -4.5"/></svg></button>
+    <button class="ib" aria-label="Reset camera"><svg class="i" viewBox="0 0 24 24"><path d="M4 8v-2a2 2 0 0 1 2 -2h2M4 16v2a2 2 0 0 0 2 2h2M16 4h2a2 2 0 0 1 2 2v2M16 20h2a2 2 0 0 0 2 -2v-2"/></svg></button>
+  </div>
+  <div class="iso" aria-hidden="true"><div class="cells"><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="pad"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div></div></div>
+  <div style="position:absolute;left:12px;top:64px;font:12px 'JetBrains Mono',monospace;color:var(--tx2);background:rgba(14,16,19,.8);padding:4px 8px;border-radius:6px">147.0 × 84.0 × 8.65 mm</div>
+
+  <section aria-label="Parameters drawer" style="position:absolute;left:0;right:0;bottom:0;top:300px;display:flex;flex-direction:column;background:var(--s1);border:1px solid var(--ln2);border-bottom:0;border-radius:16px 16px 0 0;box-shadow:0 -12px 32px rgba(0,0,0,.55)">
+    <button aria-label="Drag to resize the drawer" style="flex:none;height:28px;border:0;background:none;display:flex;align-items:center;justify-content:center"><span style="width:40px;height:4px;border-radius:2px;background:var(--ln2)"></span></button>
+    <div style="flex:none;display:flex;align-items:center;gap:8px;padding:0 8px 8px 16px"><b style="flex:1;font-size:15px">Parameters</b><button class="ib" aria-label="Collapse drawer"><svg class="i" viewBox="0 0 24 24"><path d="M6 9l6 6l6 -6"/></svg></button></div>
+    <div style="flex:1;min-height:0;overflow:auto">
+      <section class="sec">
+        <div class="sh"><button class="ib" aria-label="Collapse Size"><svg class="i" viewBox="0 0 24 24"><path d="M6 9l6 6l6 -6"/></svg></button><span class="t">Size</span><span class="sm">3.5 × 2 cells</span></div>
+        <div style="padding:4px 16px 16px;display:flex;flex-direction:column;gap:12px">
+          <div class="seg w" role="group" aria-label="Size mode"><button class="on" aria-pressed="true">Cells</button><button aria-pressed="false">Custom size</button></div>
+          <div class="row">
+            <div class="f"><label class="l" for="mx">Width (X)</label><div class="num"><input id="mx" value="3.5"><span class="u">cells</span><button class="s" aria-label="Decrease X">−</button><button class="s" aria-label="Increase X">+</button></div></div>
+            <div class="f"><label class="l" for="my">Depth (Y)</label><div class="num"><input id="my" value="2"><span class="u">cells</span><button class="s" aria-label="Decrease Y">−</button><button class="s" aria-label="Increase Y">+</button></div></div>
+          </div>
+          <div class="f"><span class="l">Place the remainder</span><div class="seg w" role="group" aria-label="Remainder alignment"><button aria-pressed="false">Left</button><button aria-pressed="false">Centered</button><button class="on" aria-pressed="true">Right</button></div></div>
+          <div class="bn"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0M12 9h.01M11 12h1v4h1"/></svg><span>The last half cell (21.0 mm) becomes padding on the right.</span></div>
+        </div>
+      </section>
+      <section class="sec"><div class="sh"><button class="ib" aria-label="Expand Thickness"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6l-6 6"/></svg></button><span class="t">Thickness</span><span class="sm">Base 1.2 · Wall 0.95</span></div></section>
+      <section class="sec"><div class="sh"><button class="ib" aria-label="Expand Fasteners"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6l-6 6"/></svg></button><span class="t">Fasteners</span><span class="sm">Magnets: corners</span></div></section>
+      <section class="sec"><div class="sh"><button class="ib" aria-label="Expand Split"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6l-6 6"/></svg></button><span class="t">Split to fit bed</span><span class="sm">Off</span></div></section>
+    </div>
+    <div style="flex:none;padding:10px 16px calc(10px + 8px);border-top:1px solid var(--ln);background:var(--s1);display:flex;gap:8px;align-items:center">
+      <div class="seg" role="group" aria-label="Format"><button aria-pressed="false">STL</button><button class="on ac" aria-pressed="true">3MF</button></div>
+      <button class="btn p" style="flex:1"><svg class="i" viewBox="0 0 24 24"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2M7 11l5 5l5 -5M12 4v12"/></svg>Download</button>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

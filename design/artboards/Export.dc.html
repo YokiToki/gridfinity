@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Export and print bed</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700&family=Unbounded:wght@500;600&display=swap">
+<style>
+body{margin:0;background:#0E1013}
+*{box-sizing:border-box}
+.app{--bg:#0E1013;--s1:#161A1F;--s2:#1D2229;--s3:#272D36;--ln:#2B323C;--ln2:#414B59;--tx:#E6E9EE;--tx2:#A9B2BF;--tx3:#8893A2;--ac:#7C9CFF;--acd:#25356B;--ok:#4CC38A;--warn:#E5B04B;--err:#F0707B;font:13px/1.4 'Manrope',system-ui,sans-serif;color:var(--tx);background:var(--bg);display:flex;flex-direction:column}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.hd{height:52px;flex:none;display:flex;align-items:center;gap:16px;padding:0 16px;background:var(--s1);border-bottom:1px solid var(--ln)}
+.logo{display:flex;align-items:center;gap:8px;font:600 13px 'Unbounded',sans-serif;letter-spacing:-.01em;color:var(--tx);text-decoration:none;height:32px}
+.sp{flex:1}
+.seg{display:inline-flex;gap:2px;padding:2px;background:var(--bg);border:1px solid var(--ln);border-radius:8px}
+.seg.w{display:flex}.seg.w button{flex:1}
+.seg button{height:32px;min-width:32px;padding:0 12px;border:0;border-radius:6px;background:none;color:var(--tx2);font:inherit;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;white-space:nowrap}
+.seg button.on{background:var(--s3);color:var(--tx);box-shadow:inset 0 0 0 1px var(--ln2)}
+.seg button.ac.on{background:var(--acd);box-shadow:inset 0 0 0 1px var(--ac);color:#fff}
+button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+.main{flex:1;display:flex;min-height:0}
+.pnl{width:380px;flex:none;display:flex;flex-direction:column;background:var(--s1);border-right:1px solid var(--ln);min-height:0}
+.scr{flex:1;overflow:auto;min-height:0}
+.sec{border-bottom:1px solid var(--ln)}
+.sh{display:flex;align-items:center;gap:6px;min-height:44px;padding:6px 8px 6px 12px}
+.sh .t{font-weight:600;white-space:nowrap}
+.sh .sm{color:var(--tx3);font-size:12px;margin-left:auto;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.ib{width:32px;height:32px;flex:none;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:6px;background:none;color:var(--tx2);cursor:pointer}
+.ib:hover,.ib.on{background:var(--s3);color:var(--tx)}
+.sb{padding:4px 16px 16px;display:flex;flex-direction:column;gap:12px}
+.row{display:flex;gap:8px}.row>*{flex:1;min-width:0}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.l{font-size:12px;color:var(--tx2);display:flex;align-items:center;gap:4px}
+.num{display:flex;align-items:center;height:32px;background:var(--bg);border:1px solid var(--ln2);border-radius:6px}
+.num:focus-within{border-color:var(--ac);box-shadow:0 0 0 2px var(--acd)}
+.num input{flex:1;min-width:0;height:30px;padding:0 8px;border:0;background:none;color:var(--tx);font:500 13px 'JetBrains Mono',monospace;outline:0}
+.num .u{padding:0 8px 0 0;color:var(--tx3);font:12px 'JetBrains Mono',monospace}
+.sel{height:32px;background:var(--bg);border:1px solid var(--ln2);border-radius:6px;color:var(--tx);font:inherit;padding:0 8px;width:100%}
+.hint{font-size:12px;color:var(--tx3)}
+.bn{display:flex;gap:8px;padding:8px 10px;border-radius:6px;border:1px solid;font-size:12px;line-height:1.4;align-items:flex-start}
+.bn.w{background:#2A2314;border-color:#6B5524;color:#F1D79B}
+.bn.e{background:#2C1719;border-color:#7A3037;color:#F8B9BF}
+.bn.o{background:#13261D;border-color:#27573F;color:#A9E5C6}
+.btn{height:36px;padding:0 14px;border-radius:6px;border:1px solid var(--ln2);background:var(--s2);color:var(--tx);font:inherit;font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;white-space:nowrap}
+.btn.p{background:var(--ac);border-color:var(--ac);color:#0B1330;font-weight:600}
+.exp{flex:none;padding:12px 16px;border-top:1px solid var(--ln);background:var(--s1);display:flex;flex-direction:column;gap:10px;box-shadow:0 -8px 16px rgba(0,0,0,.25)}
+.chip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 8px;border-radius:12px;background:var(--s3);font-size:12px;white-space:nowrap}
+.vp{flex:1;position:relative;min-width:0;background:radial-gradient(ellipse at 40% 45%,#1A2029 0%,#0B0D10 75%);overflow:hidden;display:flex}
+.sbar{position:absolute;left:0;right:0;bottom:0;height:36px;display:flex;align-items:center;gap:20px;padding:0 16px;background:rgba(14,16,19,.88);border-top:1px solid var(--ln);font:12px 'JetBrains Mono',monospace;color:var(--tx2)}
+.bedw{flex:1;position:relative;min-width:0}
+.bed{position:absolute;left:50%;top:50%;width:560px;height:560px;margin:-298px 0 0 -280px;background-color:#1B2028;background-image:linear-gradient(#262D38 1px,transparent 1px),linear-gradient(90deg,#262D38 1px,transparent 1px);background-size:21.9px 21.9px;border:2px solid #5A6678;border-radius:10px}
+.safe{position:absolute;inset:11px;border:1.5px dashed #5C6B82;border-radius:4px}
+.pp{position:absolute;width:184px;height:184px;border-radius:6px;background:var(--pc);border:2px solid var(--po);display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;padding:6px;gap:0}
+.pp i{border-radius:7px;background:var(--pp);box-shadow:inset 0 2px 4px rgba(0,0,0,.4);margin:3px}
+.pp b{position:absolute;left:8px;top:8px;font:600 12px 'JetBrains Mono',monospace;color:#10151F;background:var(--po);padding:1px 7px;border-radius:10px;z-index:2}
+.side{width:324px;flex:none;padding:16px 16px 52px 0;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.card{background:var(--s1);border:1px solid var(--ln);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.card h3{margin:0;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);font-weight:600}
+.bar{height:6px;border-radius:3px;background:var(--s3);overflow:hidden}.bar i{display:block;height:100%;background:var(--ac)}
+</style>
+</helmet>
+<div class="app" style="width:100%;height:900px;min-width:1100px">
+  <header class="hd">
+    <a class="logo" href="Main.dc.html" aria-label="Gridfinity Generator, back to start">
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 8.5 12 14v5L2 13.5z" fill="#4A63B8"/><path d="M22 8.5 12 14v5l10-5.5z" fill="#34478F"/><g stroke="#161A1F" stroke-width=".8" stroke-linejoin="round"><path d="M12 3l5 2.75-5 2.75-5-2.75z" fill="#7C9CFF"/><path d="M17 5.75l5 2.75-5 2.75-5-2.75z" fill="#7C9CFF" opacity=".6"/><path d="M12 8.5l5 2.75-5 2.75-5-2.75z" fill="#7C9CFF"/><path d="M7 5.75l5 2.75-5 2.75-5-2.75z" fill="#7C9CFF" opacity=".6"/></g></svg>
+      Gridfinity
+    </a>
+    <div class="seg" role="tablist" aria-label="Mode" style="margin-left:24px">
+      <button role="tab" aria-selected="false"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l8 4.5v9l-8 4.5l-8 -4.5v-9l8 -4.5M12 12l8 -4.5M12 12v9M12 12l-8 -4.5"/></svg>Box</button>
+      <button role="tab" aria-selected="true" class="on"><svg class="i" viewBox="0 0 24 24"><path d="M4 4h6v6h-6zM14 4h6v6h-6zM4 14h6v6h-6zM14 14h6v6h-6z"/></svg>Baseplate</button>
+      <button role="tab" aria-selected="false"><svg class="i" viewBox="0 0 24 24"><path d="M4 4h8v8h-8zM12 16a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/></svg>Cutout</button>
+    </div>
+    <span class="sp"></span>
+    <div class="seg" role="group" aria-label="Units"><button class="on" aria-pressed="true">mm</button><button aria-pressed="false">in</button></div>
+    <div class="seg" role="group" aria-label="Language"><button class="on" aria-pressed="true">EN</button><button aria-pressed="false">RU</button></div>
+  </header>
+  <div class="main">
+    <aside class="pnl" aria-label="Parameters">
+      <div class="scr">
+        <section class="sec"><div class="sh"><button class="ib" aria-label="Expand Size"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6l-6 6"/></svg></button><span class="t">Size</span><span class="sm">4 × 4 cells</span></div></section>
+        <section class="sec"><div class="sh"><button class="ib" aria-label="Expand Fasteners"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6l-6 6"/></svg></button><span class="t">Fasteners</span><span class="sm">Magnets: corners</span></div></section>
+        <section class="sec"><div class="sh"><button class="ib" aria-label="Expand Split"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6l-6 6"/></svg></button><span class="t">Split to fit bed</span><span class="sm">4 parts</span></div></section>
+        <section class="sec">
+          <div class="sh"><button class="ib" aria-label="Collapse Export options"><svg class="i" viewBox="0 0 24 24"><path d="M6 9l6 6l6 -6"/></svg></button><span class="t">Export options</span><span class="sm">3MF · X1 Carbon</span></div>
+          <div class="sb">
+            <div class="f"><label class="l" for="pp">Printer preset</label><select id="pp" class="sel"><option>Bambu Lab X1 Carbon · 256 × 256 × 256</option></select><span class="hint">Also: X1, P1S, P1P, A1, A1 mini, H2D.</span></div>
+            <div class="row"><div class="f"><label class="l" for="m">Edge margin</label><div class="num"><input id="m" value="5.0"><span class="u">mm</span></div></div><div class="f"><label class="l" for="g">Gap between parts</label><div class="num"><input id="g" value="6.0"><span class="u">mm</span></div></div></div>
+            <div class="f"><label class="l" for="fl">Filament <span class="hint">(optional)</span></label><select id="fl" class="sel"><option>Not set</option></select></div>
+            <div class="f"><span class="l">Several parts</span><div class="seg w" role="group" aria-label="Multi-part output"><button class="on" aria-pressed="true">One 3MF</button><button aria-pressed="false">Separate files</button></div></div>
+            <div class="f"><label class="l" for="fn">File name</label><div class="num"><input id="fn" value="baseplate-4x4"><span class="u">.3mf</span></div></div>
+          </div>
+        </section>
+      </div>
+      <div class="exp">
+        <div class="row" style="align-items:center">
+          <div class="seg" role="group" aria-label="Format" style="flex:none"><button aria-pressed="false">STL</button><button class="on ac" aria-pressed="true">3MF</button></div>
+          <select class="sel" aria-label="Printer"><option>Bambu Lab X1 Carbon · 256 mm</option></select>
+        </div>
+        <div class="row" style="align-items:center">
+          <button class="btn p" style="flex:1.4"><svg class="i" viewBox="0 0 24 24"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2M7 11l5 5l5 -5M12 4v12"/></svg>Download 3MF</button>
+          <span class="chip" style="flex:1;justify-content:center;color:#A9E5C6"><svg class="i" viewBox="0 0 24 24"><path d="M5 12l5 5l10 -10"/></svg>Fits the bed</span>
+        </div>
+      </div>
+    </aside>
+    <section class="vp" aria-label="Print bed preview">
+      <div class="bedw">
+        <span class="chip" style="position:absolute;left:16px;top:16px;background:rgba(22,26,31,.9);border:1px solid var(--ln)">Bambu Lab X1 Carbon · 256 × 256 mm · top view</span>
+        <div class="bed" aria-hidden="true">
+          <div class="safe"></div>
+          <div class="pp" style="--pc:#8FA3C4;--pp:#5E7295;--po:#B3C2DB;left:90px;top:90px"><b>A1</b><i></i><i></i><i></i><i></i></div>
+          <div class="pp" style="--pc:#7FC4B0;--pp:#4F8F7E;--po:#A8E0D1;left:287px;top:90px"><b>A2</b><i></i><i></i><i></i><i></i></div>
+          <div class="pp" style="--pc:#C9A7E0;--pp:#8E6CAD;--po:#E2CBF1;left:90px;top:287px"><b>A3</b><i></i><i></i><i></i><i></i></div>
+          <div class="pp" style="--pc:#E0A98A;--pp:#A8704F;--po:#F2CDB6;left:287px;top:287px"><b>A4</b><i></i><i></i><i></i><i></i></div>
+          <span style="position:absolute;left:50%;bottom:-24px;transform:translateX(-50%);font:12px 'JetBrains Mono',monospace;color:var(--tx2)">256 mm</span>
+        </div>
+        <div style="position:absolute;left:50%;top:calc(50% + 300px);margin-left:-280px;display:flex;gap:16px;font-size:12px;color:var(--tx2)"><span style="display:inline-flex;align-items:center;gap:6px"><i style="width:18px;border-top:2px solid #5A6678;display:inline-block"></i>Print area</span><span style="display:inline-flex;align-items:center;gap:6px"><i style="width:18px;border-top:2px dashed #5C6B82;display:inline-block"></i>5 mm safe margin</span></div>
+      </div>
+      <div class="side">
+        <div class="card"><h3>Export states</h3><span class="hint">The sticky block in the panel switches between these.</span></div>
+        <div class="card"><h3>Building</h3><div style="display:flex;align-items:center;gap:8px"><svg class="i" viewBox="0 0 24 24" style="color:var(--ac)"><path d="M12 3a9 9 0 1 0 9 9"/></svg><span>Building 4 parts… 62%</span></div><div class="bar"><i style="width:62%"></i></div><span class="hint">You can keep editing. The result is rebuilt in the background.</span></div>
+        <div class="card"><h3>Ready</h3><div class="bn o"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5l10 -10"/></svg><span>baseplate-4x4.3mf · 4 plates · 1.2 MB</span></div></div>
+        <div class="card"><h3>Does not fit</h3><div class="bn w"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4M12 16h.01M10.36 3.59l-8.1 13.53a1.9 1.9 0 0 0 1.64 2.88h16.2a1.9 1.9 0 0 0 1.64 -2.88l-8.1 -13.53a1.9 1.9 0 0 0 -3.28 0z"/></svg><span>Plate is 262 mm wide. The bed allows 246 mm. Split it or pick a larger printer.</span></div><div class="row"><button class="btn" style="height:32px">Split to fit</button><button class="btn" style="height:32px">Change printer</button></div></div>
+        <div class="card"><h3>Error</h3><div class="bn e"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0M10 10l4 4m0 -4l-4 4"/></svg><span>The geometry worker ran out of memory. Reduce the size and try again.</span></div><button class="btn" style="height:32px">Retry</button></div>
+      </div>
+      <div class="sbar"><span>4 plates</span><span>Largest part 84.0 × 84.0 mm</span><span class="sp"></span><span style="display:inline-flex;align-items:center;gap:6px;color:#A9E5C6"><svg class="i" viewBox="0 0 24 24"><path d="M5 12l5 5l10 -10"/></svg>Everything fits inside the safe margin</span></div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

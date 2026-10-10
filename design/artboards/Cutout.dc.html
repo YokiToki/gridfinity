@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cutout editor</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700&family=Unbounded:wght@500;600&display=swap">
+<style>
+body{margin:0;background:#0E1013}
+*{box-sizing:border-box}
+.app{--bg:#0E1013;--s1:#161A1F;--s2:#1D2229;--s3:#272D36;--ln:#2B323C;--ln2:#414B59;--tx:#E6E9EE;--tx2:#A9B2BF;--tx3:#8893A2;--ac:#7C9CFF;--acd:#25356B;--ok:#4CC38A;--warn:#E5B04B;--err:#F0707B;font:13px/1.4 'Manrope',system-ui,sans-serif;color:var(--tx);background:var(--bg);display:flex;flex-direction:column}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.hd{height:52px;flex:none;display:flex;align-items:center;gap:16px;padding:0 16px;background:var(--s1);border-bottom:1px solid var(--ln)}
+.logo{display:flex;align-items:center;gap:8px;font:600 13px 'Unbounded',sans-serif;letter-spacing:-.01em;color:var(--tx);text-decoration:none;height:32px}
+.sp{flex:1}
+.seg{display:inline-flex;gap:2px;padding:2px;background:var(--bg);border:1px solid var(--ln);border-radius:8px}
+.seg.w{display:flex}.seg.w button{flex:1}
+.seg button{height:32px;min-width:32px;padding:0 12px;border:0;border-radius:6px;background:none;color:var(--tx2);font:inherit;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;white-space:nowrap}
+.seg button.on{background:var(--s3);color:var(--tx);box-shadow:inset 0 0 0 1px var(--ln2)}
+.seg button.ac.on{background:var(--acd);box-shadow:inset 0 0 0 1px var(--ac);color:#fff}
+button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+.main{flex:1;display:flex;min-height:0}
+.pnl{width:380px;flex:none;display:flex;flex-direction:column;background:var(--s1);border-right:1px solid var(--ln);min-height:0}
+.scr{flex:1;overflow:auto;min-height:0}
+.sec{border-bottom:1px solid var(--ln)}
+.sh{display:flex;align-items:center;gap:6px;min-height:44px;padding:6px 8px 6px 12px}
+.sh .t{font-weight:600;white-space:nowrap}
+.sh .sm{color:var(--tx3);font-size:12px;margin-left:auto;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.ib{width:32px;height:32px;flex:none;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:6px;background:none;color:var(--tx2);cursor:pointer}
+.ib:hover,.ib.on{background:var(--s3);color:var(--tx)}
+.sb{padding:4px 16px 16px;display:flex;flex-direction:column;gap:12px}
+.row{display:flex;gap:8px}.row>*{flex:1;min-width:0}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.l{font-size:12px;color:var(--tx2);display:flex;align-items:center;gap:4px}
+.num{display:flex;align-items:center;height:32px;background:var(--bg);border:1px solid var(--ln2);border-radius:6px}
+.num:focus-within{border-color:var(--ac);box-shadow:0 0 0 2px var(--acd)}
+.num input{flex:1;min-width:0;height:30px;padding:0 8px;border:0;background:none;color:var(--tx);font:500 13px 'JetBrains Mono',monospace;outline:0}
+.num .u{padding:0 8px 0 0;color:var(--tx3);font:12px 'JetBrains Mono',monospace}
+.num .s{width:30px;height:30px;border:0;border-left:1px solid var(--ln);background:none;color:var(--tx2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.sel{height:32px;background:var(--bg);border:1px solid var(--ln2);border-radius:6px;color:var(--tx);font:inherit;padding:0 8px;width:100%}
+.hint{font-size:12px;color:var(--tx3)}
+.bn{display:flex;gap:8px;padding:8px 10px;border-radius:6px;border:1px solid;font-size:12px;line-height:1.4;align-items:flex-start}
+.bn.w{background:#2A2314;border-color:#6B5524;color:#F1D79B}
+.bn.e{background:#2C1719;border-color:#7A3037;color:#F8B9BF}
+.btn{height:36px;padding:0 14px;border-radius:6px;border:1px solid var(--ln2);background:var(--s2);color:var(--tx);font:inherit;font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;white-space:nowrap}
+.btn.p{background:var(--ac);border-color:var(--ac);color:#0B1330;font-weight:600}
+.exp{flex:none;padding:12px 16px;border-top:1px solid var(--ln);background:var(--s1);display:flex;flex-direction:column;gap:10px;box-shadow:0 -8px 16px rgba(0,0,0,.25)}
+.chip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 8px;border-radius:12px;background:var(--s3);font-size:12px;white-space:nowrap}
+.vp{flex:1;position:relative;min-width:0;background:radial-gradient(ellipse at 50% 40%,#1A2029 0%,#0B0D10 75%);overflow:hidden}
+.fl{position:absolute;display:flex;gap:2px;padding:4px;background:rgba(22,26,31,.9);border:1px solid var(--ln);border-radius:8px}
+.sbar{position:absolute;left:0;right:0;bottom:0;height:36px;display:flex;align-items:center;gap:20px;padding:0 16px;background:rgba(14,16,19,.88);border-top:1px solid var(--ln);font:12px 'JetBrains Mono',monospace;color:var(--tx2)}
+.li{display:flex;align-items:center;gap:2px;min-height:44px;padding:4px 4px 4px 4px;border:1px solid var(--ln);border-radius:8px;background:var(--s2)}
+.li.sel{border-color:var(--ac);background:#1B2442}
+.li .n{flex:1;min-width:0}
+.li .n b{display:block;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li .n span{font:12px 'JetBrains Mono',monospace;color:var(--tx3)}
+.dz{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px;border:1.5px dashed var(--ln2);border-radius:8px;color:var(--tx2);text-align:center}
+.plan{position:absolute;left:50%;top:50%;width:504px;height:336px;margin:-190px 0 0 -252px;background-color:#171C24;background-image:linear-gradient(#364050 1px,transparent 1px),linear-gradient(90deg,#364050 1px,transparent 1px);background-size:168px 168px;border:2px solid #8FA3C4;border-radius:10px}
+.h{position:absolute;width:10px;height:10px;background:#fff;border:2px solid var(--ac);border-radius:2px}
+</style>
+</helmet>
+<div class="app" style="width:100%;height:900px;min-width:1100px">
+  <header class="hd">
+    <a class="logo" href="Main.dc.html" aria-label="Gridfinity Generator, back to start">
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 8.5 12 14v5L2 13.5z" fill="#4A63B8"/><path d="M22 8.5 12 14v5l10-5.5z" fill="#34478F"/><g stroke="#161A1F" stroke-width=".8" stroke-linejoin="round"><path d="M12 3l5 2.75-5 2.75-5-2.75z" fill="#7C9CFF"/><path d="M17 5.75l5 2.75-5 2.75-5-2.75z" fill="#7C9CFF" opacity=".6"/><path d="M12 8.5l5 2.75-5 2.75-5-2.75z" fill="#7C9CFF"/><path d="M7 5.75l5 2.75-5 2.75-5-2.75z" fill="#7C9CFF" opacity=".6"/></g></svg>
+      Gridfinity
+    </a>
+    <div class="seg" role="tablist" aria-label="Mode" style="margin-left:24px">
+      <button role="tab" aria-selected="false"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l8 4.5v9l-8 4.5l-8 -4.5v-9l8 -4.5M12 12l8 -4.5M12 12v9M12 12l-8 -4.5"/></svg>Box</button>
+      <button role="tab" aria-selected="false"><svg class="i" viewBox="0 0 24 24"><path d="M4 4h6v6h-6zM14 4h6v6h-6zM4 14h6v6h-6zM14 14h6v6h-6z"/></svg>Baseplate</button>
+      <button role="tab" aria-selected="true" class="on"><svg class="i" viewBox="0 0 24 24"><path d="M4 4h8v8h-8zM12 16a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/></svg>Cutout</button>
+    </div>
+    <span class="sp"></span>
+    <div class="seg" role="group" aria-label="Units"><button class="on" aria-pressed="true">mm</button><button aria-pressed="false">in</button></div>
+    <div class="seg" role="group" aria-label="Language"><button class="on" aria-pressed="true">EN</button><button aria-pressed="false">RU</button></div>
+  </header>
+  <div class="main">
+    <aside class="pnl" aria-label="Parameters">
+      <div class="scr">
+        <section class="sec"><div class="sh"><button class="ib" aria-label="Expand Bin"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6l-6 6"/></svg></button><span class="t">Bin</span><span class="sm">3 × 2 × 4 u · lip standard</span></div></section>
+        <section class="sec">
+          <div class="sh"><button class="ib" aria-label="Collapse Cutouts"><svg class="i" viewBox="0 0 24 24"><path d="M6 9l6 6l6 -6"/></svg></button><span class="t">Cutouts</span><span class="sm">2 items</span></div>
+          <div class="sb">
+            <div class="f" style="gap:6px">
+              <div class="li sel"><button class="ib" aria-label="Hide cutout 1"><svg class="i" viewBox="0 0 24 24"><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6"/></svg></button><div class="n"><b>pliers.stl</b><span>96.0 × 38.0 × 12.4 mm</span></div><button class="ib" aria-label="Duplicate"><svg class="i" viewBox="0 0 24 24"><path d="M8 8m0 2a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2zM16 8v-2a2 2 0 0 0 -2 -2h-8a2 2 0 0 0 -2 2v8a2 2 0 0 0 2 2h2"/></svg></button><button class="ib" aria-label="Delete"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/></svg></button></div>
+              <div class="li"><button class="ib" aria-label="Hide cutout 2"><svg class="i" viewBox="0 0 24 24"><path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6"/></svg></button><div class="n"><b>Circle</b><span>Ø 24.0 mm · depth 20.0</span></div><svg class="i" viewBox="0 0 24 24" style="color:#F0707B" aria-label="Has problems"><path d="M12 9v4M12 16h.01M10.36 3.59l-8.1 13.53a1.9 1.9 0 0 0 1.64 2.88h16.2a1.9 1.9 0 0 0 1.64 -2.88l-8.1 -13.53a1.9 1.9 0 0 0 -3.28 0z"/></svg><button class="ib" aria-label="Duplicate"><svg class="i" viewBox="0 0 24 24"><path d="M8 8m0 2a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-8a2 2 0 0 1 -2 -2zM16 8v-2a2 2 0 0 0 -2 -2h-8a2 2 0 0 0 -2 2v8a2 2 0 0 0 2 2h2"/></svg></button><button class="ib" aria-label="Delete"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/></svg></button></div>
+            </div>
+            <div class="bn e"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0M10 10l4 4m0 -4l-4 4"/></svg><span><b>Cutout 2</b> goes 3.0 mm beyond the right wall and overlaps pliers.stl by 4 × 5 mm. Move it inside the bin.</span></div>
+            <div class="seg w" role="group" aria-label="Add cutout"><button><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>STL</button><button><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Rectangle</button><button><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Circle</button></div>
+            <div class="dz"><svg class="i" viewBox="0 0 24 24" style="width:24px;height:24px"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2M7 9l5 -5l5 5M12 4v12"/></svg><span>Drop an STL here, or <u>browse</u></span><span class="hint">Binary or ASCII, up to 50 MB</span></div>
+            <div class="row"><div class="f"><span class="l">File units</span><div class="seg w" role="group" aria-label="File units"><button class="on" aria-pressed="true">mm</button><button aria-pressed="false">in</button></div></div><div class="f"><span class="l">Up axis</span><div class="seg w" role="group" aria-label="Up axis"><button class="on" aria-pressed="true">Z</button><button aria-pressed="false">Y</button></div></div></div>
+            <div class="bn e"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0M10 10l4 4m0 -4l-4 4"/></svg><span><b>wrench.stl was rejected.</b> The mesh has 143 open edges, so a pocket cannot be cut from it. Repair it in your slicer or pick another file.</span></div>
+          </div>
+        </section>
+        <section class="sec">
+          <div class="sh"><button class="ib" aria-label="Collapse Selected cutout"><svg class="i" viewBox="0 0 24 24"><path d="M6 9l6 6l6 -6"/></svg></button><span class="t">pliers.stl</span><span class="sm">Position and depth</span></div>
+          <div class="sb">
+            <div class="row"><div class="f"><label class="l" for="px">X</label><div class="num"><input id="px" value="12.0"><span class="u">mm</span><button class="s" aria-label="Decrease X">−</button><button class="s" aria-label="Increase X">+</button></div></div><div class="f"><label class="l" for="py">Y</label><div class="num"><input id="py" value="15.0"><span class="u">mm</span><button class="s" aria-label="Decrease Y">−</button><button class="s" aria-label="Increase Y">+</button></div></div></div>
+            <div class="row"><div class="f"><label class="l" for="rt">Rotation</label><div class="num"><input id="rt" value="0"><span class="u">°</span></div></div><div class="f"><label class="l" for="cl">Clearance</label><div class="num"><input id="cl" value="0.40"><span class="u">mm</span></div></div></div>
+            <div class="f"><span class="l">Cut mode</span><div class="seg w" role="group" aria-label="Cut mode"><button aria-pressed="false">Through</button><button class="on" aria-pressed="true">To depth</button></div></div>
+            <div class="f"><label class="l" for="dp">Depth</label><div class="num"><input id="dp" value="20.0"><span class="u">mm</span><button class="s" aria-label="Decrease depth">−</button><button class="s" aria-label="Increase depth">+</button></div><span class="hint">Model height 12.4 mm. Floor left under the pocket: 4.8 mm.</span></div>
+          </div>
+        </section>
+      </div>
+      <div class="exp">
+        <div class="row" style="align-items:center">
+          <div class="seg" role="group" aria-label="Format" style="flex:none"><button aria-pressed="false">STL</button><button class="on ac" aria-pressed="true">3MF</button></div>
+          <select class="sel" aria-label="Printer"><option>Bambu Lab X1 Carbon · 256 mm</option></select>
+        </div>
+        <div class="row" style="align-items:center">
+          <button class="btn p" style="flex:1.4" disabled aria-disabled="true" title="Fix errors first"><svg class="i" viewBox="0 0 24 24"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2M7 11l5 5l5 -5M12 4v12"/></svg>Download 3MF</button>
+          <span class="chip" style="flex:1;justify-content:center;background:#2C1719;color:#F8B9BF"><svg class="i" viewBox="0 0 24 24"><path d="M12 9v4M12 16h.01M10.36 3.59l-8.1 13.53a1.9 1.9 0 0 0 1.64 2.88h16.2a1.9 1.9 0 0 0 1.64 -2.88l-8.1 -13.53a1.9 1.9 0 0 0 -3.28 0z"/></svg>1 error</span>
+        </div>
+      </div>
+    </aside>
+    <section class="vp" aria-label="Placement view">
+      <div class="fl" style="left:16px;top:16px"><div class="seg" role="tablist" aria-label="Preview type"><button role="tab" aria-selected="false">3D</button><button role="tab" aria-selected="true" class="on ac">Place (top view)</button></div></div>
+      <div class="plan">
+        <span style="position:absolute;left:0;top:-24px;font:12px 'JetBrains Mono',monospace;color:var(--tx2)">126.0 mm</span>
+        <span style="position:absolute;left:-60px;top:0;font:12px 'JetBrains Mono',monospace;color:var(--tx2)">84.0 mm</span>
+        <div style="position:absolute;left:252px;top:0;width:0;height:100%;border-left:1px dashed rgba(124,156,255,.6)"></div>
+        <div style="position:absolute;left:0;top:168px;width:100%;height:0;border-top:1px dashed rgba(124,156,255,.6)"></div>
+        <div style="position:absolute;left:48px;top:60px;width:384px;height:152px;border:2px solid var(--ac);border-radius:76px 40px 40px 76px;background:rgba(124,156,255,.22)">
+          <span style="position:absolute;left:14px;top:10px;font:500 12px 'JetBrains Mono',monospace;color:#fff;background:rgba(14,16,19,.7);padding:1px 6px;border-radius:4px">pliers.stl</span>
+          <span class="h" style="left:-7px;top:-7px"></span><span class="h" style="right:-7px;top:-7px"></span><span class="h" style="left:-7px;bottom:-7px"></span><span class="h" style="right:-7px;bottom:-7px"></span>
+        </div>
+        <div style="position:absolute;left:420px;top:190px;width:96px;height:96px;border:2px dashed var(--err);border-radius:50%;background:rgba(240,112,123,.2)"></div>
+        <div style="position:absolute;left:420px;top:190px;width:12px;height:22px;background:repeating-linear-gradient(45deg,rgba(240,112,123,.9) 0 3px,transparent 3px 6px)"></div>
+        <div style="position:absolute;left:504px;top:176px;width:12px;height:110px;background:repeating-linear-gradient(45deg,rgba(240,112,123,.9) 0 3px,transparent 3px 6px)"></div>
+        <span class="chip" style="position:absolute;left:360px;top:296px;background:#2C1719;color:#F8B9BF;border:1px solid #7A3037"><svg class="i" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0M10 10l4 4m0 -4l-4 4"/></svg>3.0 mm outside</span>
+        <span class="chip" style="position:absolute;left:12px;bottom:10px;background:rgba(14,16,19,.85);border:1px solid var(--ln2)"><svg class="i" viewBox="0 0 24 24"><path d="M4 4h16v16h-16zM4 12h16M12 4v16"/></svg>Snap to 1 mm</span>
+      </div>
+      <div class="fl" style="right:16px;top:16px;flex-direction:column">
+        <button class="ib on" aria-label="Snap to grid"><svg class="i" viewBox="0 0 24 24"><path d="M4 4h16v16h-16zM4 12h16M12 4v16"/></svg></button>
+        <button class="ib" aria-label="Center in bin"><svg class="i" viewBox="0 0 24 24"><path d="M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0M12 3v4M12 17v4M3 12h4M17 12h4"/></svg></button>
+        <button class="ib" aria-label="Align left"><svg class="i" viewBox="0 0 24 24"><path d="M4 4v16M8 6h12v4h-12zM8 14h8v4h-8z"/></svg></button>
+        <button class="ib" aria-label="Align top"><svg class="i" viewBox="0 0 24 24"><path d="M4 4h16M6 8v12h4v-12zM14 8v8h4v-8z"/></svg></button>
+        <button class="ib" aria-label="Reset zoom"><svg class="i" viewBox="0 0 24 24"><path d="M4 8v-2a2 2 0 0 1 2 -2h2M4 16v2a2 2 0 0 0 2 2h2M16 4h2a2 2 0 0 1 2 2v2M16 20h2a2 2 0 0 0 2 -2v-2"/></svg></button>
+      </div>
+      <div class="sbar"><span>Bin 126.0 × 84.0 mm</span><span>Pocket 96.4 × 38.8 × 20.0 mm</span><span class="sp"></span><span style="display:inline-flex;align-items:center;gap:6px;color:#F8B9BF"><svg class="i" viewBox="0 0 24 24"><path d="M12 9v4M12 16h.01M10.36 3.59l-8.1 13.53a1.9 1.9 0 0 0 1.64 2.88h16.2a1.9 1.9 0 0 0 1.64 -2.88l-8.1 -13.53a1.9 1.9 0 0 0 -3.28 0z"/></svg>1 error, export disabled</span></div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -16,6 +16,6 @@
 
 ## 3. UI
 
-- [ ] 3.1 `BoxPanel` sections (Size, General, Lip with explanation tooltip, Walls, Scoop) with en/ru strings; render tests.
+- [ ] 3.1 `BoxPanel` sections (Size, General, Lip with explanation tooltip, Walls, Scoop) with en/ru strings; render tests. Design: `design/artboards/Box.dc.html`.
 - [ ] 3.2 2D compartment editor (drag dividers, merge/split); component tests for merge and move.
 - [ ] 3.3 Verify in the browser: generate a 100×60 mm, 4-unit tall bin with 3×2 compartments and a front scoop, export STL, check bbox.

@@ -14,6 +14,6 @@
 
 ## 3. UI
 
-- [ ] 3.1 `SplitSection` (enable, source of build volume, margin, auto/manual cuts, connector settings) with en/ru strings.
-- [ ] 3.2 Part list, labels, exploded preview toggle in the viewport; verify in the browser with a 300×200 mm plate.
+- [ ] 3.1 `SplitSection` (enable, source of build volume, margin, auto/manual cuts, connector settings) with en/ru strings. Design: `design/artboards/BaseplateSplit.dc.html`.
+- [ ] 3.2 Part list, labels, exploded preview toggle in the viewport; verify in the browser with a 300×200 mm plate. Design: `design/artboards/BaseplateSplit.dc.html`.
 - [ ] 3.3 Highlight oversize parts and warn; component test for the warning state.

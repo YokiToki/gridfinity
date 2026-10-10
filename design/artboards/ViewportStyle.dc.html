@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Viewport styling</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700&family=Unbounded:wght@500;600&display=swap">
+<style>
+body{margin:0;background:#0E1013}
+*{box-sizing:border-box}
+.app{--bg:#0E1013;--s1:#161A1F;--s2:#1D2229;--s3:#272D36;--ln:#2B323C;--ln2:#414B59;--tx:#E6E9EE;--tx2:#A9B2BF;--tx3:#8893A2;--ac:#7C9CFF;font:13px/1.4 'Manrope',system-ui,sans-serif;color:var(--tx);background:var(--bg);display:flex}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.vp{flex:1;position:relative;min-width:0;background:radial-gradient(ellipse at 50% 40%,#1A2029 0%,#0B0D10 75%);overflow:hidden}
+.iso{position:absolute;left:50%;top:50%;margin:-60px 0 0 -190px;transform:rotateX(58deg) rotateZ(-38deg) scale(1.2);transform-style:preserve-3d}
+.floor{position:absolute;left:-330px;top:-330px;width:900px;height:900px;background-color:rgba(27,32,40,.55);background-image:linear-gradient(#364050 1.5px,transparent 1.5px),linear-gradient(90deg,#364050 1.5px,transparent 1.5px),linear-gradient(#262D38 1px,transparent 1px),linear-gradient(90deg,#262D38 1px,transparent 1px);background-size:150px 150px,150px 150px,30px 30px,30px 30px;transform:translateZ(-14px);-webkit-mask-image:radial-gradient(circle,#000 35%,transparent 70%);mask-image:radial-gradient(circle,#000 35%,transparent 70%)}
+.pl{position:relative;width:380px;height:250px;display:grid;grid-template-columns:repeat(3,1fr) ;grid-template-rows:repeat(2,1fr);background:#8FA3C4;border-radius:10px;transform-style:preserve-3d;box-shadow:0 0 0 3px #7C9CFF,0 0 24px 6px rgba(124,156,255,.45)}
+.pl:before{content:"";position:absolute;inset:0;background:#4A5A78;border-radius:10px;transform:translateZ(-12px)}
+.pl i{position:relative}
+.pl i:after{content:"";position:absolute;inset:8px;border-radius:10px;background:#5E7295;box-shadow:inset 0 4px 8px rgba(0,0,0,.4)}
+.bb{position:absolute;left:-14px;top:-14px;width:408px;height:278px;border:1.5px dashed #5C6B82;border-radius:4px;transform:translateZ(0)}
+.lb{position:absolute;transform:translate(-50%,-50%);display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:12px;background:rgba(14,16,19,.92);font:500 12px 'JetBrains Mono',monospace;color:#E6E9EE;border:1px solid var(--ln2);white-space:nowrap}
+.side{width:440px;flex:none;background:var(--s1);border-left:1px solid var(--ln);padding:20px;display:flex;flex-direction:column;gap:14px;overflow:hidden}
+.side h3{margin:0;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--tx3);font-weight:600}
+.r{display:flex;align-items:center;gap:10px;min-width:0}
+.r i{width:30px;height:30px;border-radius:6px;border:1px solid rgba(255,255,255,.16);flex:none}
+.r b{display:block;font:500 12px 'JetBrains Mono',monospace}.r span{display:block;font-size:12px;color:var(--tx2)}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px}
+</style>
+</helmet>
+<div class="app" style="width:100%;height:900px;min-width:1100px">
+  <section class="vp" aria-label="Styled viewport sample">
+    <div class="iso" aria-hidden="true">
+      <div class="floor"></div>
+      <div class="bb"></div>
+      <div class="pl"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    </div>
+    <span class="lb" style="left:calc(50% - 30px);top:calc(50% + 190px);border-color:#5C6B82">380.0 mm</span>
+    <span class="lb" style="left:calc(50% + 275px);top:calc(50% + 70px);border-color:#5C6B82">250.0 mm</span>
+    <span class="lb" style="left:calc(50% - 250px);top:calc(50% - 100px);border:2px solid #B3C2DB;font-weight:600">A1</span>
+    <span class="lb" style="left:calc(50% + 70px);top:calc(50% - 168px);background:#2A2314;border-color:#6B5524;color:#F1D79B"><svg class="i" viewBox="0 0 24 24"><path d="M12 9v4M12 16h.01M10.36 3.59l-8.1 13.53a1.9 1.9 0 0 0 1.64 2.88h16.2a1.9 1.9 0 0 0 1.64 -2.88l-8.1 -13.53a1.9 1.9 0 0 0 -3.28 0z"/></svg>Selected part</span>
+    <div style="position:absolute;left:16px;top:16px;display:flex;gap:6px;flex-direction:column"><b style="font-size:15px">Viewport styling</b><span style="color:var(--tx2);max-width:360px">Light cool-grey model on a near-black ground. Pockets are darker, never black. Selection is the accent plus a glow.</span></div>
+    <div style="position:absolute;left:0;right:0;bottom:0;height:36px;display:flex;align-items:center;gap:20px;padding:0 16px;background:rgba(14,16,19,.88);border-top:1px solid var(--ln);font:12px 'JetBrains Mono',monospace;color:var(--tx2)"><span>Orbit: drag</span><span>Pan: right-drag</span><span>Zoom: wheel</span><span>Z up, same as STL</span></div>
+  </section>
+  <aside class="side">
+    <h3>Ground and grid</h3>
+    <div class="g2">
+      <div class="r"><i style="background:radial-gradient(#1A2029,#0B0D10)"></i><div><b>#1A2029 → #0B0D10</b><span>background</span></div></div>
+      <div class="r"><i style="background:#262D38"></i><div><b>#262D38</b><span>floor grid 10 mm</span></div></div>
+      <div class="r"><i style="background:#364050"></i><div><b>#364050</b><span>major grid 50 mm</span></div></div>
+      <div class="r"><i style="background:#5C6B82"></i><div><b>#5C6B82</b><span>bounding box, dashed</span></div></div>
+    </div>
+    <h3>Model</h3>
+    <div class="g2">
+      <div class="r"><i style="background:#8FA3C4"></i><div><b>#8FA3C4</b><span>top faces, 7.5:1 on ground</span></div></div>
+      <div class="r"><i style="background:#5E7295"></i><div><b>#5E7295</b><span>pocket floor</span></div></div>
+      <div class="r"><i style="background:#4A5A78"></i><div><b>#4A5A78</b><span>side and underside</span></div></div>
+      <div class="r"><i style="background:#1B2232"></i><div><b>#1B2232</b><span>magnet and screw holes</span></div></div>
+    </div>
+    <h3>Parts A1 to A4 (fill, outline)</h3>
+    <div class="g2">
+      <div class="r"><i style="background:#8FA3C4;box-shadow:0 0 0 2px #B3C2DB"></i><div><b>#8FA3C4 · #B3C2DB</b><span>A1 blue</span></div></div>
+      <div class="r"><i style="background:#7FC4B0;box-shadow:0 0 0 2px #A8E0D1"></i><div><b>#7FC4B0 · #A8E0D1</b><span>A2 teal</span></div></div>
+      <div class="r"><i style="background:#C9A7E0;box-shadow:0 0 0 2px #E2CBF1"></i><div><b>#C9A7E0 · #E2CBF1</b><span>A3 violet</span></div></div>
+      <div class="r"><i style="background:#E0A98A;box-shadow:0 0 0 2px #F2CDB6"></i><div><b>#E0A98A · #F2CDB6</b><span>A4 peach</span></div></div>
+    </div>
+    <span style="font-size:12px;color:var(--tx2)">Parts also carry a text label (A1…), so colour is never the only cue. All four differ in lightness and hue.</span>
+    <h3>States</h3>
+    <div class="g2">
+      <div class="r"><i style="background:#7C9CFF;box-shadow:0 0 12px 2px rgba(124,156,255,.6)"></i><div><b>#7C9CFF</b><span>selected, 3 px + glow</span></div></div>
+      <div class="r"><i style="background:#B3C2DB"></i><div><b>#B3C2DB</b><span>hover outline, 2 px</span></div></div>
+      <div class="r"><i style="background:repeating-linear-gradient(45deg,#E5B04B 0 4px,#4a3a14 4px 8px)"></i><div><b>#E5B04B hatch</b><span>padding remainder, with chip</span></div></div>
+      <div class="r"><i style="background:repeating-linear-gradient(45deg,#F0707B 0 4px,#4a1c20 4px 8px)"></i><div><b>#F0707B hatch</b><span>overlap or out of bounds, with chip</span></div></div>
+    </div>
+    <h3>Labels</h3>
+    <span style="font-size:12px;color:var(--tx2)">Pill on rgba(14,16,19,.92), 1 px border #414B59, JetBrains Mono 12 / 500. Part labels use a 2 px outline in the part colour. Always screen-aligned, never rotated with the model.</span>
+  </aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

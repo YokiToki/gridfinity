@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Baseplate editor</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700&family=Unbounded:wght@500;600&display=swap">
+<style>
+body{margin:0;background:#0E1013}
+*{box-sizing:border-box}
+.app{--bg:#0E1013;--s1:#161A1F;--s2:#1D2229;--s3:#272D36;--ln:#2B323C;--ln2:#414B59;--tx:#E6E9EE;--tx2:#A9B2BF;--tx3:#8893A2;--ac:#7C9CFF;--acd:#25356B;--ok:#4CC38A;--warn:#E5B04B;--err:#F0707B;font:13px/1.4 'Manrope',system-ui,sans-serif;color:var(--tx);background:var(--bg);display:flex;flex-direction:column}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.hd{height:52px;flex:none;display:flex;align-items:center;gap:16px;padding:0 16px;background:var(--s1);border-bottom:1px solid var(--ln)}
+.logo{display:flex;align-items:center;gap:8px;font:600 13px 'Unbounded',sans-serif;letter-spacing:-.01em;color:var(--tx);text-decoration:none;height:32px}
+.sp{flex:1}
+.seg{display:inline-flex;gap:2px;padding:2px;background:var(--bg);border:1px solid var(--ln);border-radius:8px}
+.seg.w{display:flex}.seg.w button{flex:1}
+.seg button{height:32px;min-width:32px;padding:0 12px;border:0;border-radius:6px;background:none;color:var(--tx2);font:inherit;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;white-space:nowrap}
+.seg button.on{background:var(--s3);color:var(--tx);box-shadow:inset 0 0 0 1px var(--ln2)}
+.seg button.ac.on{background:var(--acd);box-shadow:inset 0 0 0 1px var(--ac);color:#fff}
+button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+.main{flex:1;display:flex;min-height:0}
+.pnl{width:380px;flex:none;display:flex;flex-direction:column;background:var(--s1);border-right:1px solid var(--ln);min-height:0}
+.scr{flex:1;overflow:auto;min-height:0}
+.sec{border-bottom:1px solid var(--ln)}
+.sh{display:flex;align-items:center;gap:6px;min-height:44px;padding:6px 8px 6px 12px}
+.sh .t{font-weight:600;white-space:nowrap}
+.sh .sm{color:var(--tx3);font-size:12px;margin-left:auto;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.ib{width:32px;height:32px;flex:none;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:6px;background:none;color:var(--tx2);cursor:pointer}
+.ib:hover,.ib.on{background:var(--s3);color:var(--tx)}
+.sb{padding:4px 16px 16px;display:flex;flex-direction:column;gap:12px}
+.row{display:flex;gap:8px}.row>*{flex:1;min-width:0}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.l{font-size:12px;color:var(--tx2);display:flex;align-items:center;gap:4px}
+.num{display:flex;align-items:center;height:32px;background:var(--bg);border:1px solid var(--ln2);border-radius:6px}
+.num:focus-within{border-color:var(--ac);box-shadow:0 0 0 2px var(--acd)}
+.num input{flex:1;min-width:0;height:30px;padding:0 8px;border:0;background:none;color:var(--tx);font:500 13px 'JetBrains Mono',monospace;outline:0}
+.num .u{padding:0 6px 0 0;color:var(--tx3);font:12px 'JetBrains Mono',monospace}
+.num .s{width:30px;height:30px;border:0;border-left:1px solid var(--ln);background:none;color:var(--tx2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.sel{height:32px;background:var(--bg);border:1px solid var(--ln2);border-radius:6px;color:var(--tx);font:inherit;padding:0 8px;width:100%}
+.hint{font-size:12px;color:var(--tx3)}
+.bn{display:flex;gap:8px;padding:8px 10px;border-radius:6px;border:1px solid;font-size:12px;line-height:1.4;align-items:flex-start}
+.bn.w{background:#2A2314;border-color:#6B5524;color:#F1D79B}
+.bn.i2{background:#17213F;border-color:#34457F;color:#C3D0FF}
+.btn{height:36px;padding:0 14px;border-radius:6px;border:1px solid var(--ln2);background:var(--s2);color:var(--tx);font:inherit;font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;white-space:nowrap}
+.btn.p{background:var(--ac);border-color:var(--ac);color:#0B1330;font-weight:600}
+.exp{flex:none;padding:12px 16px;border-top:1px solid var(--ln);background:var(--s1);display:flex;flex-direction:column;gap:10px;box-shadow:0 -8px 16px rgba(0,0,0,.25)}
+.chip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 8px;border-radius:12px;background:var(--s3);font-size:12px;white-space:nowrap}
+.vp{flex:1;position:relative;min-width:0;background:radial-gradient(ellipse at 50% 40%,#1A2029 0%,#0B0D10 75%);overflow:hidden}
+.fl{position:absolute;display:flex;gap:2px;padding:4px;background:rgba(22,26,31,.9);border:1px solid var(--ln);border-radius:8px}
+.sbar{position:absolute;left:0;right:0;bottom:0;height:36px;display:flex;align-items:center;gap:20px;padding:0 16px;background:rgba(14,16,19,.88);border-top:1px solid var(--ln);font:12px 'JetBrains Mono',monospace;color:var(--tx2)}
+.iso{position:absolute;left:50%;top:50%;margin:-120px 0 0 -140px;transform:rotateX(58deg) rotateZ(-38deg) scale(1.25);transform-style:preserve-3d}
+.cells{position:relative;display:grid;grid-template-columns:repeat(3,80px) 40px;grid-template-rows:repeat(2,80px);transform-style:preserve-3d;background:#8FA3C4;border-radius:10px}
+.cells:before{content:"";position:absolute;inset:0;background:#4A5A78;border-radius:10px;transform:translateZ(-12px)}
+.cell{position:relative}
+.cell:after{content:"";position:absolute;inset:7px;border-radius:9px;background:#5E7295;box-shadow:inset 0 4px 8px rgba(0,0,0,.4)}
+.cell.m:before{content:"";position:absolute;width:12px;height:12px;border-radius:50%;background:#1B2232;z-index:2;box-shadow:0 0 0 2px #B3C2DB}
+.cell.tl:before{left:14px;top:14px}.cell.tr:before{right:14px;top:14px}.cell.bl:before{left:14px;bottom:14px}.cell.br:before{right:14px;bottom:14px}
+.pad{grid-row:1/3;grid-column:4;border-radius:0 10px 10px 0;background:repeating-linear-gradient(45deg,rgba(229,176,75,.55) 0 5px,rgba(229,176,75,.12) 5px 10px);border:2px solid rgba(229,176,75,.85)}
+.ed{position:relative;width:100%;height:150px;background:var(--bg);border:1px solid var(--ln2);border-radius:6px;overflow:hidden}
+</style>
+</helmet>
+<div class="app" style="width:100%;height:900px;min-width:1100px">
+  <header class="hd">
+    <a class="logo" href="Main.dc.html" aria-label="Gridfinity Generator, back to start">
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 8.5 12 14v5L2 13.5z" fill="#4A63B8"/><path d="M22 8.5 12 14v5l10-5.5z" fill="#34478F"/><g stroke="#161A1F" stroke-width=".8" stroke-linejoin="round"><path d="M12 3l5 2.75-5 2.75-5-2.75z" fill="#7C9CFF"/><path d="M17 5.75l5 2.75-5 2.75-5-2.75z" fill="#7C9CFF" opacity=".6"/><path d="M12 8.5l5 2.75-5 2.75-5-2.75z" fill="#7C9CFF"/><path d="M7 5.75l5 2.75-5 2.75-5-2.75z" fill="#7C9CFF" opacity=".6"/></g></svg>
+      Gridfinity
+    </a>
+    <div class="seg" role="tablist" aria-label="Mode" style="margin-left:24px">
+      <button role="tab" aria-selected="false"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l8 4.5v9l-8 4.5l-8 -4.5v-9l8 -4.5M12 12l8 -4.5M12 12v9M12 12l-8 -4.5"/></svg>Box</button>
+      <button role="tab" aria-selected="true" class="on"><svg class="i" viewBox="0 0 24 24"><path d="M4 4h6v6h-6zM14 4h6v6h-6zM4 14h6v6h-6zM14 14h6v6h-6z"/></svg>Baseplate</button>
+      <button role="tab" aria-selected="false"><svg class="i" viewBox="0 0 24 24"><path d="M4 4h8v8h-8zM12 16a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/></svg>Cutout</button>
+    </div>
+    <span class="sp"></span>
+    <div class="seg" role="group" aria-label="Units"><button class="on" aria-pressed="true">mm</button><button aria-pressed="false">in</button></div>
+    <div class="seg" role="group" aria-label="Language"><button class="on" aria-pressed="true">EN</button><button aria-pressed="false">RU</button></div>
+  </header>
+  <div class="main">
+    <aside class="pnl" aria-label="Parameters">
+      <div class="scr">
+        <section class="sec">
+          <div class="sh"><button class="ib" aria-label="Collapse Size"><svg class="i" viewBox="0 0 24 24"><path d="M6 9l6 6l6 -6"/></svg></button><span class="t">Size</span><span class="sm">3.5 × 2 cells</span><button class="ib" aria-label="Reset Size"><svg class="i" viewBox="0 0 24 24"><path d="M19.95 11a8 8 0 1 0 -.5 4m.5 5v-5h-5"/></svg></button></div>
+          <div class="sb">
+            <div class="seg w" role="group" aria-label="Size mode"><button class="on" aria-pressed="true">Cells</button><button aria-pressed="false">Custom size</button></div>
+            <div class="row">
+              <div class="f"><label class="l" for="bx">Width (X)</label><div class="num"><input id="bx" value="3.5"><span class="u">cells</span><button class="s" aria-label="Decrease X">−</button><button class="s" aria-label="Increase X">+</button></div></div>
+              <div class="f"><label class="l" for="by">Depth (Y)</label><div class="num"><input id="by" value="2"><span class="u">cells</span><button class="s" aria-label="Decrease Y">−</button><button class="s" aria-label="Increase Y">+</button></div></div>
+            </div>
+            <div class="hint" style="font-family:'JetBrains Mono',monospace">147.0 × 84.0 mm · cell 42 mm</div>
+            <div class="f"><span class="l">Place the remainder</span>
+              <div class="seg w" role="group" aria-label="Remainder alignment"><button aria-pressed="false">Left</button><button aria-pressed="false">Centered</button><button class="on" aria-pressed="true">Right</button></div>
+            </div>
+            <div class="bn i2"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0M12 9h.01M11 12h1v4h1"/></svg><span>The last half cell (21.0 mm) becomes padding on the right, shown hatched in the preview.</span></div>
+          </div>
+        </section>
+        <section class="sec">
+          <div class="sh"><button class="ib" aria-label="Expand Thickness"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6l-6 6"/></svg></button><span class="t">Thickness</span><span class="sm">Base 1.2 · Wall 0.95 · Gap 0.25 mm</span></div>
+        </section>
+        <section class="sec">
+          <div class="sh"><button class="ib" aria-label="Collapse Fasteners"><svg class="i" viewBox="0 0 24 24"><path d="M6 9l6 6l6 -6"/></svg></button><span class="t">Fasteners</span><span class="sm">Magnets: corners</span><button class="ib" aria-label="Reset Fasteners"><svg class="i" viewBox="0 0 24 24"><path d="M19.95 11a8 8 0 1 0 -.5 4m.5 5v-5h-5"/></svg></button></div>
+          <div class="sb">
+            <div class="seg w" role="group" aria-label="Placement mode"><button aria-pressed="false">None</button><button class="on" aria-pressed="true">Corners</button><button aria-pressed="false">Every cell</button><button aria-pressed="false">Manual</button></div>
+            <div class="f"><label class="l" for="mp">Magnet preset</label><select id="mp" class="sel"><option>Magnet 6 × 2 mm</option></select></div>
+            <div class="row">
+              <div class="f"><label class="l" for="md">Magnet Ø</label><div class="num"><input id="md" value="6.0"><span class="u" style="padding-right:8px">mm</span></div></div>
+              <div class="f"><label class="l" for="mh">Depth</label><div class="num"><input id="mh" value="2.0"><span class="u" style="padding-right:8px">mm</span></div></div>
+            </div>
+            <div class="bn w"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4M10.36 3.59l-8.1 13.53a1.9 1.9 0 0 0 1.64 2.88h16.2a1.9 1.9 0 0 0 1.64 -2.88l-8.1 -13.53a1.9 1.9 0 0 0 -3.28 0zM12 16h.01"/></svg><span><b>Warning:</b> a 2.0 mm pocket leaves 0.45 mm of floor. The plate gets +4 mm base while magnets are on.</span></div>
+            <div class="f"><span class="l">Placement editor <span class="hint">· click to add, drag to move</span></span>
+              <div class="ed" aria-label="Fastener placement editor">
+                <div style="position:absolute;left:24px;top:14px;width:224px;height:112px;background-image:linear-gradient(var(--ln2) 1px,transparent 1px),linear-gradient(90deg,var(--ln2) 1px,transparent 1px);background-size:64px 56px;border:1px solid var(--ln2)"></div>
+                <div style="position:absolute;left:216px;top:14px;width:32px;height:112px;background:repeating-linear-gradient(45deg,rgba(229,176,75,.5) 0 4px,transparent 4px 8px)"></div>
+                <span style="position:absolute;left:30px;top:20px;width:12px;height:12px;border-radius:50%;background:var(--ac)"></span>
+                <span style="position:absolute;left:206px;top:20px;width:12px;height:12px;border-radius:50%;background:var(--ac)"></span>
+                <span style="position:absolute;left:28px;top:106px;width:16px;height:16px;border-radius:50%;background:var(--ac);box-shadow:0 0 0 3px var(--acd),0 0 0 4px var(--ac)"></span>
+                <span style="position:absolute;left:206px;top:108px;width:12px;height:12px;border-radius:50%;background:var(--ac)"></span>
+                <div style="position:absolute;left:264px;top:14px;right:8px;font:12px 'JetBrains Mono',monospace;color:var(--tx2);line-height:1.7">#3<br>x 10.5<br>y 73.5<br><span style="color:var(--tx3)">mm</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section class="sec">
+          <div class="sh"><button class="ib" aria-label="Expand Split"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6l-6 6"/></svg></button><span class="t">Split to fit bed</span><span class="sm">Off</span></div>
+        </section>
+        <section class="sec">
+          <div class="sh"><button class="ib" aria-label="Expand Connectors"><svg class="i" viewBox="0 0 24 24"><path d="M9 6l6 6l-6 6"/></svg></button><span class="t">Connectors</span><span class="sm">Needs split</span></div>
+        </section>
+      </div>
+      <div class="exp">
+        <div class="row" style="align-items:center">
+          <div class="seg" role="group" aria-label="Format" style="flex:none"><button aria-pressed="false">STL</button><button class="on ac" aria-pressed="true">3MF</button></div>
+          <select class="sel" aria-label="Printer"><option>Bambu Lab X1 Carbon · 256 mm</option></select>
+        </div>
+        <div class="row" style="align-items:center">
+          <button class="btn p" style="flex:1.4"><svg class="i" viewBox="0 0 24 24"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2M7 11l5 5l5 -5M12 4v12"/></svg>Download 3MF</button>
+          <span class="chip" style="flex:1;justify-content:center;color:#A9E5C6"><svg class="i" viewBox="0 0 24 24"><path d="M5 12l5 5l10 -10"/></svg>Fits the bed</span>
+        </div>
+      </div>
+    </aside>
+    <section class="vp" aria-label="3D preview">
+      <div class="iso" aria-hidden="true">
+        <div class="cells">
+          <div class="cell m tl"></div><div class="cell"></div><div class="cell m tr"></div>
+          <div class="pad"></div>
+          <div class="cell m bl"></div><div class="cell"></div><div class="cell m br"></div>
+        </div>
+      </div>
+      <div class="chip" style="position:absolute;left:62%;top:66%;background:#2A2314;color:#F1D79B;border:1px solid #6B5524"><svg class="i" viewBox="0 0 24 24"><path d="M12 9v4M12 16h.01M10.36 3.59l-8.1 13.53a1.9 1.9 0 0 0 1.64 2.88h16.2a1.9 1.9 0 0 0 1.64 -2.88l-8.1 -13.53a1.9 1.9 0 0 0 -3.28 0z"/></svg>Padding 21.0 mm</div>
+      <div class="fl" style="right:16px;top:16px;flex-direction:column">
+        <button class="ib on" aria-label="Isometric view"><svg class="i" viewBox="0 0 24 24"><path d="M12 3l8 4.5v9l-8 4.5l-8 -4.5v-9l8 -4.5M12 12l8 -4.5M12 12v9M12 12l-8 -4.5"/></svg></button>
+        <button class="ib" aria-label="Top view"><svg class="i" viewBox="0 0 24 24"><path d="M4 4h16v16h-16z"/></svg></button>
+        <button class="ib" aria-label="Reset camera"><svg class="i" viewBox="0 0 24 24"><path d="M4 8v-2a2 2 0 0 1 2 -2h2M4 16v2a2 2 0 0 0 2 2h2M16 4h2a2 2 0 0 1 2 2v2M16 20h2a2 2 0 0 0 2 -2v-2"/></svg></button>
+        <button class="ib on" aria-label="Show dimensions"><svg class="i" viewBox="0 0 24 24"><path d="M5 5l14 14M5 5v4M5 5h4M19 19v-4M19 19h-4"/></svg></button>
+        <button class="ib" aria-label="Toggle grid"><svg class="i" viewBox="0 0 24 24"><path d="M4 4h16v16h-16zM4 12h16M12 4v16"/></svg></button>
+      </div>
+      <div class="sbar"><span>X 147.0</span><span>Y 84.0</span><span>Z 8.65 mm</span><span>Vol 48.2 cm³</span><span class="sp"></span><span style="display:inline-flex;align-items:center;gap:6px;color:#A9E5C6"><svg class="i" viewBox="0 0 24 24"><path d="M5 12l5 5l10 -10"/></svg>Updated in 0.4 s</span></div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

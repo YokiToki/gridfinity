@@ -9,8 +9,8 @@
 
 ## 2. UI
 
-- [ ] 2.1 `SizeSection` with units/mm toggle and alignment per axis; component test for 300 mm → 7.14 units.
-- [ ] 2.2 `ThicknessSection` with reset and validation messages (en/ru).
+- [ ] 2.1 `SizeSection` with units/mm toggle and alignment per axis; component test for 300 mm → 7.14 units. Design: `design/artboards/Baseplate.dc.html`. Include the remainder-alignment control (Left/Centered/Right) and the padding info banner.
+- [ ] 2.2 `ThicknessSection` with reset and validation messages (en/ru). Design: `design/artboards/Baseplate.dc.html`.
 - [ ] 2.3 Build plate toggle, size presets, oversize warning; verify in browser with a 300 mm plate.
 - [ ] 2.4 Measurements readout in mm/inch; test 84 mm → 3.307 in.
 - [ ] 2.5 Visual parity pass against gridfinitygenerator.com (outer wall, corner radius) with side-by-side screenshots.

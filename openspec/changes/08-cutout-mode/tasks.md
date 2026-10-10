@@ -19,10 +19,10 @@
 
 - [ ] 3.1 Pure alignment helpers (centre, align edge with margin, distribute, fit footprint); table tests.
 - [ ] 3.2 Snapping utilities shared with the fastener editor; tests for centre, edge and grid snapping.
-- [ ] 3.3 2D top-view editor with drag, numeric fields, guides; component tests for drag and numeric entry.
+- [ ] 3.3 2D top-view editor with drag, numeric fields, guides; component tests for drag and numeric entry. Design: `design/artboards/Cutout.dc.html`.
 
 ## 4. UI
 
-- [ ] 4.1 `CutoutPanel` sections and cutout list with en/ru strings; render tests.
+- [ ] 4.1 `CutoutPanel` sections and cutout list with en/ru strings; render tests. Design: `design/artboards/Cutout.dc.html`.
 - [ ] 4.2 Warnings for wall margins and overlaps; component test for the edge warning.
 - [ ] 4.3 Verify in the browser: import a sample STL, lay flat, centre, export STL and check the pocket exists.

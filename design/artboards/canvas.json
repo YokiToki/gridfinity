@@ -1,0 +1,40 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-10-10T12:00:00Z" },
+  "title": "Gridfinity Generator Design",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 1440, "h": 900, "title": "0 · Start page", "expand": "fill" },
+    "Baseplate.dc.html": { "x": 1520, "y": 0, "w": 1440, "h": 900, "title": "1 · Baseplate", "expand": "fill" },
+    "BaseplateSplit.dc.html": { "x": 3040, "y": 0, "w": 1440, "h": 900, "title": "2 · Baseplate split + connectors", "expand": "fill" },
+    "Box.dc.html": { "x": 0, "y": 1200, "w": 1440, "h": 900, "title": "3 · Box / Tray", "expand": "fill" },
+    "Cutout.dc.html": { "x": 1520, "y": 1200, "w": 1440, "h": 900, "title": "4 · Cutout", "expand": "fill" },
+    "Export.dc.html": { "x": 3040, "y": 1200, "w": 1440, "h": 900, "title": "5 · Export + bed preview", "expand": "fill" },
+    "BaseplateRU.dc.html": { "x": 0, "y": 2400, "w": 1440, "h": 900, "title": "6 · Baseplate, RU locale", "expand": "fill" },
+    "Mobile.dc.html": { "x": 1520, "y": 2400, "w": 390, "h": 844, "title": "7 · Mobile, drawer open" },
+    "Components.dc.html": { "x": 0, "y": 3600, "w": 1440, "h": 1800, "title": "8 · Component library", "expand": "fill" },
+    "Tokens.dc.html": { "x": 1520, "y": 3600, "w": 1440, "h": 1100, "title": "9 · Tokens", "expand": "fill" },
+    "ViewportStyle.dc.html": { "x": 3040, "y": 3600, "w": 1440, "h": 900, "title": "10 · Viewport styling", "expand": "fill" }
+  },
+  "order": [
+    "Main.dc.html",
+    "Baseplate.dc.html",
+    "BaseplateSplit.dc.html",
+    "Box.dc.html",
+    "Cutout.dc.html",
+    "Export.dc.html",
+    "BaseplateRU.dc.html",
+    "Mobile.dc.html",
+    "Components.dc.html",
+    "Tokens.dc.html",
+    "ViewportStyle.dc.html"
+  ],
+  "notes": {
+    "t1": { "x": 0, "y": -260, "text": "Start and Baseplate", "kind": "title1", "maxW": 4440 },
+    "t2": { "x": 0, "y": 940, "text": "Box, Cutout, Export", "kind": "title1", "maxW": 4440 },
+    "t3": { "x": 0, "y": 2140, "text": "Russian locale and mobile", "kind": "title1", "maxW": 1910 },
+    "t4": { "x": 0, "y": 3340, "text": "System: components, tokens, viewport", "kind": "title1", "maxW": 4440 }
+  },
+  "designSystems": []
+}
