@@ -1,6 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { defaultParams, type BaseplateParams } from '../../geometry/baseplate'
+import { axisMm, baseplateLayout, defaultParams, validateBaseplate, type BaseplateGeometry, type BaseplateParams } from '../../geometry/baseplate'
 import { usePersistedState } from '../../app/usePersistedState'
 import { useModel } from '../../app/useModel'
 import { recordSession } from '../../app/lastSession'
@@ -14,18 +14,23 @@ const PARAMS_KEY = 'gridfinity.baseplate'
 export function BaseplateMode() {
   const { t } = useTranslation()
   const [p, setP] = usePersistedState<BaseplateParams>(PARAMS_KEY, defaultParams, migrateBaseplate)
-  const { mesh, busy, pending } = useModel('baseplate', p)
+  // перестраиваем модель только при изменении геометрии: стол в превью её не трогает
+  const geometry = useMemo<BaseplateGeometry>(() => ({ pitch: p.pitch, x: p.x, y: p.y, thickness: p.thickness, fasteners: p.fasteners }), [p.pitch, p.x, p.y, p.thickness, p.fasteners])
+  const valid = validateBaseplate(geometry).ok
+  const { mesh, busy, pending } = useModel('baseplate', geometry, { enabled: valid })
+  const { sizeX, sizeY } = baseplateLayout(geometry)
 
   useEffect(() => {
-    recordSession('baseplate', p.customSize ? `${p.sizeX} × ${p.sizeY} ${t('units.mm')}` : `${p.x} × ${p.y}`)
-  }, [p, t])
+    const units = p.x.mode === 'units' && p.y.mode === 'units'
+    recordSession('baseplate', units ? `${p.x.value} × ${p.y.value}` : `${axisMm(p.x, p.pitch)} × ${axisMm(p.y, p.pitch)} ${t('units.mm')}`)
+  }, [p.x, p.y, p.pitch, t])
 
   return (
     <Workspace
       model={mesh} busy={busy}
-      plate={p.showPlate ? { x: p.plateX, y: p.plateY } : null}
+      plate={p.preview.showPlate ? { x: p.preview.plateX, y: p.preview.plateY } : null}
       panel={<BaseplatePanel params={p} onChange={setP} />}
-      footer={<ExportBlock model={mesh} busy={pending} name={`baseplate_${p.x}x${p.y}`} />}
+      footer={<ExportBlock model={mesh} busy={pending} name={`baseplate_${Math.round(sizeX)}x${Math.round(sizeY)}`} />}
     />
   )
 }

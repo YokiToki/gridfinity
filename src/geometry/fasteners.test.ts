@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { getWasm } from './wasm'
-import { buildBaseplate, defaultParams } from './baseplate'
+import { buildBaseplate } from './baseplate'
 import { footprintFromCells, footprintFromSize } from './footprint'
 import {
   allPositions, allSlots, checkFasteners, cornerPositions, defaultFasteners, fastenerCuts, magnetSize, MAGNET_PRESETS, resolvePositions,
   slotPosition, slotsFromPoints, standardPositions, switchMode, toggleSlot, validSlots, withMagnetPreset, type FastenerConfig, type FastenerMode, type Slot,
 } from './fasteners'
-import { expectValidSolid } from './testing'
+import { expectValidSolid, mm, sharpParams as defaultParams, units } from './testing'
 
 const kind = (mode: FastenerMode) => ({ mode, slots: [] })
 const cfg = (m: FastenerMode, s: FastenerMode, extra: Partial<FastenerConfig> = {}): FastenerConfig => ({ ...defaultFasteners, magnets: kind(m), screws: kind(s), ...extra })
@@ -167,7 +167,7 @@ describe('baseplate с крепежом', () => {
     })
   }
   it('в режиме Full материала больше, чем в Corner: больше ушей', async () => {
-    const mk = async (mode: FastenerMode) => (await buildBaseplate({ ...defaultParams, x: 3, y: 3, fasteners: { ...defaultFasteners, magnets: { mode, slots: [] }, screws: { mode, slots: [] } } })).volume()
+    const mk = async (mode: FastenerMode) => (await buildBaseplate({ ...defaultParams, x: units(3), y: units(3), fasteners: { ...defaultFasteners, magnets: { mode, slots: [] }, screws: { mode, slots: [] } } })).volume()
     const [corner, full] = [await mk('corner'), await mk('full')]
     expect(full).toBeGreaterThan(corner)
   })

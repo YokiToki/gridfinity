@@ -206,11 +206,13 @@ export function fastenerCuts(w: ManifoldToplevel, c: FastenerConfig, fp: Footpri
 
 /**
  * Окна ячеек под гнёздами: каждое окно открыто насквозь, кроме ушей вокруг отверстий этой ячейки.
- * floor — высота нижнего края гнезда (верх ушей). Без отверстий возвращает пустой список.
+ * Окно занимает z от zFrom (толщина сплошного пола, 0 — открытая рама) до zTo (низ гнезда, верх ушей).
+ * Если окну нет места (zTo не выше zFrom), список пуст.
  */
-export function cellWindows(w: ManifoldToplevel, c: FastenerConfig, fp: Footprint, floor = FLOOR): Manifold[] {
+export function cellWindows(w: ManifoldToplevel, c: FastenerConfig, fp: Footprint, zTo = FLOOR, zFrom = 0): Manifold[] {
+  if (zTo - Math.max(zFrom, 0) < 1e-6) return []
+  const zCut = zFrom > 0 ? zFrom : -1 // открытая рама режется с запасом ниже плиты
   const pos = allPositions(c, fp)
-  if (!needsFloor(pos)) return []
   const holes = [
     ...pos.magnets.map((p) => ({ p, r: earRadius(c, 'magnets') })),
     ...pos.screws.map((p) => ({ p, r: earRadius(c, 'screws') })),
@@ -221,7 +223,7 @@ export function cellWindows(w: ManifoldToplevel, c: FastenerConfig, fp: Footprin
     const key = `${i},${j}`
     byCell.set(key, [...(byCell.get(key) ?? []), h])
   }
-  const template = socketWindow(w, fp.pitch, -1, floor + 0.002)
+  const template = socketWindow(w, fp.pitch, zCut, zTo + 0.002)
   const out: Manifold[] = []
   for (let i = 0; i < fp.nx; i++) {
     for (let j = 0; j < fp.ny; j++) {
@@ -231,7 +233,7 @@ export function cellWindows(w: ManifoldToplevel, c: FastenerConfig, fp: Footprin
       if (own.length) {
         const ears = own.map((h) => {
           const cell = cellOfPoint(fp, h.p)
-          return fastenerEar(w, h.p, center, cell.sx, cell.sy, h.r, fp.pitch, -2, floor + 1)
+          return fastenerEar(w, h.p, center, cell.sx, cell.sy, h.r, fp.pitch, zCut - 1, zTo + 1)
         })
         cutter = cutter.subtract(w.Manifold.union(ears))
       }

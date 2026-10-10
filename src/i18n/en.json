@@ -54,18 +54,42 @@
   "baseplate": {
     "size": {
       "title": "Size",
-      "unit": "Cell size",
+      "pitch": "Cell size",
       "x": "Width (X)",
       "y": "Depth (Y)",
-      "custom": "Custom size",
-      "width": "Width",
-      "depth": "Depth"
+      "cells": "{{x}} × {{y}} cells",
+      "paddingNote": "The leftover space becomes flat padding next to the cells, placed as chosen.",
+      "dimensions": "{{x}} × {{y}} {{unit}} · cell {{pitch}} {{unit}}"
+    },
+    "thickness": {
+      "title": "Thickness",
+      "baseHeight": "Profile height",
+      "floor": "Floor (0 = open frame)",
+      "rim": "Outer rim",
+      "paddingDrop": "Lower padding by",
+      "cornerRadius": "Corner radius",
+      "summary": "Floor {{floor}} · Rim {{rim}} · Height {{height}}"
     },
     "plate": {
       "title": "Build plate",
       "show": "Show build plate",
       "x": "Plate X",
-      "y": "Plate Y"
+      "y": "Plate Y",
+      "preset": "Bed size",
+      "custom": "Custom",
+      "oversize": "The baseplate ({{size}}) is larger than the build plate ({{plate}}). Reduce the size or split it into parts.",
+      "fits": "Fits the build plate"
+    },
+    "error": {
+      "size": "Enter a size greater than zero",
+      "sizeTooLarge": "Size is too large (up to {{max}} mm)",
+      "negative": "Must not be negative",
+      "baseHeightMin": "Not below the standard 4.65 mm profile",
+      "rimTooLarge": "The rim leaves no room for the plate",
+      "radiusTooLarge": "Radius is larger than half of the plate",
+      "tooManyCells": "Too many cells along this axis",
+      "paddingDropTooLarge": "Lowering is larger than the plate height",
+      "invalid": "Fix the highlighted values: the preview shows the last valid model"
     },
     "export": "Export STL"
   },
@@ -92,11 +116,18 @@
     "units": "Units",
     "length": "Length",
     "align": "Align cells",
-    "start": "Start",
-    "center": "Center",
-    "end": "End",
     "padding": "Padding {{value}}",
-    "truncated": "Smaller than one cell: the cell is truncated."
+    "truncated": "Smaller than one cell: the cell is truncated.",
+    "alignX": {
+      "start": "Left",
+      "center": "Centered",
+      "end": "Right"
+    },
+    "alignY": {
+      "start": "Front",
+      "center": "Centered",
+      "end": "Back"
+    }
   },
   "fastener": {
     "title": "Fasteners",

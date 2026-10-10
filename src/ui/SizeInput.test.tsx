@@ -11,7 +11,7 @@ import type { Align } from '../geometry/sizing'
 function Harness({ start = 84 }: { start?: number }) {
   const [mm, setMm] = useState(start)
   const [align, setAlign] = useState<Align>('center')
-  return <><SizeInput label="X" valueMm={mm} pitch={42} onChange={setMm} align={align} onAlignChange={setAlign} /><output data-testid="mm">{mm}</output><output data-testid="al">{align}</output></>
+  return <><SizeInput label="X" valueMm={mm} pitch={42} onChange={(v) => setMm(v)} align={align} onAlignChange={setAlign} /><output data-testid="mm">{mm}</output><output data-testid="al">{align}</output></>
 }
 
 describe('SizeInput', () => {
@@ -34,7 +34,7 @@ describe('SizeInput', () => {
   it('выбор выравнивания', async () => {
     await i18n.changeLanguage('en')
     render(<Harness />)
-    await userEvent.click(screen.getByRole('button', { name: 'End' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Right' }))
     expect(screen.getByTestId('al')).toHaveTextContent('end')
   })
   it('меньше одной ячейки — предупреждение', async () => {

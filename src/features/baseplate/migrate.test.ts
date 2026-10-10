@@ -13,10 +13,32 @@ describe('миграция сохранённых параметров baseplate
   it('старый JSON с magnets/screws: true загружается как Full', () => {
     store({ unit: 42, x: 3, y: 2, magnets: true, screws: true })
     const p = load()
-    expect(p.x).toBe(3)
+    expect(p.pitch).toBe(42)
+    expect(p.x).toEqual({ mode: 'units', value: 3, align: 'center' })
+    expect(p.y).toEqual({ mode: 'units', value: 2, align: 'center' })
     expect(p.fasteners.magnets).toEqual({ mode: 'full', slots: [] })
     expect(p.fasteners.screws).toEqual({ mode: 'full', slots: [] })
     expect('magnets' in p).toBe(false)
+  })
+  it('прототип: customSize превращается в размер в мм, стол — в preview', () => {
+    store({ unit: 40, x: 2, y: 2, customSize: true, sizeX: 300, sizeY: 200, showPlate: true, plateX: 220, plateY: 220 })
+    const p = load()
+    expect(p.pitch).toBe(40)
+    expect(p.x).toEqual({ mode: 'mm', value: 300, align: 'center' })
+    expect(p.y).toEqual({ mode: 'mm', value: 200, align: 'center' })
+    expect(p.preview).toEqual({ showPlate: true, plateX: 220, plateY: 220 })
+    expect(p.thickness).toEqual(defaultParams.thickness)
+    expect('customSize' in p).toBe(false)
+  })
+  it('прототип: customSize меньше блока ячеек не уменьшает плиту', () => {
+    store({ unit: 42, x: 3, y: 1, customSize: true, sizeX: 50, sizeY: 50 })
+    expect(load().x).toEqual({ mode: 'mm', value: 126, align: 'center' })
+  })
+  it('частичные вложенные объекты донаполняются по умолчанию', () => {
+    store({ thickness: { floor: 1.2 }, preview: { showPlate: true } })
+    const p = load()
+    expect(p.thickness).toEqual({ ...defaultParams.thickness, floor: 1.2 })
+    expect(p.preview).toEqual({ ...defaultParams.preview, showPlate: true })
   })
   it('false → none, смешанный случай', () => {
     store({ magnets: true, screws: false })

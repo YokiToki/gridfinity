@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { getWasm } from './wasm'
-import { buildBaseplate, defaultParams } from './baseplate'
+import { buildBaseplate } from './baseplate'
 import { footprintFromCells } from './footprint'
 import { cellOfPoint, cellWindows, checkFasteners, defaultFasteners, earRadius, fastenerEar, type FastenerConfig, type FastenerMode } from './fasteners'
 import { socketPocket, socketWindow, socketWindowWidth } from './profiles'
 import { SOCKET_HEIGHT } from './spec'
-import { expectValidSolid } from './testing'
+import { expectValidSolid, mm, sharpParams as defaultParams, units } from './testing'
 
 const withModes = (m: FastenerMode, s: FastenerMode, extra: Partial<FastenerConfig> = {}): FastenerConfig =>
   ({ ...defaultFasteners, magnets: { mode: m, slots: [] }, screws: { mode: s, slots: [] }, ...extra })
@@ -55,7 +55,8 @@ describe('fastenerEar', () => {
 describe('baseplate с ушами', () => {
   it('без отверстий окон нет и высота 4.65', async () => {
     const w = await getWasm()
-    expect(cellWindows(w, defaultFasteners, footprintFromCells(2, 2, 42))).toEqual([])
+    expect(cellWindows(w, defaultFasteners, footprintFromCells(2, 2, 42), 0)).toEqual([])
+    expect(cellWindows(w, defaultFasteners, footprintFromCells(2, 2, 42), 4, 4)).toEqual([]) // пол толщиной с уши: окну нет места
     expectValidSolid(await buildBaseplate(defaultParams), { size: [84, 84, 4.65] })
   })
   it('Full 2×2: высота 8.65, сплошного пола нет, остаются уши', async () => {
@@ -77,7 +78,7 @@ describe('baseplate с ушами', () => {
   })
   it('Corner 3×3: ячейки без отверстий открыты насквозь', async () => {
     const w = await getWasm()
-    const p = { ...defaultParams, x: 3, y: 3, fasteners: withModes('corner', 'none') }
+    const p = { ...defaultParams, x: units(3), y: units(3), fasteners: withModes('corner', 'none') }
     const m = await buildBaseplate(p)
     expectValidSolid(m, { size: [126, 126, 8.65] })
     const win = socketWindow(w, 42, -1, 4.002)

@@ -19,3 +19,12 @@ describe('MeasurementsBar', () => {
     expect(screen.getByText('Y 1')).toBeInTheDocument()
   })
 })
+
+describe('MeasurementsBar: дюймы', () => {
+  it('84 мм → 3.307 in', () => {
+    const m = { min: [0, 0, 0], max: [84, 84, 4.65], volume: 1, numProp: 3, vertProperties: new Float32Array(), triVerts: new Uint32Array() } as MeshData
+    render(<UnitContext.Provider value={{ unit: 'in', setUnit: () => {} }}><MeasurementsBar model={m} /></UnitContext.Provider>)
+    expect(screen.getByText('X 3.307')).toBeInTheDocument()
+    expect(screen.getByText(/Z 0.183 in/)).toBeInTheDocument()
+  })
+})

@@ -17,11 +17,19 @@ The user SHALL set the baseplate size per axis as decimal units or millimetres; 
 - **THEN** 7×4 cells are placed, the remaining 6 mm and 32 mm are padding, and the plate measures exactly 300×200 mm
 
 ### Requirement: Thickness settings
-The user SHALL be able to set base height, floor thickness (0 for open frame), outer rim width and padding thickness, with spec defaults and reset.
+The user SHALL be able to set base (profile) height, floor thickness (0 for open frame), outer rim width, how far the padding sits below the rim (0 for flush) and the outer corner radius, with spec defaults, reset and a localized message next to any invalid value; while a value is invalid the previous valid model stays displayed.
 
 #### Scenario: Open frame
 - **WHEN** floor thickness is 0
 - **THEN** the plate is a through-hole frame of height equal to the base profile height
+
+#### Scenario: Lowered padding
+- **WHEN** the plate has leftover padding and the padding is lowered by 2 mm
+- **THEN** the padding surface is 2 mm below the rim and the cells and the rim keep their height
+
+#### Scenario: Invalid value
+- **WHEN** the user enters a profile height below the standard 4.65 mm
+- **THEN** the field shows a message, the preview keeps the last valid model and export is disabled until the value is fixed
 
 #### Scenario: Solid floor
 - **WHEN** floor thickness is 1.2 mm
@@ -47,7 +55,7 @@ The user SHALL be able to show a build plate in the preview with configurable X/
 
 #### Scenario: Oversize
 - **WHEN** the plate model is 300 mm wide and the build plate is 256 mm
-- **THEN** a warning is shown and the splitting option is offered
+- **THEN** a warning states both sizes and suggests reducing the size or splitting the plate into parts (the split itself is provided by `06-baseplate-split`)
 
 ### Requirement: Measurements
 The app SHALL show the model's X/Y/Z size in the selected unit and update it on every change.
