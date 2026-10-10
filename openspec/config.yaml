@@ -1,5 +1,13 @@
 schema: spec-driven
 
+context: |
+  Personal client-only Gridfinity generator (no backend): Box/Tray, Baseplate, Cutout modes, modelled on gridfinitygenerator.com.
+  Stack: Vite, React, TypeScript, Tailwind CSS (current major), Tabler Icons (current), three.js, manifold-3d (WASM). Deployed to GitLab Pages as a static site.
+  All user-visible strings go through i18n with en and ru from the start; no hard-coded UI text.
+  Geometry is stored and computed in millimetres; inch is a display/input option only.
+  Components are small, single-purpose and grouped by feature; geometry code stays free of React and three.js.
+  Specs are written in English; code comments may be Russian.
+
 # Project context (optional)
 # Add only constraints that should guide OpenSpec artifacts and workflows.
 # Include constraints an agent cannot infer by reading the code.

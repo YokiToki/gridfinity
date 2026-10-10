@@ -1,0 +1,31 @@
+# Spec Delta
+
+## Purpose
+Defines how the app is built, verified and published as a static site on GitLab Pages.
+
+## ADDED Requirements
+
+### Requirement: Automated publishing
+A push to the default branch SHALL run tests and a production build and, if both pass, publish the build output to GitLab Pages.
+
+#### Scenario: Successful pipeline
+- **WHEN** a commit lands on the default branch and tests and build pass
+- **THEN** the site is published and reachable at the project's Pages URL
+
+#### Scenario: Failing tests
+- **WHEN** tests fail on the default branch
+- **THEN** nothing is published and the pipeline is marked failed
+
+### Requirement: Works under a subpath
+The published site SHALL load all assets, including the geometry WASM binary, and navigate between modes correctly when served from the project subpath.
+
+#### Scenario: Deep link
+- **WHEN** a user opens the Pages URL with a mode hash route
+- **THEN** that mode loads and the model generates
+
+### Requirement: Branch pipelines do not publish
+Pipelines for non-default branches SHALL run tests and build but SHALL NOT publish.
+
+#### Scenario: Feature branch
+- **WHEN** a commit is pushed to a feature branch
+- **THEN** tests and build run and no Pages deployment occurs
