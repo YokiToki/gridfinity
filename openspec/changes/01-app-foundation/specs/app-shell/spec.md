@@ -20,6 +20,25 @@ The app SHALL offer three modes — Box, Baseplate and Cutout — selectable fro
 - **WHEN** a mode has no implementation yet
 - **THEN** a localized placeholder is shown in place of its parameter panel and the 3D viewport stays usable
 
+### Requirement: Start page
+The app SHALL open on a start page at the root path that lets the user choose Box, Baseplate or Cutout, each as a card with an icon, a short localized description and a link to that mode.
+
+#### Scenario: Choose a mode
+- **WHEN** the user opens the root URL and selects the Cutout card
+- **THEN** the cutout route opens and the mode switcher in the top bar shows Cutout as active
+
+#### Scenario: Return to start
+- **WHEN** the user selects the logo in the top bar from any mode
+- **THEN** the start page is shown and every mode's parameters stay stored
+
+#### Scenario: Start page has no viewport
+- **WHEN** the start page is shown
+- **THEN** no 3D viewport or parameter panel is rendered and no geometry is computed
+
+#### Scenario: Unknown path
+- **WHEN** the user opens a path that matches no route
+- **THEN** the start page is shown
+
 ### Requirement: Per-mode persisted state
 The app SHALL keep each mode's parameters independently and restore them after a page reload.
 

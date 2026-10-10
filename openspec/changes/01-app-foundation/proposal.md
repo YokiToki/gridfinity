@@ -8,6 +8,7 @@ The prototype is a single-purpose baseplate page with ad-hoc CSS and English-onl
 
 - Add Tailwind CSS and Tabler Icons (current majors) and replace `style.css` with utility classes.
 - Introduce a feature-based component structure: app shell (sidebar, viewport, top bar), reusable form controls (number field with unit, segmented control, toggle, section), per-mode panels.
+- Add a start page (root route) with Box / Baseplate / Cutout cards; the top-bar logo returns to it.
 - Add a mode switcher (Box / Baseplate / Cutout) with routing so each mode has its own URL and persisted state; Box and Cutout show a "coming soon" placeholder until their changes land.
 - Add en/ru localization with automatic language detection and a manual selector; all existing strings move into translation files.
 - Add a global length-unit setting (mm / inch) that affects every displayed and entered length.

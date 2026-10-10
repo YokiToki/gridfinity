@@ -9,8 +9,9 @@
 
 - [ ] 2.1 Create folders `app/`, `ui/`, `features/{box,baseplate,cutout,viewport}/`, `geometry/`, `i18n/`; move `baseplate.ts`/`stl.ts` to `geometry/` and `Viewport.tsx` to `features/viewport/`; `npm test` and `npm run build` still pass.
 - [ ] 2.2 Implement `AppShell` (top bar, sidebar slot, viewport slot) and hash router with Box/Baseplate/Cutout routes; verify direct URL open and switching in the browser.
-- [ ] 2.3 Add placeholder panels for Box and Cutout; verify the viewport still renders under them.
-- [ ] 2.4 Implement `usePersistedState` with corruption fallback; unit test: valid, missing and corrupt JSON.
+- [ ] 2.3 Build `StartPage` (three mode cards with Tabler icons and localized descriptions; no viewport mounted); link the top-bar logo to it, fall back to it for unknown paths; component test: each card links to its route, and the page does not render the viewport.
+- [ ] 2.4 Add placeholder panels for Box and Cutout; verify the viewport still renders under them.
+- [ ] 2.5 Implement `usePersistedState` with corruption fallback; unit test: valid, missing and corrupt JSON.
 
 ## 3. Shared controls
 
