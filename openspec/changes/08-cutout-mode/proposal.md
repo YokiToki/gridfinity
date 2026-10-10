@@ -24,4 +24,4 @@ A common use of Gridfinity is a bin that holds a specific tool in a fitted pocke
 ## Impact
 
 - New `geometry/cutout.ts`, `geometry/stl-import.ts`, `features/cutout/*`; replaces the Cutout placeholder.
-- Reuses the Box geometry (foot, body, lip); depends on `box-mode`, `fastener-placement`.
+- Reuses the Box geometry (foot, body, lip); depends on `07-box-mode`, `04-fastener-placement`.

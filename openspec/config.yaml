@@ -8,33 +8,20 @@ context: |
   Components are small, single-purpose and grouped by feature; geometry code stays free of React and three.js.
   Specs are written in English; code comments may be Russian.
 
-# Project context (optional)
-# Add only constraints that should guide OpenSpec artifacts and workflows.
-# Include constraints an agent cannot infer by reading the code.
-# Keep general project documentation and discoverable codebase facts out.
-# Example:
-#   context: |
-#     Designs and tasks must cover Windows, macOS, and Linux
-#     Write all artifacts in Spanish
+rules:
+  proposal:
+    - Change folders are numbered NN-name in implementation order; the NN prefix is the build order.
+    - End the Impact section with a "Depends on:" line listing the numbered changes it requires (e.g. `03-geometry-core`), or "Depends on: none". Only depend on lower numbers.
+    - State what is out of scope.
+  tasks:
+    - Number tasks as `<section>.<n>` and keep each task independently committable, with its test or verification named in the task.
+    - Mark the last section of every change as verification (npm test, npm run build, check in the browser).
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always state what is out of scope
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
-
-# Per-operation guidance (optional)
-# Add advisory guidance for how apply and archive work should be conducted.
-# This is separate from artifact rules above.
-# Example:
-#   operations:
-#     apply:
-#       guidance:
-#         - Keep test summaries concise
-#     archive:
-#       guidance:
-#         - Summarize the archive outcome before finishing
+operations:
+  apply:
+    guidance:
+      - Before starting, check that every change listed under "Depends on" is archived or fully done; if not, stop and say so.
+      - Commit after each completed task section.
+  archive:
+    guidance:
+      - Archive changes in numeric order so the main specs stay consistent.

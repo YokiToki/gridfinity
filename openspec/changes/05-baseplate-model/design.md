@@ -8,7 +8,7 @@ Current `buildBaseplate` takes integer cell counts and a single `FLOOR` constant
 
 **Goals:** drawer-sized plates, tunable thicknesses, visual parity with the reference.
 
-**Non-Goals:** splitting into parts and connectors (`baseplate-split`), exports (`export-3mf-bambu`).
+**Non-Goals:** splitting into parts and connectors (`06-baseplate-split`), exports (`09-export-3mf-bambu`).
 
 ## Decisions
 

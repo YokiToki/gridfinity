@@ -24,4 +24,4 @@ The main use of Gridfinity is bins. Box mode produces a bin/tray of arbitrary fo
 ## Impact
 
 - New `geometry/box.ts`, `features/box/*`; replaces the Box placeholder.
-- Depends on `app-foundation`, `geometry-core`, `fastener-placement`.
+- Depends on `01-app-foundation`, `03-geometry-core`, `04-fastener-placement`.

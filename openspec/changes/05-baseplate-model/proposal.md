@@ -17,11 +17,11 @@ The prototype baseplate only supports whole-unit sizes, fixed thicknesses and a 
 ## Capabilities
 
 ### New Capabilities
-- `baseplate-model`: parametric baseplate geometry, size handling and preview/measurements.
+- `05-baseplate-model`: parametric baseplate geometry, size handling and preview/measurements.
 
 ### Modified Capabilities
 
 ## Impact
 
 - `geometry/baseplate.ts`, `features/baseplate/*`; persisted state migrates to the new params shape.
-- Depends on `app-foundation`, `geometry-core`, `fastener-placement`.
+- Depends on `01-app-foundation`, `03-geometry-core`, `04-fastener-placement`.

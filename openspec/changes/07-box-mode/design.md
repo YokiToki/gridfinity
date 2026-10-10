@@ -2,7 +2,7 @@
 
 ## Context
 
-Box needs the bin foot (reverse of the baseplate socket), walls, lip and cavity. See proposal.md. The profile builders come from `geometry-core`.
+Box needs the bin foot (reverse of the baseplate socket), walls, lip and cavity. See proposal.md. The profile builders come from `03-geometry-core`.
 
 ## Goals / Non-Goals
 

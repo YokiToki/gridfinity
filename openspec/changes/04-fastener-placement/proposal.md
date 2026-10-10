@@ -14,7 +14,7 @@ Magnets and screw holes are needed in Box, Baseplate and Cutout, with the same p
 ## Capabilities
 
 ### New Capabilities
-- `fastener-placement`: magnet and screw hole modes, dimensions and manual placement shared by all modes.
+- `04-fastener-placement`: magnet and screw hole modes, dimensions and manual placement shared by all modes.
 
 ### Modified Capabilities
 
@@ -22,4 +22,4 @@ Magnets and screw holes are needed in Box, Baseplate and Cutout, with the same p
 
 - New `geometry/fasteners.ts`, `features/fasteners/` UI (panel + 2D placement editor).
 - Replaces the prototype's `magnets`/`screws` booleans in baseplate params (state migration).
-- Depends on `geometry-core` and `app-foundation`.
+- Depends on `03-geometry-core` and `01-app-foundation`.
