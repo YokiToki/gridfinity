@@ -44,20 +44,16 @@ Open the URL Vite prints, tweak, export.
 | `npm run build` | Type check, then production build into `dist/` |
 | `npm test`      | Geometry tests (vitest)                       |
 
-## Deploy (GitLab Pages)
+## Deploy (GitHub Pages)
 
-The app is a static site, so it deploys as plain files. `.gitlab-ci.yml` does the work:
+The app is a static site, so it deploys as plain files. `.github/workflows/pages.yml` does the work:
 
-- **Default branch:** `pages` job runs `npm ci`, `npm test`, `npm run build` and publishes `dist/` as the Pages artifact. If tests or the build fail, nothing is published.
-- **Other branches:** `verify` job runs the same tests and build, without publishing.
+- **Every push and pull request:** the `verify` job runs `npm ci`, `npm test` and `npm run build`.
+- **`main` only:** if `verify` passes, the `deploy` job publishes `dist/` to GitHub Pages. If tests or the build fail, nothing is published.
 
-One-time setup:
+One-time setup: in the repository open **Settings → Pages** and set **Source** to **GitHub Actions**. After the first successful run on `main` the URL appears in the run summary and under Settings → Pages, usually `https://<user>.github.io/<repo>/`.
 
-1. Push the repository to a GitLab project (`git remote add gitlab <url>`, then `git push gitlab main`).
-2. In the project, open **Deploy → Pages** and make sure Pages is enabled (on gitlab.com it is on by default). If your project's visibility is private, choose who can see the site there.
-3. After the first successful pipeline the URL appears under **Deploy → Pages**, usually `https://<namespace>.gitlab.io/<project>/`.
-
-The build uses relative asset URLs (`base: './'`) and hash routes (`/#/baseplate`), so it works from any subpath and a deep link such as `.../#/baseplate` opens that mode directly. Node 24 or newer is required (`engines` in `package.json`, `node:24-alpine` in CI).
+The build uses relative asset URLs (`base: './'`) and hash routes (`/#/baseplate`), so it works from any subpath and a deep link such as `.../#/baseplate` opens that mode directly. Node 24 or newer is required (`engines` in `package.json`, `node-version: 24` in the workflow).
 
 ## How it works
 

@@ -5,7 +5,7 @@
 | # | Change | Depends on | Результат |
 |---|--------|-----------|-----------|
 | 01 | `01-app-foundation` | — | Tailwind, Tabler, структура компонентов, i18n en/ru, mm/inch, переключатель режимов |
-| 02 | `02-gitlab-pages-deploy` | 01 | CI и деплой на GitLab Pages (дальше каждая фича сразу видна онлайн) |
+| 02 | `02-github-pages-deploy` | 01 | CI и деплой на GitHub Pages (дальше каждая фича сразу видна онлайн) |
 | 03 | `03-geometry-core` | 01 | Общая геометрия Gridfinity, дробные xy-юниты, настройки толщин |
 | 04 | `04-fastener-placement` | 01, 03 | Винты и магниты: по краям, в каждой ячейке, вручную |
 | 05 | `05-baseplate-model` | 01, 03, 04 | Режим Baseplate на новой геометрии |
