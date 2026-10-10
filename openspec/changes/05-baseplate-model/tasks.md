@@ -5,7 +5,7 @@
 - [ ] 1.1 Define new `BaseplateParams` (AxisSize, thickness, floor) and migrate persisted prototype state; test old JSON loads.
 - [ ] 1.2 Build outer block with cells + padding + alignment; tests: 84×84, 300×200 give exact bbox and correct cell count.
 - [ ] 1.3 Implement floor styles and thickness settings; tests: open frame height 4.65, floor 1.2 adds 1.2.
-- [ ] 1.4 Integrate `fastenerCuts`; auto-raise floor with a message key; test notice is returned.
+- [ ] 1.4 Integrate `fastenerCuts` and `cellWindows` (ears from `04a-fastener-ears`); pocket bottom at `max(floor, 4 mm)` with holes, windows from the floor thickness up; tests: open frame + magnets keeps floor 0 and height 8.65, solid floor 1.2 + magnets keeps a 1.2 mm floor under the windows, floor ≥ 4 mm absorbs the ears.
 
 ## 2. UI
 

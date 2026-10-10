@@ -28,11 +28,19 @@ The user SHALL be able to set base height, floor thickness (0 for open frame), o
 - **THEN** each socket has a 1.2 mm floor and total height increases accordingly
 
 ### Requirement: Fasteners on baseplate
-The baseplate SHALL support magnet and screw holes through the shared fastener settings; enabling any hole kind that requires a floor SHALL add the minimum floor automatically and tell the user.
+The baseplate SHALL support magnet and screw holes through the shared fastener settings. Holes sit in ears (local pads) rather than a full floor, and enabling fasteners SHALL NOT change the floor thickness setting.
 
 #### Scenario: Magnets enabled with open frame
-- **WHEN** the user enables magnets while floor is 0
-- **THEN** the floor is raised to the minimum that holds the magnet and a notice explains why
+- **WHEN** the user enables magnets while floor thickness is 0
+- **THEN** each hole has an ear, the rest of every cell stays open through the bottom, and the floor thickness field still reads 0
+
+#### Scenario: Magnets enabled with solid floor
+- **WHEN** the user enables magnets while floor thickness is 1.2 mm
+- **THEN** the cells keep a 1.2 mm floor and the ears rise from it to the pocket bottom
+
+#### Scenario: Floor thicker than the ears
+- **WHEN** floor thickness is at least as large as the ear height
+- **THEN** the floor absorbs the ears and the plate has a continuous floor of that thickness
 
 ### Requirement: Build plate preview
 The user SHALL be able to show a build plate in the preview with configurable X/Y size, and the app SHALL warn when the model exceeds it.

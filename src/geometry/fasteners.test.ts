@@ -3,12 +3,12 @@ import { getWasm } from './wasm'
 import { buildBaseplate, defaultParams } from './baseplate'
 import { footprintFromCells, footprintFromSize } from './footprint'
 import {
-  allPositions, checkFasteners, cornerPositions, defaultFasteners, fastenerCuts, magnetSize, MAGNET_PRESETS, resolvePositions,
-  standardPositions, switchMode, withMagnetPreset, type FastenerConfig, type FastenerMode,
+  allPositions, allSlots, checkFasteners, cornerPositions, defaultFasteners, fastenerCuts, magnetSize, MAGNET_PRESETS, resolvePositions,
+  slotPosition, slotsFromPoints, standardPositions, switchMode, toggleSlot, validSlots, withMagnetPreset, type FastenerConfig, type FastenerMode, type Slot,
 } from './fasteners'
 import { expectValidSolid } from './testing'
 
-const kind = (mode: FastenerMode) => ({ mode, manual: [] })
+const kind = (mode: FastenerMode) => ({ mode, slots: [] })
 const cfg = (m: FastenerMode, s: FastenerMode, extra: Partial<FastenerConfig> = {}): FastenerConfig => ({ ...defaultFasteners, magnets: kind(m), screws: kind(s), ...extra })
 const has = (pts: { x: number; y: number }[], x: number, y: number) => pts.some((p) => Math.abs(p.x - x) < 1e-9 && Math.abs(p.y - y) < 1e-9)
 
@@ -71,21 +71,63 @@ describe('позиции', () => {
     const fp = footprintFromSize(100, 84, 42, 'start', 'center')
     expect(Math.min(...standardPositions(fp).map((p) => p.x))).toBeCloseTo(-42, 9) // первая ячейка центрирована на -29, крайнее отверстие на -42
   })
-  it('none даёт пустой список, manual возвращает копию точек', () => {
-    const fp = footprintFromCells(2, 2, 42)
-    expect(resolvePositions(kind('none'), fp)).toEqual([])
-    const manual = [{ x: 1, y: 2 }]
-    const out = resolvePositions({ mode: 'manual', manual }, fp)
-    expect(out).toEqual(manual)
-    expect(out[0]).not.toBe(manual[0])
+  it('none даёт пустой список', () => {
+    expect(resolvePositions(kind('none'), footprintFromCells(2, 2, 42))).toEqual([])
   })
-  it('переход Full → Manual сохраняет точки; из none — пустой список', () => {
-    const fp = footprintFromCells(2, 2, 42)
-    const m = switchMode({ mode: 'full', manual: [] }, 'manual', fp)
-    expect(m.mode).toBe('manual')
-    expect(m.manual).toHaveLength(16)
-    expect(switchMode(kind('none'), 'manual', fp).manual).toEqual([])
-    expect(switchMode(m, 'corner', fp).manual).toHaveLength(16) // ручные точки не теряются при смене режима
+})
+
+describe('Manual: выбор стандартных позиций', () => {
+  const fp = footprintFromCells(2, 2, 42)
+  const slot = (i: number, j: number, sx: 1 | -1, sy: 1 | -1): Slot => ({ i, j, sx, sy })
+
+  it('слот → позиция: центр ячейки плюс угол на 13 мм', () => {
+    expect(slotPosition(fp, slot(0, 0, -1, -1))).toEqual({ x: -34, y: -34 })
+    expect(slotPosition(fp, slot(1, 0, 1, 1))).toEqual({ x: 34, y: -8 })
+  })
+  it('все слоты 2×2 совпадают со стандартными позициями', () => {
+    const slots = allSlots(fp)
+    expect(slots).toHaveLength(16)
+    const pts = slots.map((s) => slotPosition(fp, s))
+    expect(pts.every((p) => has(standardPositions(fp), p.x, p.y))).toBe(true)
+  })
+  it('manual использует только выбранные слоты', () => {
+    const k = { mode: 'manual' as const, slots: [slot(0, 0, -1, -1), slot(1, 1, 1, 1)] }
+    expect(resolvePositions(k, fp)).toEqual([{ x: -34, y: -34 }, { x: 34, y: 34 }])
+  })
+  it('сетка 3×2: слоты на последней ячейке', () => {
+    const fp32 = footprintFromCells(3, 2, 42)
+    expect(slotPosition(fp32, slot(2, 1, 1, 1))).toEqual({ x: 55, y: 34 })
+    expect(allSlots(fp32)).toHaveLength(24)
+  })
+  it('сетка уменьшилась: слоты несуществующих ячеек игнорируются, остальные сохраняются', () => {
+    const k = { mode: 'manual' as const, slots: [slot(0, 0, -1, -1), slot(2, 1, 1, 1)] }
+    expect(validSlots(k.slots, fp)).toEqual([slot(0, 0, -1, -1)])
+    expect(resolvePositions(k, fp)).toHaveLength(1)
+    expect(resolvePositions(k, footprintFromCells(3, 2, 42))).toHaveLength(2)
+  })
+  it('toggleSlot включает и выключает', () => {
+    const a = toggleSlot([], slot(0, 0, 1, 1))
+    expect(a).toHaveLength(1)
+    expect(toggleSlot(a, slot(0, 0, 1, 1))).toEqual([])
+  })
+  it('переход в Manual из любого режима даёт пустой выбор', () => {
+    for (const mode of ['none', 'corner', 'full'] as const) {
+      const m = switchMode({ mode, slots: [slot(0, 0, 1, 1)] }, 'manual')
+      expect(m).toEqual({ mode: 'manual', slots: [] })
+    }
+  })
+  it('выход из Manual выбор не трогает; тот же режим возвращает тот же объект', () => {
+    const k = { mode: 'manual' as const, slots: [slot(0, 0, 1, 1)] }
+    expect(switchMode(k, 'corner').slots).toEqual(k.slots)
+    expect(switchMode(k, 'manual')).toBe(k)
+  })
+  it('старые точки привязываются к ближайшей позиции в радиусе 3 мм', () => {
+    const out = slotsFromPoints([{ x: -33, y: -35 }, { x: -34.5, y: -33.5 }, { x: 0, y: 0 }, { x: 34, y: 34 }], fp)
+    expect(out).toEqual([slot(0, 0, -1, -1), slot(1, 1, 1, 1)]) // дубль слит, далёкая точка отброшена
+  })
+  it('точка ровно на границе радиуса привязки принимается, чуть дальше — нет', () => {
+    expect(slotsFromPoints([{ x: -34 + 3, y: -34 }], fp)).toHaveLength(1)
+    expect(slotsFromPoints([{ x: -34 + 3.01, y: -34 }], fp)).toHaveLength(0)
   })
 })
 
@@ -111,8 +153,8 @@ describe('baseplate с крепежом', () => {
   const modes: FastenerMode[] = ['none', 'corner', 'full', 'manual']
   for (const mode of modes) {
     it(`магниты ${mode}: валидное тело`, async () => {
-      const manual = mode === 'manual' ? [{ x: -8, y: -8 }, { x: 8, y: 8 }] : []
-      const p = { ...defaultParams, fasteners: { ...defaultFasteners, magnets: { mode, manual } } }
+      const slots: Slot[] = mode === 'manual' ? [{ i: 0, j: 0, sx: -1, sy: -1 }, { i: 1, j: 1, sx: 1, sy: 1 }] : []
+      const p = { ...defaultParams, fasteners: { ...defaultFasteners, magnets: { mode, slots } } }
       const m = await buildBaseplate(p)
       const empty = await buildBaseplate(defaultParams)
       expectValidSolid(m)
@@ -124,25 +166,22 @@ describe('baseplate с крепежом', () => {
       }
     })
   }
-  it('число отверстий определяет вычтенный объём магнитов', async () => {
-    const mk = async (mode: FastenerMode) => (await buildBaseplate({ ...defaultParams, fasteners: { ...defaultFasteners, magnets: { mode, manual: [] }, screws: { mode: 'full', manual: [] } } })).volume()
+  it('в режиме Full материала больше, чем в Corner: больше ушей', async () => {
+    const mk = async (mode: FastenerMode) => (await buildBaseplate({ ...defaultParams, x: 3, y: 3, fasteners: { ...defaultFasteners, magnets: { mode, slots: [] }, screws: { mode, slots: [] } } })).volume()
     const [corner, full] = [await mk('corner'), await mk('full')]
-    const hole = Math.PI * 3.25 ** 2 * 2.4
-    // у полного режима на 12 магнитных гнёзд больше; часть объёма гнезда лежит выше пола, где материала нет
-    expect(corner).toBeGreaterThan(full)
-    expect(corner - full).toBeGreaterThan(8 * hole)
-    expect(corner - full).toBeLessThan(12 * hole + 1)
+    expect(full).toBeGreaterThan(corner)
   })
-  it('ручное отверстие: пустой список = нет пола, одно отверстие = есть', async () => {
-    const mk = (manual: { x: number; y: number }[]) => buildBaseplate({ ...defaultParams, fasteners: { ...defaultFasteners, screws: { mode: 'manual', manual } } })
-    expect((await mk([])).boundingBox().max[2]).toBeCloseTo(4.65, 3)
-    const one = await mk([{ x: -8, y: -8 }])
-    expectValidSolid(one)
-    expect(one.boundingBox().max[2]).toBeCloseTo(8.65, 3)
+  it('Manual: без выбранных позиций пола и ушей нет, с одной позицией они появляются', async () => {
+    const mk = (slots: Slot[]) => buildBaseplate({ ...defaultParams, fasteners: { ...defaultFasteners, screws: { mode: 'manual', slots } } })
+    const none = await mk([])
+    expectValidSolid(none, { size: [84, 84, 4.65] })
+    const one = await mk([{ i: 0, j: 0, sx: -1, sy: -1 }])
+    expectValidSolid(one, { size: [84, 84, 8.65] })
+    expect(one.volume()).not.toBeCloseTo(none.volume(), 0)
   })
   it('потай и цековка дают валидное тело', async () => {
     for (const screwHead of ['countersink', 'counterbore'] as const) {
-      expectValidSolid(await buildBaseplate({ ...defaultParams, fasteners: { ...defaultFasteners, screws: { mode: 'corner', manual: [] }, screwHead } }))
+      expectValidSolid(await buildBaseplate({ ...defaultParams, fasteners: { ...defaultFasteners, screws: { mode: 'corner', slots: [] }, screwHead } }))
     }
   })
 })
@@ -151,9 +190,8 @@ describe('checkFasteners', () => {
   it('стандартные позиции без предупреждений', () => {
     expect(checkFasteners(cfg('full', 'full'), footprintFromCells(2, 2, 42))).toEqual([])
   })
-  it('ручное отверстие у самого края и два пересекающихся', () => {
-    const c = cfg('none', 'none', { magnets: { mode: 'manual', manual: [{ x: 40, y: 0 }, { x: 0, y: 0 }, { x: 3, y: 0 }] } })
-    const keys = checkFasteners(c, footprintFromCells(2, 2, 42)).map((w) => w.key)
+  it('огромный магнит: у края габарита и пересечение отверстий', () => {
+    const keys = checkFasteners(cfg('full', 'none', { magnetD: 27 }), footprintFromCells(1, 1, 42)).map((w) => w.key)
     expect(keys).toContain('fastener.nearEdge')
     expect(keys).toContain('fastener.overlap')
   })

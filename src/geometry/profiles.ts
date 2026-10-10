@@ -43,6 +43,22 @@ export function socketPocket(w: ManifoldToplevel, pitch: number): Manifold {
   return layeredHull(w, pitch - 2 * CLEARANCE + 0.5, SOCKET_R_TOP, SOCKET_LAYERS)
 }
 
+/** Ширина гнезда по нижнему слою профиля: по ней вырезается окно ячейки под гнездом. */
+export const socketWindowWidth = (pitch: number) => pitch - 2 * CLEARANCE + 0.5 - 2 * (SOCKET_LAYERS.up + SOCKET_LAYERS.low)
+
+/**
+ * Окно ячейки под гнездом: контур совпадает с нижним слоем гнезда, поэтому стенка продолжается без ступеньки.
+ * Тело занимает z от zFrom до zTo.
+ */
+export function socketWindow(w: ManifoldToplevel, pitch: number, zFrom: number, zTo: number): Manifold {
+  const { CrossSection, Manifold } = w
+  const width = socketWindowWidth(pitch)
+  const rMid = Math.max(SOCKET_R_TOP - SOCKET_LAYERS.up, R_MIN)
+  const rLow = Math.max(rMid - SOCKET_LAYERS.low, R_MIN)
+  const rounded = CrossSection.square([Math.max(width - 2 * rLow, 0.01), Math.max(width - 2 * rLow, 0.01)], true).offset(rLow, 'Round', 2, 24)
+  return Manifold.extrude(rounded, zTo - zFrom).translate([0, 0, zFrom])
+}
+
 /** Нога коробки (твёрдое тело) для одной ячейки. Верх z = 4.75 (+SLAB_T). */
 export function binFoot(w: ManifoldToplevel, pitch: number): Manifold {
   return layeredHull(w, pitch - 2 * CLEARANCE, FOOT_R_TOP, FOOT_LAYERS)

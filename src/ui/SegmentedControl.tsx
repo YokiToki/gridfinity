@@ -17,7 +17,7 @@ export function SegmentedControl<T extends string>({ options, value, onChange, a
         return (
           <button
             key={o.value} type="button" aria-pressed={on} onClick={() => onChange(o.value)}
-            className={`inline-flex h-8 min-w-8 cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap rounded-control border-0 px-3 ${fill ? 'flex-1' : ''} ${
+            className={`inline-flex min-h-8 min-w-8 cursor-pointer items-center justify-center gap-1.5 rounded-control border-0 text-center leading-tight ${fill ? 'min-w-0 flex-1 px-1.5 py-1' : 'whitespace-nowrap px-3'} ${
               on ? (accent ? 'bg-accent-muted text-white shadow-[inset_0_0_0_1px_var(--color-accent)]' : 'bg-surface-3 text-text shadow-[inset_0_0_0_1px_var(--color-border-strong)]') : 'bg-transparent text-text-muted hover:text-text'}`}
           >
             {o.icon}{o.label}

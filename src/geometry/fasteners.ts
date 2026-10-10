@@ -1,14 +1,18 @@
 import type { Manifold, ManifoldToplevel } from 'manifold-3d'
 import { cellCenters, cellCenter, type Footprint, type Point } from './footprint'
 import { FLOOR, HOLE_OFFSET, MAGNET_D, MAGNET_H, SCREW_D } from './spec'
+import { socketWindow, socketWindowWidth } from './profiles'
 
 export type FastenerMode = 'none' | 'corner' | 'full' | 'manual'
 export const FASTENER_MODES: FastenerMode[] = ['none', 'corner', 'full', 'manual']
 
+/** Стандартная позиция отверстия: ячейка (i, j) и её угол (sx, sy ∈ {−1, +1}). Хранится так, а не координатами, чтобы переживать смену размера сетки. */
+export interface Slot { i: number; j: number; sx: 1 | -1; sy: 1 | -1 }
+
 export interface FastenerKind {
   mode: FastenerMode
-  /** Точки ручной расстановки, мм, начало координат — центр габарита. */
-  manual: Point[]
+  /** Выбранные позиции в режиме manual. */
+  slots: Slot[]
 }
 
 export type ScrewHead = 'none' | 'countersink' | 'counterbore'
@@ -28,6 +32,8 @@ export interface FastenerConfig {
   headDepth: number
   /** Допуск посадки: добавляется к диаметру магнита и к его глубине. */
   tolerance: number
+  /** Материал вокруг отверстия («ухо»), мм. */
+  earWall: number
 }
 
 export interface MagnetPreset { id: string; d: number; depth: number }
@@ -42,8 +48,8 @@ export const SCREW_PRESETS: ScrewPreset[] = [{ id: 'm3', d: 3 }]
 export const CUSTOM = 'custom'
 
 export const defaultFasteners: FastenerConfig = {
-  magnets: { mode: 'none', manual: [] },
-  screws: { mode: 'none', manual: [] },
+  magnets: { mode: 'none', slots: [] },
+  screws: { mode: 'none', slots: [] },
   magnetPreset: 'm6.5x2.4',
   magnetD: MAGNET_D,
   magnetDepth: MAGNET_H,
@@ -53,6 +59,7 @@ export const defaultFasteners: FastenerConfig = {
   headD: 6,
   headDepth: 1.5,
   tolerance: 0,
+  earWall: 1.2,
 }
 
 /** Применяет пресет магнита: размеры берутся из пресета, custom оставляет текущие. */
@@ -67,6 +74,9 @@ export function withScrewPreset(c: FastenerConfig, id: string): FastenerConfig {
 
 /** Фактические размеры отверстий с учётом допуска. */
 export const magnetSize = (c: FastenerConfig) => ({ d: c.magnetD + c.tolerance, depth: c.magnetDepth + c.tolerance })
+
+/** Радиус уха вокруг отверстия данного вида. */
+export const earRadius = (c: FastenerConfig, kind: 'magnets' | 'screws') => (kind === 'magnets' ? magnetSize(c).d : c.screwD) / 2 + c.earWall
 
 const SIGNS: [number, number][] = [[-1, -1], [1, -1], [-1, 1], [1, 1]]
 
@@ -85,20 +95,58 @@ export function cornerPositions(fp: Footprint): Point[] {
   }))
 }
 
+export const sameSlot = (a: Slot, b: Slot) => a.i === b.i && a.j === b.j && a.sx === b.sx && a.sy === b.sy
+
+/** Позиция слота в координатах модели. */
+export function slotPosition(fp: Footprint, s: Slot): Point {
+  const c = cellCenter(fp, s.i, s.j)
+  return { x: c.x + s.sx * HOLE_OFFSET, y: c.y + s.sy * HOLE_OFFSET }
+}
+
+/** Все стандартные слоты сетки. */
+export function allSlots(fp: Footprint): Slot[] {
+  const out: Slot[] = []
+  for (let i = 0; i < fp.nx; i++) for (let j = 0; j < fp.ny; j++) for (const [sx, sy] of SIGNS) out.push({ i, j, sx: sx as 1 | -1, sy: sy as 1 | -1 })
+  return out
+}
+
+/** Слоты, которые есть в текущей сетке (после уменьшения сетки лишние игнорируются). */
+export const validSlots = (slots: Slot[], fp: Footprint) => slots.filter((s) => s.i >= 0 && s.j >= 0 && s.i < fp.nx && s.j < fp.ny)
+
+export const toggleSlot = (slots: Slot[], s: Slot): Slot[] => (slots.some((q) => sameSlot(q, s)) ? slots.filter((q) => !sameSlot(q, s)) : [...slots, s])
+
 export function resolvePositions(kind: FastenerKind, fp: Footprint): Point[] {
   switch (kind.mode) {
     case 'none': return []
     case 'corner': return cornerPositions(fp)
     case 'full': return standardPositions(fp)
-    case 'manual': return kind.manual.map((p) => ({ ...p }))
+    case 'manual': return validSlots(kind.slots, fp).map((s) => slotPosition(fp, s))
   }
 }
 
-/** Переключение режима: при уходе в Manual текущие вычисленные точки сохраняются как ручные. */
-export function switchMode(kind: FastenerKind, mode: FastenerMode, fp: Footprint): FastenerKind {
+/** Переключение режима. В Manual всегда входим с пустым выбором; при выходе из Manual выбор не трогаем. */
+export function switchMode(kind: FastenerKind, mode: FastenerMode): FastenerKind {
   if (mode === kind.mode) return kind
-  if (mode === 'manual') return { mode, manual: kind.mode === 'none' ? kind.manual : resolvePositions(kind, fp) }
-  return { ...kind, mode }
+  return mode === 'manual' ? { mode, slots: [] } : { ...kind, mode }
+}
+
+export const SNAP_RADIUS = 3 // мм
+
+/** Старые сохранённые точки → слоты: ближайшая стандартная позиция в радиусе, остальные отбрасываются, дубли сливаются. */
+export function slotsFromPoints(points: Point[], fp: Footprint, radius = SNAP_RADIUS): Slot[] {
+  const slots = allSlots(fp)
+  const out: Slot[] = []
+  for (const p of points) {
+    let best: Slot | null = null
+    let bd = radius
+    for (const s of slots) {
+      const q = slotPosition(fp, s)
+      const d = Math.hypot(p.x - q.x, p.y - q.y)
+      if (d <= bd) { best = s; bd = d }
+    }
+    if (best && !out.some((o) => sameSlot(o, best!))) out.push(best)
+  }
+  return out
 }
 
 export interface FastenerPositions { magnets: Point[]; screws: Point[] }
@@ -111,6 +159,24 @@ export function allPositions(c: FastenerConfig, fp: Footprint): FastenerPosition
 export const needsFloor = (p: FastenerPositions) => p.magnets.length > 0 || p.screws.length > 0
 
 export interface FastenerCuts { cuts: Manifold[]; positions: FastenerPositions }
+
+/** Ячейка, в которой лежит точка, и направление угла ячейки (−1 или +1 по каждой оси). */
+export function cellOfPoint(fp: Footprint, p: Point) {
+  const i = Math.min(fp.nx - 1, Math.max(0, Math.floor((p.x + fp.sizeX / 2 - fp.offsetX) / fp.pitch)))
+  const j = Math.min(fp.ny - 1, Math.max(0, Math.floor((p.y + fp.sizeY / 2 - fp.offsetY) / fp.pitch)))
+  const c = cellCenter(fp, i, j)
+  return { i, j, center: c, sx: p.x >= c.x ? 1 : -1, sy: p.y >= c.y ? 1 : -1 }
+}
+
+/**
+ * Ухо: оболочка круга вокруг отверстия и круга в углу окна ячейки, поэтому оно сливается со стенками.
+ * Тело занимает z от zFrom до zTo; вычитается из окна ячейки, и ухо остаётся материалом.
+ */
+export function fastenerEar(w: ManifoldToplevel, hole: Point, cell: Point, sx: number, sy: number, radius: number, pitch: number, zFrom: number, zTo: number): Manifold {
+  const half = socketWindowWidth(pitch) / 2
+  const disc = (x: number, y: number) => w.Manifold.cylinder(zTo - zFrom, radius, radius, 32).translate([x, y, zFrom])
+  return w.Manifold.hull([disc(hole.x, hole.y), disc(cell.x + sx * half, cell.y + sy * half)])
+}
 
 /**
  * Объёмы для вычитания. floor — высота материала под гнёздом (низ гнезда): магнитное гнездо
@@ -138,6 +204,43 @@ export function fastenerCuts(w: ManifoldToplevel, c: FastenerConfig, fp: Footpri
   return { cuts, positions }
 }
 
+/**
+ * Окна ячеек под гнёздами: каждое окно открыто насквозь, кроме ушей вокруг отверстий этой ячейки.
+ * floor — высота нижнего края гнезда (верх ушей). Без отверстий возвращает пустой список.
+ */
+export function cellWindows(w: ManifoldToplevel, c: FastenerConfig, fp: Footprint, floor = FLOOR): Manifold[] {
+  const pos = allPositions(c, fp)
+  if (!needsFloor(pos)) return []
+  const holes = [
+    ...pos.magnets.map((p) => ({ p, r: earRadius(c, 'magnets') })),
+    ...pos.screws.map((p) => ({ p, r: earRadius(c, 'screws') })),
+  ]
+  const byCell = new Map<string, typeof holes>()
+  for (const h of holes) {
+    const { i, j } = cellOfPoint(fp, h.p)
+    const key = `${i},${j}`
+    byCell.set(key, [...(byCell.get(key) ?? []), h])
+  }
+  const template = socketWindow(w, fp.pitch, -1, floor + 0.002)
+  const out: Manifold[] = []
+  for (let i = 0; i < fp.nx; i++) {
+    for (let j = 0; j < fp.ny; j++) {
+      const center = cellCenter(fp, i, j)
+      let cutter = template.translate([center.x, center.y, 0])
+      const own = byCell.get(`${i},${j}`) ?? []
+      if (own.length) {
+        const ears = own.map((h) => {
+          const cell = cellOfPoint(fp, h.p)
+          return fastenerEar(w, h.p, center, cell.sx, cell.sy, h.r, fp.pitch, -2, floor + 1)
+        })
+        cutter = cutter.subtract(w.Manifold.union(ears))
+      }
+      out.push(cutter)
+    }
+  }
+  return out
+}
+
 export interface FastenerWarning { kind: 'magnets' | 'screws'; key: string; index: number }
 
 const EDGE_MIN = 0.8 // минимальная стенка между отверстием и контуром, мм
@@ -155,5 +258,12 @@ export function checkFasteners(c: FastenerConfig, fp: Footprint): FastenerWarnin
   }
   check('magnets', pos.magnets, magnetSize(c).d)
   check('screws', pos.screws, c.screwD)
+  // ухо должно помещаться в ячейку: отверстие внутри окна, а уши соседних отверстий не слипаются
+  const half = socketWindowWidth(fp.pitch) / 2
+  for (const kind of ['magnets', 'screws'] as const) {
+    if (pos[kind].length === 0) continue
+    const holeR = (kind === 'magnets' ? magnetSize(c).d : c.screwD) / 2
+    if (HOLE_OFFSET + holeR > half || earRadius(c, kind) >= HOLE_OFFSET) out.push({ kind, key: 'fastener.earTooBig', index: 0 })
+  }
   return out
 }

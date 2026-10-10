@@ -84,6 +84,21 @@ describe('переключение единиц', () => {
   })
 })
 
+describe('SegmentedControl: длинные подписи', () => {
+  const options = [{ value: 'a', label: 'Нет' }, { value: 'b', label: 'Углы' }, { value: 'c', label: 'Все ячейки' }, { value: 'd', label: 'Вручную' }]
+  it('подпись растянутого контрола показывается целиком и может переноситься', () => {
+    render(<SegmentedControl fill ariaLabel="s" value="a" onChange={() => {}} options={options} />)
+    const b = screen.getByRole('button', { name: 'Все ячейки' })
+    expect(b).toHaveTextContent('Все ячейки')
+    expect(b.className).not.toContain('whitespace-nowrap')
+    expect(b.className).toContain('min-w-0')
+  })
+  it('компактный контрол не переносит подписи', () => {
+    render(<SegmentedControl ariaLabel="s" value="a" onChange={() => {}} options={options} />)
+    expect(screen.getByRole('button', { name: 'Нет' }).className).toContain('whitespace-nowrap')
+  })
+})
+
 describe('SegmentedControl и Toggle', () => {
   it('выбор сегмента с клавиатуры', async () => {
     let v = 'a'

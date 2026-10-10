@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  checkFasteners, CUSTOM, defaultFasteners, FASTENER_MODES, MAGNET_PRESETS, SCREW_PRESETS, switchMode, withMagnetPreset, withScrewPreset,
+  checkFasteners, CUSTOM, defaultFasteners, FASTENER_MODES, MAGNET_PRESETS, SCREW_PRESETS, switchMode, validSlots, withMagnetPreset, withScrewPreset,
   type FastenerConfig, type FastenerKind, type FastenerMode, type ScrewHead,
 } from '../../geometry/fasteners'
 import type { Footprint } from '../../geometry/footprint'
@@ -24,8 +24,8 @@ export function FastenerSection({ config, onChange, footprint, children }: {
 }) {
   const { t } = useTranslation()
   const set = (patch: Partial<FastenerConfig>) => onChange({ ...config, ...patch })
-  const setKind = (kind: Kind, mode: FastenerMode) => set({ [kind]: switchMode(config[kind], mode, footprint) } as Partial<FastenerConfig>)
-  const summaryOf = (k: FastenerKind) => (k.mode === 'manual' ? t('fastener.summary.manual', { n: k.manual.length }) : t(`fastener.summary.${k.mode}`))
+  const setKind = (kind: Kind, mode: FastenerMode) => set({ [kind]: switchMode(config[kind], mode) } as Partial<FastenerConfig>)
+  const summaryOf = (k: FastenerKind) => (k.mode === 'manual' ? t('fastener.summary.manual', { n: validSlots(k.slots, footprint).length }) : t(`fastener.summary.${k.mode}`))
   const summary = `${t('fastener.magnets')}: ${summaryOf(config.magnets)} · ${t('fastener.screws')}: ${summaryOf(config.screws)}`
   const warnings = checkFasteners(config, footprint)
   const modeOptions = FASTENER_MODES.map((m) => ({ value: m, label: t(`fastener.mode.${m}`) }))
@@ -67,7 +67,12 @@ export function FastenerSection({ config, onChange, footprint, children }: {
           </>
         )}
       </div>
-      <LengthField label={t('fastener.tolerance')} value={config.tolerance} min={0} max={1} step={0.05} onChange={(v) => set({ tolerance: v })} />
+      <div className="grid grid-cols-2 gap-2">
+        <LengthField label={t('fastener.tolerance')} value={config.tolerance} min={0} max={1} step={0.05} onChange={(v) => set({ tolerance: v })} />
+        {(config.magnets.mode !== 'none' || config.screws.mode !== 'none') && (
+          <LengthField label={t('fastener.earWall')} value={config.earWall} min={0.4} max={4} step={0.1} onChange={(v) => set({ earWall: v })} />
+        )}
+      </div>
       {warnings.map((w) => (
         <Banner key={`${w.kind}-${w.key}-${w.index}`} kind="warn">{t(w.key, { kind: t(`fastener.kinds.${w.kind}`), n: w.index + 1 })}</Banner>
       ))}

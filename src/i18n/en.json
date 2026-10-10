@@ -106,14 +106,14 @@
       "label": "Placement",
       "none": "None",
       "corner": "Corners",
-      "full": "Every cell",
+      "full": "All cells",
       "manual": "Manual"
     },
     "summary": {
       "none": "none",
       "corner": "corners",
       "full": "every cell",
-      "manual": "{{n}} manual"
+      "manual": "{{n}} selected"
     },
     "preset": "Preset",
     "custom": "Custom",
@@ -137,18 +137,20 @@
     },
     "editor": {
       "title": "Placement editor",
-      "hint": "click to add, drag to move",
-      "label": "Fastener placement editor",
+      "hint": "click a position to toggle it",
+      "label": "Fastener positions",
       "edit": "Editing",
-      "add": "Add hole",
-      "remove": "Remove hole {{n}}",
-      "empty": "No holes yet. Click a snap point to add one.",
-      "x": "X",
-      "y": "Y",
-      "list": "Holes",
-      "fromCorner": "from the corner",
-      "hole": "Hole {{n}}"
+      "empty": "Nothing selected. Click a position to add a hole and an ear.",
+      "slot": "Cell {{i}},{{j}}, {{corner}}",
+      "corner": {
+        "topLeft": "top left",
+        "topRight": "top right",
+        "bottomLeft": "bottom left",
+        "bottomRight": "bottom right"
+      }
     },
-    "floorNote": "Fasteners add a {{value}} floor under the pockets."
+    "floorNote": "Fasteners add ears {{value}} high around the holes; the rest of each cell stays open.",
+    "earTooBig": "{{kind}}: the ear of the hole does not fit inside the cell.",
+    "earWall": "Ear wall"
   }
 }

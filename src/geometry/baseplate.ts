@@ -3,7 +3,7 @@ import { getWasm } from './wasm'
 import { socketPocket } from './profiles'
 import { DEFAULT_PITCH, FLOOR, SOCKET_HEIGHT } from './spec'
 import { footprintFromCells, cellCenters } from './footprint'
-import { allPositions, defaultFasteners, fastenerCuts, needsFloor, type FastenerConfig } from './fasteners'
+import { allPositions, cellWindows, defaultFasteners, fastenerCuts, needsFloor, type FastenerConfig } from './fasteners'
 
 export interface BaseplateParams {
   unit: number // размер ячейки, мм
@@ -42,6 +42,8 @@ export async function buildBaseplate(p: BaseplateParams, wasmUrl?: string): Prom
   const plate = Manifold.cube([sizeX, sizeY, height]).translate([-sizeX / 2, -sizeY / 2, 0])
   const cell = socketPocket(w, p.unit).translate([0, 0, floor])
   const cuts: Manifold[] = cellCenters(fp).map((c) => cell.translate([c.x, c.y, 0]))
+  // под гнёздами ячейки открыты насквозь, материал остаётся только в «ушах» вокруг отверстий
+  cuts.push(...cellWindows(w, p.fasteners, fp, floor))
   cuts.push(...fastenerCuts(w, p.fasteners, fp, floor).cuts)
   return plate.subtract(Manifold.union(cuts))
 }
