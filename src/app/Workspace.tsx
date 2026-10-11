@@ -8,7 +8,7 @@ import { ExportOptionsSection } from '../features/export/ExportOptionsSection'
 import { MeasurementsBar } from '../features/viewport/MeasurementsBar'
 
 /** Раскладка режима: панель параметров, закреплённый блок экспорта и 3D-вид. На узком экране панель — нижняя шторка. */
-export function Workspace({ panel, footer, model, plate, gap, busy }: {
+export function Workspace({ panel, footer, model, plate, gap, busy, exportOptions = true }: {
   panel: ReactNode
   footer?: ReactNode
   model: ModelResult | null
@@ -16,6 +16,8 @@ export function Workspace({ panel, footer, model, plate, gap, busy }: {
   /** Зазор между частями в разнесённом виде, мм (0 — собрано). */
   gap?: number
   busy?: boolean
+  /** Секция параметров экспорта в панели (у заглушек без модели не нужна). */
+  exportOptions?: boolean
 }) {
   const { t } = useTranslation()
   const [view, setView] = usePersistedState('gridfinity.viewport', { tools: true })
@@ -56,7 +58,7 @@ export function Workspace({ panel, footer, model, plate, gap, busy }: {
           <button type="button" aria-label={t('shell.collapseDrawer')} onClick={() => setDrawerTop(window.innerHeight - 140)}
             className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-control border-0 bg-transparent text-text-muted"><IconChevronDown size={18} stroke={1.75} /></button>
         </div>
-        <div className="min-h-0 flex-1 overflow-auto">{panel}<ExportOptionsSection /></div>
+        <div className="min-h-0 flex-1 overflow-auto">{panel}{exportOptions && <ExportOptionsSection />}</div>
         {footer && <div className="flex-none border-t border-border bg-surface-1 px-4 py-3 shadow-sticky">{footer}</div>}
       </aside>
       <section aria-label={t('viewport.label')} className="relative min-w-0 flex-1 overflow-hidden bg-[radial-gradient(ellipse_at_50%_40%,#1a2029_0%,#0b0d10_75%)]">

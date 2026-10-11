@@ -21,14 +21,14 @@ const renderAt = (path: string) => render(
   <I18nextProvider i18n={i18n}><RouterProvider router={createMemoryRouter(routes, { initialEntries: [path] })} /></I18nextProvider>,
 )
 
-describe('StartPage', () => {
+describe('StartPage (выбор продукта)', () => {
   beforeEach(async () => { localStorage.clear(); await i18n.changeLanguage('en') })
 
-  it('каждая карточка ведёт на свой маршрут', () => {
+  it('две карточки ведут на разделы продуктов', () => {
     renderAt('/')
-    expect(screen.getByTestId('card-box')).toHaveAttribute('href', '/box')
-    expect(screen.getByTestId('card-baseplate')).toHaveAttribute('href', '/baseplate')
-    expect(screen.getByTestId('card-cutout')).toHaveAttribute('href', '/cutout')
+    expect(screen.getByTestId('card-gridfinity')).toHaveAttribute('href', '/gridfinity')
+    expect(screen.getByTestId('card-keychain')).toHaveAttribute('href', '/keychain')
+    expect(screen.getByTestId('card-keychain')).toHaveTextContent('Keychain Master')
   })
   it('вьюпорт и панель параметров не рендерятся', () => {
     renderAt('/')
@@ -39,21 +39,46 @@ describe('StartPage', () => {
     renderAt('/nope')
     expect(screen.getByRole('heading', { name: 'What are you printing?' })).toBeInTheDocument()
   })
-  it('клавиша 3 открывает Cutout', async () => {
+  it('клавиша 2 открывает Keychain Master', async () => {
     renderAt('/')
-    await userEvent.keyboard('3')
-    expect(await screen.findByText('Cutouts')).toBeInTheDocument()
+    await userEvent.keyboard('2')
+    expect(await screen.findByText('Keychain Master is coming soon')).toBeInTheDocument()
   })
-  it('плашка «Продолжить» скрыта без сохранённой сессии и видна с ней', () => {
+  it('плашка «Продолжить» скрыта без сохранённой сессии и ведёт в режим Gridfinity', () => {
     const { unmount } = renderAt('/')
     expect(screen.queryByText(/Continue:/)).toBeNull()
     unmount()
     recordSession('baseplate', '6 × 4')
     renderAt('/')
-    expect(screen.getByText(/Continue: Baseplate 6 × 4/)).toBeInTheDocument()
+    const link = screen.getByText(/Continue: Baseplate 6 × 4/).closest('a')!
+    expect(link).toHaveAttribute('href', '/gridfinity/baseplate')
+  })
+  it('«Продолжить» после Keychain ведёт в раздел брелоков', () => {
+    recordSession(null, '1 emblem', 'keychain')
+    renderAt('/')
+    const link = screen.getByText(/Continue: Keychain Master 1 emblem/).closest('a')!
+    expect(link).toHaveAttribute('href', '/keychain')
+  })
+})
+
+describe('ModeChooser (/gridfinity)', () => {
+  beforeEach(async () => { localStorage.clear(); await i18n.changeLanguage('en') })
+
+  it('каждая карточка ведёт на свой режим, вьюпорта нет', () => {
+    renderAt('/gridfinity')
+    expect(screen.getByTestId('card-box')).toHaveAttribute('href', '/gridfinity/box')
+    expect(screen.getByTestId('card-baseplate')).toHaveAttribute('href', '/gridfinity/baseplate')
+    expect(screen.getByTestId('card-cutout')).toHaveAttribute('href', '/gridfinity/cutout')
+    expect(screen.queryByLabelText('3D preview')).toBeNull()
+    expect(screen.getByRole('heading', { name: 'Choose a Gridfinity part' })).toBeInTheDocument()
+  })
+  it('клавиша 3 открывает Cutout', async () => {
+    renderAt('/gridfinity')
+    await userEvent.keyboard('3')
+    expect(await screen.findByText('Cutouts')).toBeInTheDocument()
   })
   it('режим Box открывается с панелью параметров и вьюпортом', async () => {
-    renderAt('/box')
+    renderAt('/gridfinity/box')
     expect(await screen.findByLabelText('3D preview')).toBeInTheDocument()
     expect(screen.getByRole('complementary', { name: 'Parameters' })).toBeInTheDocument()
     expect(screen.getByText('Compartments')).toBeInTheDocument()

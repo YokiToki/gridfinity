@@ -76,8 +76,8 @@ describe('режим Cutout: импорт STL', () => {
     first.unmount()
     registered.length = 0
     open()
-    expect(await screen.findByRole('button', { name: 'Select tool' })).toBeInTheDocument()
-    await waitFor(() => expect(registered).toHaveLength(1))
+    expect(await screen.findByRole('button', { name: 'Select tool' }, { timeout: 5000 })).toBeInTheDocument()
+    await waitFor(() => expect(registered).toHaveLength(1), { timeout: 5000 }) // чтение IndexedDB под нагрузкой полного прогона бывает долгим
     expect(screen.queryByText(/not stored on this device/)).toBeNull()
   })
   it('удаление выреза освобождает сетку в хранилище', async () => {

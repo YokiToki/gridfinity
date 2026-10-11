@@ -29,7 +29,7 @@
     "baseplate": "Baseplate",
     "cutout": "Cutout",
     "comingSoon": "{{mode}} is coming soon",
-    "comingSoonHint": "This mode is not implemented yet. The 3D view still works."
+    "comingSoonHint": "This section is not implemented yet. The 3D view still works."
   },
   "start": {
     "tagline": "runs in your browser · no account · STL and 3MF",
@@ -49,7 +49,9 @@
       "tag1": "STL import",
       "tag2": "snap"
     },
-    "continue": "Continue: {{mode}} {{size}}, saved {{when}}"
+    "continue": "Continue: {{mode}} {{size}}, saved {{when}}",
+    "gridfinityTitle": "Choose a Gridfinity part",
+    "open": "Open {{name}}"
   },
   "baseplate": {
     "size": {
@@ -449,5 +451,20 @@
     "plates": "{{n}} plates",
     "overflow": "{{n}} part(s) too big for the bed",
     "part": "Download part {{label}}"
+  },
+  "products": {
+    "label": "Product",
+    "gridfinity": {
+      "name": "Gridfinity Master",
+      "desc": "Parametric Gridfinity bins, baseplates and tool cutouts with STL and 3MF export.",
+      "tag1": "box · baseplate",
+      "tag2": "cutout"
+    },
+    "keychain": {
+      "name": "Keychain Master",
+      "desc": "Turn an image into a relief keychain: silhouette, height pattern, ring mount.",
+      "tag1": "image → relief",
+      "tag2": "soon"
+    }
   }
 }
