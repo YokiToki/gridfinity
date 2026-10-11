@@ -8,13 +8,18 @@ import { recordSession } from '../../app/lastSession'
 import { Workspace } from '../../app/Workspace'
 import { migrateBaseplate } from './migrate'
 import { BaseplatePanel } from './BaseplatePanel'
-import { ExportBlock } from '../../app/ExportBlock'
+import { bedOf, useExportSettings } from '../../export/settings'
+import { ExportPanel } from '../export/ExportPanel'
 
 const PARAMS_KEY = 'gridfinity.baseplate'
 
 export function BaseplateMode() {
   const { t } = useTranslation()
-  const [p, setP] = usePersistedState<BaseplateParams>(PARAMS_KEY, defaultParams, migrateBaseplate)
+  const [stored, setP] = usePersistedState<BaseplateParams>(PARAMS_KEY, defaultParams, migrateBaseplate)
+  // стол и поле берутся из общих настроек принтера: сохранённые в режиме значения ими перекрываются
+  const [ex] = useExportSettings()
+  const bed = bedOf(ex)
+  const p = useMemo<BaseplateParams>(() => ({ ...stored, preview: { ...stored.preview, plateX: bed.x, plateY: bed.y }, split: { ...stored.split, margin: ex.margin } }), [stored, bed.x, bed.y, ex.margin])
   // перестраиваем модель только при изменении геометрии: стол, разнесённый вид и зазор её не трогают
   const raw = toGeometry(p)
   const candidate = raw.split.enabled ? raw : { ...raw, split: defaultSplit }
@@ -34,9 +39,9 @@ export function BaseplateMode() {
     <Workspace
       model={model} busy={busy}
       gap={p.split.enabled && p.split.exploded ? p.split.gap : 0}
-      plate={p.preview.showPlate ? { x: p.preview.plateX, y: p.preview.plateY } : null}
+      plate={p.preview.showPlate ? { x: p.preview.plateX, y: p.preview.plateY, margin: ex.margin } : null}
       panel={<BaseplatePanel params={p} onChange={setP} />}
-      footer={<ExportBlock model={model} busy={pending} name={`baseplate_${Math.round(sizeX)}x${Math.round(sizeY)}`} />}
+      footer={<ExportPanel model={model} busy={pending} name={`baseplate_${Math.round(sizeX)}x${Math.round(sizeY)}`} />}
     />
   )
 }

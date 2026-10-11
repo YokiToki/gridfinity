@@ -5,7 +5,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import type { ModelResult } from '../../geometry/model'
 import { groundOpacity } from './ground'
 
-export interface BuildPlate { x: number; y: number }
+export interface BuildPlate { x: number; y: number; /** Поле по краю: пунктирный контур рабочей области. */ margin?: number }
 
 interface Api {
   setModel: (m: ModelResult | null) => void
@@ -127,7 +127,7 @@ export function Viewport({ model, plate, gap = 0, showTools = true, onFitReady }
     // стол: полупрозрачная плита + контур
     const plateGroup = new THREE.Group()
     scene.add(plateGroup)
-    let plateMats: { fill: THREE.MeshBasicMaterial; line: THREE.LineBasicMaterial } | null = null
+    let plateMats: { fill: THREE.MeshBasicMaterial; line: THREE.LineBasicMaterial; safe?: THREE.LineBasicMaterial } | null = null
 
     const modelGroup = new THREE.Group()
     scene.add(modelGroup)
@@ -186,6 +186,15 @@ export function Viewport({ model, plate, gap = 0, showTools = true, onFitReady }
         const outline = new THREE.LineSegments(box, lineMat)
         outline.position.z = -0.04
         plateGroup.add(fill, outline)
+        const m = p.margin ?? 0
+        if (m > 0 && p.x > 2 * m && p.y > 2 * m) {
+          const safeMat = new THREE.LineDashedMaterial({ color: 0x5c6b82, dashSize: 4, gapSize: 3, transparent: true })
+          plateMats!.safe = safeMat
+          const safe = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(p.x - 2 * m, p.y - 2 * m)), safeMat)
+          safe.computeLineDistances()
+          safe.position.z = -0.03
+          plateGroup.add(safe)
+        }
       },
       setGap(g) { applyGap(g) },
       setTools(m, show) {
@@ -293,7 +302,7 @@ export function Viewport({ model, plate, gap = 0, showTools = true, onFitReady }
       ;(grid.material as THREE.ShaderMaterial).uniforms.uAlpha.value = ground
       grid.visible = ground > 0.01
       plateGroup.visible = ground > 0.01
-      if (plateMats) { plateMats.fill.opacity = 0.85 * ground; plateMats.line.opacity = ground }
+      if (plateMats) { plateMats.fill.opacity = 0.85 * ground; plateMats.line.opacity = ground; if (plateMats.safe) plateMats.safe.opacity = ground }
       const w = el.clientWidth, h = el.clientHeight
       renderer.setViewport(0, 0, w, h); renderer.setScissorTest(false)
       renderer.clear(); renderer.render(scene, camera)

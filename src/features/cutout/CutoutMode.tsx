@@ -8,7 +8,7 @@ import { usePersistedState } from '../../app/usePersistedState'
 import { getModelClient, useModel } from '../../app/useModel'
 import { recordSession } from '../../app/lastSession'
 import { Workspace } from '../../app/Workspace'
-import { ExportBlock } from '../../app/ExportBlock'
+import { ExportPanel } from '../export/ExportPanel'
 import { openMeshStore, type MeshStore } from './meshStore'
 import { importStl, LARGE_STL_BYTES } from './importStl'
 import { migrateCutout } from './migrate'
@@ -92,7 +92,7 @@ export function CutoutMode() {
       model={model} busy={busy}
       panel={<CutoutPanel params={p} onChange={setP} selectedId={selectedId} onSelect={setSelectedId} meshes={meshes} onImport={(f) => void onImport(f)} importMessage={message}
         draft={draft} onDraft={setDraft} snap={snap} onSnap={setSnap} generationError={error} />}
-      footer={<ExportBlock model={model} busy={pending} name={nameBase} />}
+      footer={<ExportPanel model={model} busy={pending} name={nameBase} />}
     />
   )
 }

@@ -5,7 +5,7 @@ import { usePersistedState } from '../../app/usePersistedState'
 import { useModel } from '../../app/useModel'
 import { recordSession } from '../../app/lastSession'
 import { Workspace } from '../../app/Workspace'
-import { ExportBlock } from '../../app/ExportBlock'
+import { ExportPanel } from '../export/ExportPanel'
 import { migrateBox } from './migrate'
 import { BoxPanel } from './BoxPanel'
 
@@ -29,7 +29,7 @@ export function BoxMode() {
     <Workspace
       model={model} busy={busy}
       panel={<BoxPanel params={p} onChange={setP} />}
-      footer={<ExportBlock model={model} busy={pending} name={`box_${Math.round(axisMm(p.x, p.pitch))}x${Math.round(axisMm(p.y, p.pitch))}`} />}
+      footer={<ExportPanel model={model} busy={pending} name={`box_${Math.round(axisMm(p.x, p.pitch))}x${Math.round(axisMm(p.y, p.pitch))}`} />}
     />
   )
 }

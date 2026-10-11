@@ -92,12 +92,6 @@
       "invalid": "Fix the highlighted values: the preview shows the last valid model",
       "splitCellTooBig": "A single cell does not fit the bed, so the plate cannot be split.",
       "splitTooManyParts": "Too many parts (more than {{max}}). Use a larger bed or a smaller plate."
-    },
-    "export": {
-      "stl": "Export STL",
-      "all": "Export all parts",
-      "part": "Part {{label}}",
-      "partFile": "{{label}} · STL"
     }
   },
   "viewport": {
@@ -419,5 +413,42 @@
       "size": "Width and length must be greater than zero.",
       "generation": "Could not build the model: {{message}}"
     }
+  },
+  "export": {
+    "printer": {
+      "label": "Printer",
+      "custom": "Custom bed",
+      "x": "Bed width",
+      "y": "Bed depth"
+    },
+    "margin": "Edge margin",
+    "format": "File format",
+    "options": "Export options",
+    "gap": "Gap on the print plate",
+    "nozzle": "Nozzle",
+    "process": "Process preset",
+    "filament": "Filament",
+    "filamentNone": "Not set",
+    "multi": {
+      "label": "Several parts",
+      "one": "One {{format}}",
+      "separate": "Separate files"
+    },
+    "orientation": {
+      "label": "Print orientation",
+      "auto": "Auto",
+      "asis": "As designed",
+      "flipped": "Flipped",
+      "hint": "Auto prints as designed: every model already has a flat base. Flipped puts the top on the bed."
+    },
+    "fileName": "File name",
+    "fileNameAuto": "Automatic",
+    "download": "Download {{format}}",
+    "downloadFiles": "Download {{n}} {{format}} files",
+    "building": "Building…",
+    "fits": "Fits the bed",
+    "plates": "{{n}} plates",
+    "overflow": "{{n}} part(s) too big for the bed",
+    "part": "Download part {{label}}"
   }
 }

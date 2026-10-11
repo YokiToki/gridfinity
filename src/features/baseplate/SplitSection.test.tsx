@@ -10,7 +10,6 @@ import { defaultConnector } from '../../geometry/connectors'
 import { result } from '../../geometry/testing'
 import { UnitContext } from '../../ui/units'
 import { BaseplatePanel } from './BaseplatePanel'
-import { ExportBlock } from '../../app/ExportBlock'
 
 let latest: BaseplateParams = defaultParams
 
@@ -187,32 +186,5 @@ describe('ConnectorsSection', () => {
     render(<Harness start={big({ connector: { ...defaultConnector, type: 'dovetail', count: 4 } })} />)
     await userEvent.click(screen.getByRole('button', { name: 'Reset: Connectors' }))
     expect(latest.split.connector).toEqual(defaultConnector)
-  })
-})
-
-describe('ExportBlock', () => {
-  beforeEach(async () => { await i18n.changeLanguage('en') })
-  const two = { parts: [...result(1).parts, { ...result(2).parts[0], label: 'B1', col: 1, oversize: true }] }
-
-  it('одна часть: одна кнопка экспорта', () => {
-    render(<ExportBlock model={result(1)} busy={false} name="baseplate_84x84" />)
-    expect(screen.getByRole('button', { name: 'Export STL' })).toBeEnabled()
-  })
-  it('несколько частей: экспорт всех и каждой отдельно, имя файла с меткой, слишком большая часть помечена', async () => {
-    const names: string[] = []
-    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) { names.push(this.download) })
-    URL.createObjectURL = vi.fn(() => 'blob:x')
-    URL.revokeObjectURL = vi.fn()
-    render(<ExportBlock model={two} busy={false} name="baseplate_300x200" />)
-    await userEvent.click(screen.getByRole('button', { name: 'Part B1' }))
-    expect(names).toEqual(['baseplate_300x200_B1.stl'])
-    await userEvent.click(screen.getByRole('button', { name: /Export all parts \(2\)/ }))
-    expect(names.slice(1)).toEqual(['baseplate_300x200_A1.stl', 'baseplate_300x200_B1.stl'])
-    expect(screen.getByRole('button', { name: 'Part B1' })).toHaveTextContent('!')
-    click.mockRestore()
-  })
-  it('пока модель устарела — кнопки отключены', () => {
-    render(<ExportBlock model={two} busy name="x" />)
-    expect(screen.getByRole('button', { name: /Export all parts/ })).toBeDisabled()
   })
 })

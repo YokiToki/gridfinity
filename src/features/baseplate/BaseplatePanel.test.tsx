@@ -7,6 +7,7 @@ import i18n from '../../i18n'
 import { axisMm, defaultParams, type BaseplateParams } from '../../geometry/baseplate'
 import { UnitContext } from '../../ui/units'
 import { BaseplatePanel } from './BaseplatePanel'
+import { bedOf, resetExportSettings } from '../../export/settings'
 
 let latest: BaseplateParams = defaultParams
 
@@ -128,22 +129,24 @@ describe('ThicknessSection', () => {
 })
 
 describe('PlateSection', () => {
-  beforeEach(async () => { await i18n.changeLanguage('en'); latest = defaultParams })
+  beforeEach(async () => { await i18n.changeLanguage('en'); latest = defaultParams; localStorage.clear(); resetExportSettings() })
+  const readExport = () => JSON.parse(localStorage.getItem('gridfinity.export')!)
   const big: BaseplateParams = { ...defaultParams, x: { mode: 'mm', value: 300, align: 'center' }, y: { mode: 'mm', value: 200, align: 'center' }, preview: { showPlate: true, plateX: 256, plateY: 256 } }
 
   it('стол выключен: полей нет', () => {
     render(<Harness />)
     expect(screen.queryByLabelText('Plate X')).toBeNull()
   })
-  it('включение стола и выбор пресета', async () => {
+  it('включение стола и выбор принтера', async () => {
     render(<Harness />)
     await userEvent.click(screen.getByRole('button', { name: 'Expand: Build plate' }))
     await userEvent.click(screen.getByRole('switch', { name: 'Show build plate' }))
     expect(latest.preview.showPlate).toBe(true)
-    await userEvent.selectOptions(screen.getByLabelText('Bed size'), '350')
-    expect(latest.preview).toMatchObject({ plateX: 350, plateY: 350 })
-    await type('Plate X', '300')
-    expect((screen.getByLabelText('Bed size') as HTMLSelectElement).value).toBe('custom')
+    await userEvent.selectOptions(screen.getByLabelText('Printer'), 'h2d')
+    expect(bedOf(readExport())).toMatchObject({ x: 350, y: 320 })
+    await userEvent.selectOptions(screen.getByLabelText('Printer'), 'custom')
+    await type('Bed width', '300')
+    expect(bedOf(readExport()).x).toBe(300)
   })
   it('плита 300 мм на столе 256: предупреждение', () => {
     render(<Harness start={big} />)
@@ -156,7 +159,7 @@ describe('PlateSection', () => {
   })
   it('предупреждение исчезает, когда стол увеличили', async () => {
     render(<Harness start={big} />)
-    await userEvent.selectOptions(screen.getByLabelText('Bed size'), '350')
+    await userEvent.selectOptions(screen.getByLabelText('Printer'), 'h2d')
     expect(screen.queryByText(/larger than the build plate/)).toBeNull()
   })
 })

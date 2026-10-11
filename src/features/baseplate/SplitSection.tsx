@@ -13,6 +13,7 @@ import { SegmentedControl } from '../../ui/SegmentedControl'
 import { Banner } from '../../ui/Banner'
 import { formatLength, useUnit } from '../../ui/units'
 import { BED_PRESETS, presetFor } from './bedPresets'
+import { updateExportSettings } from '../../export/settings'
 
 type Patch = (f: Partial<SplitSettings>) => void
 
@@ -60,7 +61,7 @@ export function SplitSection({ params: p, onChange }: { params: BaseplateParams;
             <LengthField label={t('split.bedX')} value={bedX} min={50} max={1000} onChange={(v) => onChange({ source: 'custom', bedX: v, bedY })} />
             <LengthField label={t('split.bedY')} value={bedY} min={50} max={1000} onChange={(v) => onChange({ source: 'custom', bedX, bedY: v })} />
           </div>
-          <LengthField label={t('split.margin')} value={s.margin} min={0} max={50} step={1} onChange={(v) => onChange({ margin: v })} />
+          <LengthField label={t('split.margin')} value={s.margin} min={0} max={50} step={1} onChange={(v) => { updateExportSettings({ margin: v }); onChange({ margin: v }) }} />
           <SegmentedControl fill ariaLabel={t('split.mode')} value={s.auto ? 'auto' : 'manual'} onChange={(v) => setMode(v === 'auto')}
             options={[{ value: 'auto', label: t('split.auto') }, { value: 'manual', label: t('split.manual') }]} />
           {!s.auto && (['x', 'y'] as const).map((axis) => (
