@@ -21,6 +21,7 @@
 | 11 | `11-keychain-relief` | 10 | Keychain: растр → силуэт → рельеф, масштаб, подложка, STL |
 | 12 | `12-keychain-patterns` | 11 | Keychain: источники высоты (в т.ч. яркость), профили, паттерны |
 | 13 | `13-keychain-mounts` | 11 | Keychain: крепление под кольцо, редактор расстановки, две половинки, штифты |
+| 14 | `14-start-page-renders` | 07, 08, 10 | Стартовая страница: векторные рендеры настоящих деталей 2×2 вместо схематичных SVG, готовятся на этапе сборки |
 
 ```mermaid
 gantt
@@ -36,9 +37,12 @@ gantt
     section Gridfinity
     05 baseplate-model      :done, c05, after c04a, 2d
     06 baseplate-split      :done, c06, after c05, 2d
-    07 box-mode             :c07, after c04a, 2d
+    06a connector-fixes     :done, c06a, after c06, 1d
+    07a underside-view      :done, c07a, after c01, 1d
+    07 box-mode             :done, c07, after c04a, 2d
     08 cutout-mode          :c08, after c07, 2d
     09 export-3mf-bambu     :c09, after c06 c08, 1d
+    14 start-page-renders   :c14, after c08 c10, 1d
     section Keychain
     10 product-sections     :c10, after c01, 1d
     11 keychain-relief      :c11, after c10, 3d
