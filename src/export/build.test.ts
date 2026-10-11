@@ -34,9 +34,18 @@ describe('buildExport: 3MF', () => {
     expect(cfg.print_settings_id).toBe('0.20mm Standard @BBL X1C')
     expect(cfg.filament_settings_id).toEqual(['Bambu PLA Basic @BBL X1C'])
     expect(cfg.nozzle_diameter).toEqual(['0.4'])
+    expect(cfg).toMatchObject({ filament_ids: ['GFA00'], filament_type: ['PLA'], filament_vendor: ['Bambu Lab'], filament_diameter: ['1.75'], filament_map: ['1'], from: 'project' })
     expect(cfg.printable_area).toEqual(['0x0', '256x0', '256x256', '0x256'])
     expect(f['Metadata/model_settings.config']).toContain('plater_id')
     expect(f['3D/3dmodel.model']).toContain('BambuStudio')
+  })
+  it('P2S: имя профиля пластика с «0.4 nozzle», как в проекте, сохранённом Studio', async () => {
+    const r = buildExport(one.parts, S({ format: '3mf', printerId: 'p2s', filament: 'petg' }), 'x')
+    const cfg = JSON.parse((await unzipText(r.files[0].blob))['Metadata/project_settings.config'])
+    expect(cfg.filament_settings_id).toEqual(['Bambu PETG Basic @BBL P2S 0.4 nozzle'])
+    expect(cfg.filament_ids).toEqual(['GFG00'])
+    expect(cfg.print_settings_id).toBe('0.20mm Standard @BBL P2S')
+    expect(cfg.printer_settings_id).toBe('Bambu Lab P2S 0.4 nozzle')
   })
   it('свой принтер: обычный 3MF без метаданных Bambu', async () => {
     const r = buildExport(four.parts, S({ format: '3mf', printerId: 'custom', customX: 300, customY: 300 }), 'plate')

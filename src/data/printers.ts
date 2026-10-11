@@ -22,6 +22,8 @@ export interface BambuProfile {
   model: string
   /** Суффикс совместимости профилей процесса и пластика, например «X1C» в «0.20mm Standard @BBL X1C». */
   suffix: string
+  /** Имена профилей пластика у этой модели всегда оканчиваются на «0.4 nozzle» (по проекту, сохранённому Studio для P2S). */
+  nozzleInFilament?: boolean
 }
 
 export const CUSTOM_PRINTER = 'custom'
@@ -31,7 +33,7 @@ export const PRINTERS: PrinterPreset[] = [
   { id: 'a1', name: 'Bambu Lab A1', x: 256, y: 256, z: 256, bambu: { model: 'Bambu Lab A1', suffix: 'A1' }, source: 'https://wiki.bambulab.com/en/a1' },
   { id: 'p1p', name: 'Bambu Lab P1P', x: 256, y: 256, z: 256, bambu: { model: 'Bambu Lab P1P', suffix: 'P1P' }, source: 'https://wiki.bambulab.com/en/p1' },
   { id: 'p1s', name: 'Bambu Lab P1S', x: 256, y: 256, z: 256, bambu: { model: 'Bambu Lab P1S', suffix: 'P1S' }, source: 'https://wiki.bambulab.com/en/p1' },
-  { id: 'p2s', name: 'Bambu Lab P2S', x: 256, y: 256, z: 256, bambu: { model: 'Bambu Lab P2S', suffix: 'P2S' }, source: 'https://bambulab.com/en/p2s/specs' },
+  { id: 'p2s', name: 'Bambu Lab P2S', x: 256, y: 256, z: 256, bambu: { model: 'Bambu Lab P2S', suffix: 'P2S', nozzleInFilament: true }, source: 'https://bambulab.com/en/p2s/specs' },
   { id: 'x1c', name: 'Bambu Lab X1 Carbon', x: 256, y: 256, z: 256, bambu: { model: 'Bambu Lab X1 Carbon', suffix: 'X1C' }, source: 'https://wiki.bambulab.com/en/x1' },
   { id: 'x1e', name: 'Bambu Lab X1E', x: 256, y: 256, z: 256, bambu: { model: 'Bambu Lab X1E', suffix: 'X1E' }, source: 'https://wiki.bambulab.com/en/x1e' },
   { id: 'h2d', name: 'Bambu Lab H2D', x: 325, y: 320, z: 325, bambu: { model: 'Bambu Lab H2D', suffix: 'H2D' }, source: 'https://bambulab.com/en/h2d/tech-specs' },
@@ -48,12 +50,13 @@ export const PROCESSES = [
   { id: '0.28-extra-draft', layer: 0.28, label: '0.28 mm Extra Draft', studio: '0.28mm Extra Draft' },
 ] as const
 
+/** Пластики Bambu: имя профиля Studio, идентификатор (filament_ids), тип и цвет по умолчанию. */
 export const FILAMENTS = [
-  { id: 'pla', label: 'PLA', studio: 'Bambu PLA Basic' },
-  { id: 'petg', label: 'PETG', studio: 'Bambu PETG Basic' },
-  { id: 'abs', label: 'ABS', studio: 'Bambu ABS' },
-  { id: 'asa', label: 'ASA', studio: 'Bambu ASA' },
-  { id: 'tpu', label: 'TPU', studio: 'Bambu TPU 95A' },
+  { id: 'pla', label: 'PLA', studio: 'Bambu PLA Basic', code: 'GFA00', type: 'PLA', colour: '#FFFFFF' },
+  { id: 'petg', label: 'PETG', studio: 'Bambu PETG Basic', code: 'GFG00', type: 'PETG', colour: '#FFFFFF' },
+  { id: 'abs', label: 'ABS', studio: 'Bambu ABS', code: 'GFB00', type: 'ABS', colour: '#FFFFFF' },
+  { id: 'asa', label: 'ASA', studio: 'Bambu ASA', code: 'GFB01', type: 'ASA', colour: '#FFFFFF' },
+  { id: 'tpu', label: 'TPU', studio: 'Bambu TPU 95A', code: 'GFU01', type: 'TPU', colour: '#FFFFFF' },
 ] as const
 
 export const NOZZLES = [0.2, 0.4, 0.6, 0.8] as const

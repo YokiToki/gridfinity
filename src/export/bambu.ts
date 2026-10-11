@@ -23,29 +23,46 @@ const nozzleSuffix = (n: number) => (n === 0.4 ? '' : ` ${n} nozzle`)
 export function profileNames(sel: BambuSelection) {
   const b = sel.printer.bambu!
   const proc = PROCESSES.find((p) => p.id === sel.process) ?? PROCESSES[0]
-  const fil = FILAMENTS.find((f) => f.id === sel.filament)
+  const fil = FILAMENTS.find((f) => f.id === sel.filament) ?? FILAMENTS[0]
   return {
     printer: `${b.model} ${sel.nozzle} nozzle`,
     process: `${proc.studio} @BBL ${b.suffix}${nozzleSuffix(sel.nozzle)}`,
-    filament: fil ? `${fil.studio} @BBL ${b.suffix}${nozzleSuffix(sel.nozzle)}` : null,
+    filament: `${fil.studio} @BBL ${b.suffix}${b.nozzleInFilament ? ` ${sel.nozzle} nozzle` : nozzleSuffix(sel.nozzle)}`,
     layer: proc.layer,
+    fil,
   }
 }
 
-/** project_settings.config (JSON): принтер, сопло, профили процесса и пластика, область печати. */
+/**
+ * project_settings.config (JSON): принтер, сопло, профили процесса и пластика, область печати.
+ * Набор ключей пластика (filament_ids, type, vendor, colour, diameter, map) сверен с проектом, сохранённым Studio 02.07: без них
+ * Studio не узнаёт слот пластика и показывает его как «(имя файла)».
+ */
 export function projectSettings(sel: BambuSelection): string {
   const n = profileNames(sel)
   const { x, y, z } = sel.printer
   const cfg: Record<string, unknown> = {
+    from: 'project',
+    name: 'project_settings',
     printer_model: sel.printer.bambu!.model,
     printer_settings_id: n.printer,
+    printer_variant: String(sel.nozzle),
     print_settings_id: n.process,
     nozzle_diameter: [String(sel.nozzle)],
     layer_height: String(n.layer),
     printable_area: [`0x0`, `${x}x0`, `${x}x${y}`, `0x${y}`],
+    bed_exclude_area: [],
     printable_height: String(z),
+    curr_bed_type: 'Textured PEI Plate',
+    filament_settings_id: [n.filament],
+    filament_ids: [n.fil.code],
+    filament_type: [n.fil.type],
+    filament_vendor: ['Bambu Lab'],
+    filament_colour: [n.fil.colour],
+    filament_diameter: ['1.75'],
+    filament_map: ['1'],
+    default_filament_profile: [n.filament],
   }
-  if (n.filament) cfg.filament_settings_id = [n.filament]
   return JSON.stringify(cfg, null, 2)
 }
 
