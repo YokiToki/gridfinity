@@ -1,7 +1,8 @@
 import { buildBaseplateParts, type BaseplateGeometry } from './baseplate'
 import { buildBox, type BoxParams } from './box'
-import { buildCutout, type CutoutParams, type MeshRegistry } from './cutout'
+import { buildCutout, buildCutoutTools, type CutoutParams, type MeshRegistry } from './cutout'
 import type { IndexedMesh } from './stl-import'
+import { getWasm } from './wasm'
 import { meshOf, type MeshData } from './mesh'
 
 /** Параметры по режимам. Новые режимы (box, cutout) добавляются сюда. */
@@ -14,7 +15,9 @@ export type ModeId = keyof ModeParams
 
 /** Одна часть модели: сетка и описание для превью. Без разделения часть одна (A1). */
 export interface PartMesh { label: string; col: number; row: number; oversize: boolean; mesh: MeshData }
-export interface ModelResult { parts: PartMesh[] }
+/** Вырезающий инструмент: только для превью, не часть модели (габариты, объём и экспорт его не учитывают). */
+export interface ToolMesh { id: string; name: string; mesh: MeshData }
+export interface ModelResult { parts: PartMesh[]; tools?: ToolMesh[] }
 
 /** Габариты всей модели в собранных координатах. */
 export function modelBounds(r: ModelResult): { min: [number, number, number]; max: [number, number, number] } {
@@ -39,7 +42,10 @@ export async function generate<M extends ModeId>(mode: M, params: ModeParams[M],
     }
     case 'cutout': {
       const m = await buildCutout(params as CutoutParams, meshRegistry, wasmUrl)
-      try { return { parts: [{ label: 'A1', col: 0, row: 0, oversize: false, mesh: meshOf(m) }] } } finally { m.delete() }
+      const tools = buildCutoutTools(await getWasm(wasmUrl), params as CutoutParams, meshRegistry)
+      try {
+        return { parts: [{ label: 'A1', col: 0, row: 0, oversize: false, mesh: meshOf(m) }], tools: tools.map((t) => ({ id: t.id, name: t.name, mesh: t.mesh })) }
+      } finally { m.delete() }
     }
     default:
       throw new Error(`Unknown mode: ${String(mode)}`)

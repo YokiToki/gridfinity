@@ -215,10 +215,10 @@ describe('CutoutPanel: деталь из STL', () => {
   })
   it('режим резки: проекция и настоящее 3D с пояснением про зазор', async () => {
     render(<Harness start={start()} meshes={new Map([['m1', mesh]])} />)
-    expect(screen.queryByText(/True 3D clearance is approximate/)).toBeNull()
+    expect(screen.queryByText(/True 3D follows the part/)).toBeNull()
     await userEvent.click(within(screen.getByRole('group', { name: 'Cutting mode' })).getByRole('button', { name: 'True 3D' }))
     expect((latest.cutouts[0].source as MeshSource).mode).toBe('3d')
-    expect(screen.getByText(/True 3D clearance is approximate/)).toBeInTheDocument()
+    expect(screen.getByText(/True 3D follows the part/)).toBeInTheDocument()
   })
   it('«Положить на грань»: самая большая грань на дно — высота 10, габарит 20 × 30', async () => {
     render(<Harness start={start()} meshes={new Map([['m1', mesh]])} />)

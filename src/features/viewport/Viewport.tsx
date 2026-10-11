@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
+import { toCreasedNormals } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import type { ModelResult } from '../../geometry/model'
 import { groundOpacity } from './ground'
@@ -8,12 +9,14 @@ export interface BuildPlate { x: number; y: number }
 
 interface Api {
   setModel: (m: ModelResult | null) => void
+  setTools: (m: ModelResult | null, show: boolean) => void
   setGap: (gap: number) => void
   setPlate: (p: BuildPlate | null) => void
   fit: () => void
 }
 
 const GIZMO_SIZE = 120
+const TOOL_COLOR = 0x35c9e8 // вырезающий инструмент: бирюзовый, отличается от модели
 const AXES = [
   { label: 'X', dir: [1, 0, 0], color: 0xe5484d },
   { label: 'Y', dir: [0, 1, 0], color: 0x46c35f },
@@ -83,7 +86,7 @@ function textSprite(text: string, color: string) {
   return s
 }
 
-export function Viewport({ model, plate, gap = 0, onFitReady }: { model: ModelResult | null; plate: BuildPlate | null; gap?: number; onFitReady?: (fit: () => void) => void }) {
+export function Viewport({ model, plate, gap = 0, showTools = true, onFitReady }: { model: ModelResult | null; plate: BuildPlate | null; gap?: number; /** Показывать вырезающие инструменты (model.tools) полупрозрачными. */ showTools?: boolean; onFitReady?: (fit: () => void) => void }) {
   const host = useRef<HTMLDivElement>(null)
   const api = useRef<Api | null>(null)
   const gapRef = useRef(gap)
@@ -128,6 +131,9 @@ export function Viewport({ model, plate, gap = 0, onFitReady }: { model: ModelRe
 
     const modelGroup = new THREE.Group()
     scene.add(modelGroup)
+    // вырезающие инструменты: полупрозрачные тела поверх модели, не часть частей (разнесение их не двигает)
+    const toolGroup = new THREE.Group()
+    scene.add(toolGroup)
     let partGroups: { group: THREE.Group; col: number; row: number }[] = []
     let cols = 1, rows = 1
     const applyGap = (g: number) => partGroups.forEach((p) => p.group.position.set(g * (p.col - (cols - 1) / 2), g * (p.row - (rows - 1) / 2), 0))
@@ -182,6 +188,25 @@ export function Viewport({ model, plate, gap = 0, onFitReady }: { model: ModelRe
         plateGroup.add(fill, outline)
       },
       setGap(g) { applyGap(g) },
+      setTools(m, show) {
+        toolGroup.traverse((o) => { const mesh = o as THREE.Mesh; if (mesh.geometry) mesh.geometry.dispose() })
+        toolGroup.clear()
+        toolGroup.visible = show
+        for (const tool of m?.tools ?? []) {
+          const mm = tool.mesh
+          const pos = new Float32Array((mm.vertProperties.length / mm.numProp) * 3)
+          for (let i = 0; i < pos.length / 3; i++) for (let k = 0; k < 3; k++) pos[i * 3 + k] = mm.vertProperties[i * mm.numProp + k]
+          const g = new THREE.BufferGeometry()
+          g.setAttribute('position', new THREE.BufferAttribute(pos, 3))
+          g.setIndex(new THREE.BufferAttribute(mm.triVerts, 1))
+          // деталь «как есть»: гладкая поверхность, острые рёбра (угол > 30°) остаются резкими
+          const smooth = toCreasedNormals(g, Math.PI / 6)
+          g.dispose()
+          const mesh = new THREE.Mesh(smooth, new THREE.MeshStandardMaterial({ color: TOOL_COLOR, transparent: true, opacity: 0.45, depthWrite: false, roughness: 0.4, metalness: 0 }))
+          mesh.renderOrder = 2
+          toolGroup.add(mesh)
+        }
+      },
       setModel(m) {
         modelGroup.traverse((o) => {
           const mesh = o as THREE.Mesh
@@ -288,6 +313,7 @@ export function Viewport({ model, plate, gap = 0, onFitReady }: { model: ModelRe
   }, [])
 
   useEffect(() => { api.current?.setModel(model) }, [model])
+  useEffect(() => { api.current?.setTools(model, showTools) }, [model, showTools])
   useEffect(() => { api.current?.setGap(gap) }, [gap])
   useEffect(() => { api.current?.setPlate(plate) }, [plate])
   return <div ref={host} style={{ width: '100%', height: '100%' }} />

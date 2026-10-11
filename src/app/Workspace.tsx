@@ -1,8 +1,9 @@
 import { useRef, useState, type ReactNode, type PointerEvent } from 'react'
 import type { ModelResult } from '../geometry/model'
 import { useTranslation } from 'react-i18next'
-import { IconChevronDown, IconFocusCentered } from '@tabler/icons-react'
+import { IconChevronDown, IconFocusCentered, IconShape } from '@tabler/icons-react'
 import { Viewport, type BuildPlate } from '../features/viewport/Viewport'
+import { usePersistedState } from './usePersistedState'
 import { MeasurementsBar } from '../features/viewport/MeasurementsBar'
 
 /** Раскладка режима: панель параметров, закреплённый блок экспорта и 3D-вид. На узком экране панель — нижняя шторка. */
@@ -16,6 +17,8 @@ export function Workspace({ panel, footer, model, plate, gap, busy }: {
   busy?: boolean
 }) {
   const { t } = useTranslation()
+  const [view, setView] = usePersistedState('gridfinity.viewport', { tools: true })
+  const hasTools = (model?.tools?.length ?? 0) > 0
   const fitRef = useRef<() => void>(() => {})
   const [drawerTop, setDrawerTop] = useState(300) // отступ верха шторки на мобильном, px
   const drag = useRef<{ y: number; top: number; moved: boolean } | null>(null)
@@ -56,11 +59,17 @@ export function Workspace({ panel, footer, model, plate, gap, busy }: {
         {footer && <div className="flex-none border-t border-border bg-surface-1 px-4 py-3 shadow-sticky">{footer}</div>}
       </aside>
       <section aria-label={t('viewport.label')} className="relative min-w-0 flex-1 overflow-hidden bg-[radial-gradient(ellipse_at_50%_40%,#1a2029_0%,#0b0d10_75%)]">
-        <Viewport model={model} plate={plate ?? null} gap={gap ?? 0} onFitReady={(f) => (fitRef.current = f)} />
+        <Viewport model={model} plate={plate ?? null} gap={gap ?? 0} showTools={view.tools} onFitReady={(f) => (fitRef.current = f)} />
         <button type="button" aria-label={t('viewport.fit')} title={t('viewport.fit')} onClick={() => fitRef.current()}
           className="absolute top-4 right-4 inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-group border border-border bg-surface-1/90 text-text-muted hover:text-text md:h-8 md:w-8">
           <IconFocusCentered size={16} stroke={1.75} />
         </button>
+        {hasTools && (
+          <button type="button" aria-label={t('viewport.tools')} title={t('viewport.tools')} aria-pressed={view.tools} onClick={() => setView({ ...view, tools: !view.tools })}
+            className={`absolute top-16 right-4 inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-group border border-border bg-surface-1/90 hover:text-text md:top-14 md:h-8 md:w-8 ${view.tools ? 'text-accent' : 'text-text-muted'}`}>
+            <IconShape size={16} stroke={1.75} />
+          </button>
+        )}
         <MeasurementsBar model={model} busy={busy} />
       </section>
     </div>

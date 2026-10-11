@@ -11,6 +11,10 @@ In Cutout mode the 3D view SHALL show each visible cutout's shape as a transluce
 - **WHEN** the user moves, rotates or hides a cutout
 - **THEN** its body moves, rotates or disappears with it
 
+#### Scenario: Imported part as it is
+- **WHEN** a cutout is an imported STL, in either cutting mode
+- **THEN** the translucent body is the part's own mesh, unchanged (also when the mesh is not a valid solid)
+
 #### Scenario: Not exported
 - **WHEN** the model is exported
 - **THEN** the file contains the bin only and no tool body

@@ -5,8 +5,9 @@ import {
   removeCutout, renameCutout, toggleCutout, updateCutout, validateCutout, MIN_MARGIN, type Cutout, type CutoutParams, type MeshRegistry, type MeshSource,
 } from './cutout'
 import { alignEdge, centerCutout, distribute, fitFootprint, snapAxis, snapMove, snapTargets } from './cutout-placement'
-import { defaultOrientation, describeMesh, flatFaces, repairMesh } from './stl-import'
-import { boxSoup } from './stl-fixtures'
+import { defaultOrientation, describeMesh, flatFaces, fillHoles, repairMesh, toManifold } from './stl-import'
+import { cachedProfile, clearProfileCache, profileCacheSize, profileOfSlices } from './cutout-profile'
+import { boxSoup, tSoup } from './stl-fixtures'
 import { defaultFasteners } from './fasteners'
 import { expectValidSolid, mm, units } from './testing'
 
@@ -200,7 +201,87 @@ describe('вырез по детали (STL)', () => {
     const { registry, source } = make(30, 12, 6)
     const solid = await buildCutout(params(), registry)
     const m = await buildCutout(params({ cutouts: [cut({ ...source, mode: '3d' }, { clearance: 1, depth: 12 })] }), registry)
-    expect(solid.slice(15).area() - m.slice(15).area()).toBeCloseTo(32 * 14, 0)
+    // 32 × 14 со скруглёнными углами радиуса 1: четыре угла теряют по (1 − π/4)
+    expect(solid.slice(15).area() - m.slice(15).area()).toBeCloseTo(32 * 14 - 4 * (1 - Math.PI / 4), 0) // углы — 12-гранная сфера, чуть острее окружности
+  })
+  /** Деталь с широкой ногой и узкой шейкой (ширина убывает вверх): точный объём оставил бы материал на пути ноги. */
+  const footed = async () => {
+    const w = await getWasm()
+    const foot = w.Manifold.cube([30, 10, 5]), neck = w.Manifold.cube([10, 10, 5]).translate([10, 0, 5])
+    const u = w.Manifold.union([foot, neck]), m = u.getMesh()
+    const mesh = { vertProperties: Float32Array.from(m.vertProperties), triVerts: Uint32Array.from(m.triVerts) }
+    const info = describeMesh(mesh.vertProperties, 'mm', defaultOrientation)
+    const source: MeshSource = { kind: 'mesh', meshId: 'f', filename: 'f.stl', unit: 'mm', orientation: defaultOrientation, mode: '3d', size: info.size, hull: info.hull }
+    return { registry: new Map([['f', mesh]]) as MeshRegistry, source }
+  }
+  it('3D: карман — сама деталь как есть (нога и шейка), без ступеней', async () => {
+    const { registry, source } = await footed()
+    const solid = await buildCutout(params(), registry)
+    const m = await buildCutout(params({ cutouts: [cut(source, { clearance: 0, depth: 12 })] }), registry)
+    expectValidSolid(m)
+    const floorZ = 21 - 12
+    for (const dz of [1, 3, 4.5]) near(solid.slice(floorZ + dz).area() - m.slice(floorZ + dz).area(), 30 * 10) // нога
+    for (const dz of [5.5, 7, 9.5]) near(solid.slice(floorZ + dz).area() - m.slice(floorZ + dz).area(), 10 * 10) // шейка: материал вокруг цел
+    expect(solid.slice(floorZ + 11).area() - m.slice(floorZ + 11).area()).toBeCloseTo(300, 0) // над деталью проём по её силуэту (нога проходит сверху)
+    expect(solid.slice(floorZ - 0.5).area() - m.slice(floorZ - 0.5).area()).toBeCloseTo(0, 1)
+    near(solid.volume() - m.volume(), 30 * 10 * 5 + 10 * 10 * 5 + 30 * 10 * 2) // объём детали плюс проём до верха стенки
+  })
+  it('3D: зазор — смещение поверхности во все стороны, не ниже дна кармана', async () => {
+    const { registry, source } = await footed()
+    const a = await buildCutout(params({ cutouts: [cut(source, { clearance: 0, depth: 12 })] }), registry)
+    const b = await buildCutout(params({ cutouts: [cut(source, { clearance: 1, depth: 12 })] }), registry)
+    for (const dz of [2, 7]) {
+      const w = dz === 2 ? 30 : 10
+      const g = a.slice(9 + dz).area() - b.slice(9 + dz).area()
+      expect(g).toBeGreaterThan(2 * (w + 10) - 1)
+      expect(g).toBeLessThan(2 * (w + 10) + Math.PI + 1)
+    }
+    expect(a.slice(8.9).area() - b.slice(8.9).area()).toBeCloseTo(0, 1)
+  })
+  /** Открытая труба без крышек: дыры закрываются, но если не удаётся — остаются срезы (проверяем срезатель напрямую). */
+  const tube = () => {
+    const full = repairMesh(boxSoup(30, 12, 6)).mesh
+    // у бруса первые 4 треугольника — низ и верх
+    return { vertProperties: full.vertProperties, triVerts: full.triVerts.slice(12) }
+  }
+  it('срезы замыкают открытую трубу: сечение — прямоугольник 30 × 12, накопление по высоте', async () => {
+    const w = await getWasm()
+    const p = profileOfSlices(w, tube(), 6)!
+    expect(p.fromSlices).toBe(true)
+    expect(p.tops.at(-1)).toBeCloseTo(6, 6)
+    for (const k of [0, 5, p.sections.length - 1]) expect(p.sections[k].area()).toBeCloseTo(360, 0)
+    for (let k = 1; k < p.sections.length; k++) expect(p.sections[k].area()).toBeGreaterThanOrEqual(p.sections[k - 1].area() - 1e-6)
+  })
+  it('сетка, у которой нет ни тела, ни сечений, режет по выпуклой оболочке', async () => {
+    const tent = { vertProperties: Float32Array.from([0, 0, 0, 20, 0, 0, 10, 10, 0, 10, -10, 0]), triVerts: Uint32Array.from([0, 1, 2, 1, 0, 3]) } // плоская «деталь» нулевой высоты
+    const info = describeMesh(tent.vertProperties, 'mm', defaultOrientation)
+    const registry: MeshRegistry = new Map([['t', tent]])
+    const source: MeshSource = { kind: 'mesh', meshId: 't', filename: 't.stl', unit: 'mm', orientation: defaultOrientation, mode: '3d', size: info.size, hull: info.hull }
+    const m = await buildCutout(params({ cutouts: [cut(source, { clearance: 0, depth: 10 })] }), registry)
+    expectValidSolid(m)
+  })
+  it('профиль кэшируется между вызовами по ключу', async () => {
+    const w = await getWasm()
+    clearProfileCache()
+    let made = 0
+    const make = () => { made++; return profileOfSlices(w, tube(), 6) }
+    const a = cachedProfile('k', make), b = cachedProfile('k', make)
+    expect(a).toBe(b)
+    expect(made).toBe(1)
+    expect(profileCacheSize()).toBe(1)
+    clearProfileCache()
+  })
+  it('плотная деталь собирается за разумное время', async () => {
+    const w = await getWasm()
+    const m = w.Manifold.sphere(15, 96).translate([0, 0, 15]).getMesh()
+    const mesh = { vertProperties: Float32Array.from(m.vertProperties), triVerts: Uint32Array.from(m.triVerts) }
+    const info = describeMesh(mesh.vertProperties, 'mm', defaultOrientation)
+    const source: MeshSource = { kind: 'mesh', meshId: 'ball', filename: 'b.stl', unit: 'mm', orientation: defaultOrientation, mode: '3d', size: info.size, hull: info.hull }
+    clearProfileCache()
+    const t0 = performance.now()
+    const r = await buildCutout(params({ cutouts: [cut(source, { clearance: 0.3, depth: 20 })] }), new Map([['ball', mesh]]))
+    expectValidSolid(r)
+    expect(performance.now() - t0).toBeLessThan(5000)
   })
   it('открытая сетка (нет одной грани): вырез по силуэту остаётся, и в режиме 3D тоже', async () => {
     const s = boxSoup(30, 12, 6)

@@ -9,9 +9,9 @@ Two problems found while trying Cutout mode:
 
 ## What Changes
 
-- **Cutting tool preview:** every visible cutout is also drawn in the 3D view as a translucent body of a different colour (the rectangle extruded to its depth, or the oriented part standing in the pocket). It is for preview only: it is not part of the model, the volume or any export, and can be switched off.
-- **True 3D becomes an insertable pocket:** the shape is taken from the STL and closed in the vertical direction. At every height the pocket section is the projection of everything of the part at or below that height, so the part can be lowered straight into the pocket and nothing is left filling a gap that the part occupies or sweeps through. Clearance is applied to that section in XY (exact offset instead of scaling), and the opening above the part stays open to the top.
-- **Closing the shape for imperfect meshes:** an open or self-intersecting mesh is no longer reduced to its convex hull. The cross-sections of the surface are closed (the outline of every slice is filled), so the same insertable pocket is produced from a mesh that is not a valid solid. The convex hull remains only for meshes that yield no usable slices.
+- **Cutting tool preview:** every visible cutout is also drawn in the 3D view as a translucent body of a different colour (the rectangle extruded to its depth, or the part's own mesh, unchanged). It is for preview only: it is not part of the model, the volume or any export, and can be switched off.
+- **True 3D cuts the part as it is:** the pocket is the part's own volume standing on the pocket floor (the clearance is a real 3D offset of the surface, not a scale), open above the part by its silhouette. No steps or layers.
+- **Closing the shape for imperfect meshes:** an open or self-intersecting mesh is no longer reduced to its convex hull. The cross-sections of the surface are closed (the outline of every slice is filled), so a pocket is still produced from a mesh that is not a valid solid (a stepped approximation). The convex hull remains only for meshes that yield no usable slices.
 
 ## Capabilities
 

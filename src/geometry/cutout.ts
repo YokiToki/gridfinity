@@ -5,7 +5,9 @@ import { binLayout, bottomFasteners, buildBinBody, FOOT_HEIGHT, lipOpening, roun
 import { defaultFasteners } from './fasteners'
 import type { LipStyle } from './profiles'
 import { DEFAULT_PITCH } from './spec'
-import { defaultOrientation, orientVertices, toManifold, type IndexedMesh, type Orientation } from './stl-import'
+import { cachedProfile, profileOfSlices } from './cutout-profile'
+import { meshOf, type MeshData } from './mesh'
+import { defaultOrientation, fillHoles, orientVertices, toManifold, type IndexedMesh, type Orientation } from './stl-import'
 
 export interface RectSource { kind: 'rect'; width: number; length: number; radius: number }
 export type CutMode = 'projected' | '3d'
@@ -185,7 +187,15 @@ function orientedManifold(w: ManifoldToplevel, s: MeshSource, mesh: IndexedMesh)
   let m = oriented.get(key)
   if (!m) {
     if (oriented.size > 24) { for (const v of oriented.values()) v.delete(); oriented.clear() }
-    m = toManifold(w, { vertProperties: orientVertices(mesh.vertProperties, s.unit, s.orientation), triVerts: mesh.triVerts })
+    const verts = orientVertices(mesh.vertProperties, s.unit, s.orientation)
+    try {
+      m = toManifold(w, { vertProperties: verts, triVerts: mesh.triVerts })
+    } catch (e) {
+      // сетка с дырами: закрыть их и повторить; без границы — сетка негодна (самопересечения), остаются срезы
+      const healed = fillHoles(mesh)
+      if (healed.triVerts.length === mesh.triVerts.length) throw e
+      m = toManifold(w, { vertProperties: orientVertices(healed.vertProperties, s.unit, s.orientation), triVerts: healed.triVerts })
+    }
     oriented.set(key, m)
   }
   return m
@@ -207,23 +217,91 @@ export function pocketSolid(w: ManifoldToplevel, c: Cutout, l: CutoutLayout, reg
   }
   const mesh = registry.get(c.source.meshId)
   if (!mesh) return null
-  let m: Manifold
-  try {
-    m = orientedManifold(w, c.source, mesh)
-  } catch {
-    // сетка не образует замкнутого тела: вырез по её силуэту (выпуклой оболочке), настоящее 3D для такой сетки невозможно
-    if (c.source.hull.length < 3) return null
-    return extrude(placeCS(grow(w.CrossSection.ofPolygons([c.source.hull]), c.clearance), c))
+  const src = c.source
+  const hullPocket = () => (src.hull.length < 3 ? null : extrude(placeCS(grow(w.CrossSection.ofPolygons([src.hull]), c.clearance), c)))
+  let solid: Manifold | null = null
+  try { solid = orientedManifold(w, src, mesh) } catch { solid = null }
+  const limit = l.wallTop + 1
+  if (solid) {
+    if (src.mode === 'projected') return extrude(placeCS(grow(solid.project(), c.clearance), c))
+    // настоящее 3D: сама деталь как есть, стоящая на дне кармана; зазор — смещение поверхности (сумма Минковского с малой сферой),
+    // над деталью проём открыт вверх по её контуру
+    let shape = solid
+    if (c.clearance > 0 && mesh.triVerts.length / 3 <= MAX_OFFSET_TRIS) {
+      const ball = w.Manifold.sphere(c.clearance, 12)
+      const grown = solid.minkowskiSum(ball)
+      shape = grown.trimByPlane([0, 0, 1], 0) // зазор не уходит ниже дна кармана
+      grown.delete(); ball.delete()
+    } else if (c.clearance > 0) {
+      const bb = solid.boundingBox(), sx = bb.max[0] - bb.min[0], sy = bb.max[1] - bb.min[1], sz = bb.max[2]
+      shape = solid.scale([(sx + 2 * c.clearance) / sx, (sy + 2 * c.clearance) / sy, (sz + c.clearance) / sz])
+    }
+    const topZ = floorZ + shape.boundingBox().max[2]
+    const placed = shape.rotate([0, 0, c.rotation]).translate([c.x, c.y, floorZ])
+    if (topZ >= limit) return placed
+    const opening = Manifold.extrude(placeCS(shape.project(), c), limit - topZ + 0.001).translate([0, 0, topZ - 0.001])
+    return Manifold.union([placed, opening])
   }
-  if (c.source.mode === 'projected') return extrude(placeCS(grow(m.project(), c.clearance), c))
-  // настоящее 3D: деталь стоит на дне кармана; зазор — масштабирование (приближённо), над деталью проём открыт вверх
-  const [sx, sy, sz] = c.source.size
-  const k: [number, number, number] = [(sx + 2 * c.clearance) / sx, (sy + 2 * c.clearance) / sy, (sz + c.clearance) / sz]
-  const shape = m.scale(k).rotate([0, 0, c.rotation]).translate([c.x, c.y, floorZ])
-  const top = floorZ + sz * k[2]
-  if (top >= l.wallTop + 1) return shape
-  const opening = Manifold.extrude(placeCS(grow(m.project(), c.clearance), c), l.wallTop + 1 - top).translate([0, 0, top - 0.001])
-  return Manifold.union([shape, opening])
+  // сетка без тела: сечения замкнуты срезами (ступенчатый карман), иначе остаётся выпуклая оболочка
+  const key = `${src.meshId}|${src.unit}|${JSON.stringify(src.orientation)}`
+  const verts = orientVertices(mesh.vertProperties, src.unit, src.orientation)
+  let height = 0
+  for (let i = 2; i < verts.length; i += 3) height = Math.max(height, verts[i])
+  const profile = cachedProfile(key, () => profileOfSlices(w, { vertProperties: verts, triVerts: mesh.triVerts }, height))
+  if (!profile) return hullPocket()
+  const top = profile.sections.length - 1
+  if (src.mode === 'projected') return extrude(placeCS(grow(profile.sections[top], c.clearance), c))
+  const slabs: Manifold[] = []
+  let prev = 0
+  profile.tops.forEach((t, k) => {
+    const z0 = floorZ + prev, z1 = Math.min(floorZ + t, limit)
+    if (z1 > z0 + 1e-6) slabs.push(Manifold.extrude(placeCS(grow(profile.sections[k], c.clearance), c), z1 - z0 + 0.001).translate([0, 0, z0 - (k ? 0.001 : 0)]))
+    prev = t
+  })
+  const topZ = floorZ + profile.height
+  if (topZ < limit) slabs.push(Manifold.extrude(placeCS(grow(profile.sections[top], c.clearance), c), limit - topZ + 0.001).translate([0, 0, topZ - 0.001]))
+  return slabs.length ? Manifold.union(slabs) : null
+}
+
+const MAX_OFFSET_TRIS = 40000 // выше — зазор масштабированием: сумма Минковского слишком долгая
+
+/** Деталь для превью как есть: исходные треугольники после ориентации, поворота и сдвига (работает и для сеток без тела). */
+function meshTool(c: Cutout, s: MeshSource, mesh: IndexedMesh, floorZ: number): MeshData {
+  const v = orientVertices(mesh.vertProperties, s.unit, s.orientation)
+  const a = (c.rotation * Math.PI) / 180, cs = Math.cos(a), sn = Math.sin(a)
+  const min: [number, number, number] = [Infinity, Infinity, Infinity], max: [number, number, number] = [-Infinity, -Infinity, -Infinity]
+  for (let i = 0; i < v.length; i += 3) {
+    const x = v[i] * cs - v[i + 1] * sn + c.x, y = v[i] * sn + v[i + 1] * cs + c.y, z = v[i + 2] + floorZ
+    v[i] = x; v[i + 1] = y; v[i + 2] = z
+    min[0] = Math.min(min[0], x); max[0] = Math.max(max[0], x); min[1] = Math.min(min[1], y); max[1] = Math.max(max[1], y); min[2] = Math.min(min[2], z); max[2] = Math.max(max[2], z)
+  }
+  let vol = 0
+  const t = mesh.triVerts
+  for (let i = 0; i < t.length; i += 3) {
+    const p = t[i] * 3, q = t[i + 1] * 3, r = t[i + 2] * 3
+    vol += (v[p] * (v[q + 1] * v[r + 2] - v[q + 2] * v[r + 1]) - v[p + 1] * (v[q] * v[r + 2] - v[q + 2] * v[r]) + v[p + 2] * (v[q] * v[r + 1] - v[q + 1] * v[r])) / 6
+  }
+  return { vertProperties: v, triVerts: mesh.triVerts, numProp: 3, min, max, volume: Math.abs(vol) }
+}
+
+/** Вырезающий инструмент для превью: сама фигура без зазора, стоящая на дне кармана (деталь — исходной сеткой). */
+export function buildCutoutTools(w: ManifoldToplevel, p: CutoutParams, registry: MeshRegistry = new Map()): { id: string; name: string; mesh: MeshData }[] {
+  const l = cutoutLayout(p)
+  const out: { id: string; name: string; mesh: MeshData }[] = []
+  for (const c of p.cutouts) {
+    if (!c.visible) continue
+    const depth = effectiveDepth(c, l)
+    if (depth < 1e-6) continue
+    const floorZ = l.wallTop - depth
+    if (c.source.kind === 'rect') {
+      const solid = w.Manifold.extrude(placeCS(roundedRectCS(w, c.source.width, c.source.length, c.source.radius), c), depth).translate([0, 0, floorZ])
+      try { out.push({ id: c.id, name: c.name, mesh: meshOf(solid) }) } finally { solid.delete() }
+      continue
+    }
+    const mesh = registry.get(c.source.meshId)
+    if (mesh) out.push({ id: c.id, name: c.name, mesh: meshTool(c, c.source, mesh, floorZ) })
+  }
+  return out
 }
 
 /** Сплошной блок коробки с карманами; губа вырезана над верхней гранью. */

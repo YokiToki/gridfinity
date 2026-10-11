@@ -125,12 +125,48 @@ export function repairMesh(soup: TriSoup): { mesh: IndexedMesh; report: RepairRe
 export function toManifold(w: ManifoldToplevel, mesh: IndexedMesh): Manifold {
   let m: Manifold
   try {
-    m = new w.Manifold(new w.Mesh({ numProp: 3, vertProperties: mesh.vertProperties, triVerts: mesh.triVerts }))
+    const raw = new w.Mesh({ numProp: 3, vertProperties: mesh.vertProperties, triVerts: mesh.triVerts })
+    raw.merge() // сливает совпадающие вершины и щели в пределах допуска
+    m = new w.Manifold(raw)
   } catch (e) {
     throw new StlError('noVolume', `The mesh is not a closed solid (${e instanceof Error ? e.message : String(e)})`)
   }
   if (m.status() !== 'NoError' || m.isEmpty() || m.volume() <= 0) throw new StlError('noVolume', `The mesh is not a closed solid (${m.status()})`)
   return m
+}
+
+/**
+ * Заделывает дыры: граничные рёбра (без пары) сцепляются в петли, каждая петля закрывается веером из её центра.
+ * Сетка должна быть уже согласована по ориентации (repairMesh). Возвращает ту же сетку, если границы нет.
+ */
+export function fillHoles(mesh: IndexedMesh): IndexedMesh {
+  const t = mesh.triVerts
+  const has = new Set<string>()
+  for (let i = 0; i < t.length; i += 3) for (let e = 0; e < 3; e++) has.add(`${t[i + e]}_${t[i + ((e + 1) % 3)]}`)
+  // граничное ребро a→b: у него нет парного b→a; дыру закрывают рёбра b→a
+  const next = new Map<number, number[]>()
+  for (let i = 0; i < t.length; i += 3) for (let e = 0; e < 3; e++) {
+    const a = t[i + e], b = t[i + ((e + 1) % 3)]
+    if (has.has(`${b}_${a}`)) continue
+    const l = next.get(b)
+    if (l) l.push(a); else next.set(b, [a])
+  }
+  if (!next.size) return mesh
+  const verts = Array.from(mesh.vertProperties)
+  const tris = Array.from(t)
+  const take = (from: number) => { const l = next.get(from); const v = l?.pop(); if (l && !l.length) next.delete(from); return v }
+  while (next.size) {
+    const start = next.keys().next().value as number
+    const loop = [start]
+    for (let cur = take(start), guard = 0; cur !== undefined && cur !== start && guard < 1e6; cur = take(cur), guard++) loop.push(cur)
+    if (loop.length < 3) continue
+    const c = verts.length / 3
+    let cx = 0, cy = 0, cz = 0
+    for (const v of loop) { cx += verts[v * 3]; cy += verts[v * 3 + 1]; cz += verts[v * 3 + 2] }
+    verts.push(cx / loop.length, cy / loop.length, cz / loop.length)
+    for (let i = 0; i < loop.length; i++) tris.push(loop[i], loop[(i + 1) % loop.length], c)
+  }
+  return { vertProperties: Float32Array.from(verts), triVerts: Uint32Array.from(tris) }
 }
 
 // ---------- ориентация ----------
@@ -245,4 +281,46 @@ export function flatFaces(mesh: IndexedMesh, count = 6): FlatFace[] {
     const l = Math.hypot(...g.n)
     return { normal: [g.n[0] / l, g.n[1] / l, g.n[2] / l] as Vec3, area: g.area }
   })
+}
+
+// ---------- сечения плоскостью (для сеток, не образующих тела) ----------
+
+/**
+ * Контуры сечения треугольного супа плоскостью z = level. Отрезки пересечения сцепляются по концам, совпадающим
+ * с точностью weld (мм); незамкнутые цепочки остаются как есть — при заливке контур замыкается прямой.
+ */
+export function sliceLoops(vertProperties: Float32Array, triVerts: Uint32Array, level: number, weld = 0.05): [number, number][][] {
+  const segs: [[number, number], [number, number]][] = []
+  const v = vertProperties
+  for (let t = 0; t < triVerts.length; t += 3) {
+    const pts: [number, number][] = []
+    for (let e = 0; e < 3; e++) {
+      const a = triVerts[t + e] * 3, b = triVerts[t + ((e + 1) % 3)] * 3
+      const za = v[a + 2] - level, zb = v[b + 2] - level
+      if ((za > 0) === (zb > 0)) continue // ребро не пересекает плоскость (вершина на плоскости считается «ниже»)
+      const k = za / (za - zb)
+      pts.push([v[a] + (v[b] - v[a]) * k, v[a + 1] + (v[b + 1] - v[a + 1]) * k])
+    }
+    if (pts.length === 2) segs.push([pts[0], pts[1]])
+  }
+  const key = (p: [number, number]) => `${Math.round(p[0] / weld)},${Math.round(p[1] / weld)}`
+  const at = new Map<string, number[]>()
+  segs.forEach((s, i) => { for (const p of s) { const k = key(p); const l = at.get(k); if (l) l.push(i); else at.set(k, [i]) } })
+  const used = new Uint8Array(segs.length)
+  const loops: [number, number][][] = []
+  for (let s = 0; s < segs.length; s++) {
+    if (used[s]) continue
+    used[s] = 1
+    const loop: [number, number][] = [segs[s][0], segs[s][1]]
+    for (let end = segs[s][1], guard = 0; guard < segs.length; guard++) {
+      const next = (at.get(key(end)) ?? []).find((i) => !used[i])
+      if (next === undefined) break
+      used[next] = 1
+      const [p, q] = segs[next]
+      end = key(p) === key(end) ? q : p
+      loop.push(end)
+    }
+    if (loop.length >= 3) loops.push(loop)
+  }
+  return loops
 }

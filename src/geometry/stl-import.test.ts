@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { getWasm } from './wasm'
 import { asciiStl, binaryStl, boxSoup } from './stl-fixtures'
-import { convexHull, defaultOrientation, describeMesh, flatFaces, orientVertices, parseStl, repairMesh, StlError, toManifold, type IndexedMesh, type TriSoup } from './stl-import'
+import { convexHull, defaultOrientation, describeMesh, flatFaces, orientVertices, parseStl, repairMesh, sliceLoops, StlError, toManifold, type IndexedMesh, type TriSoup } from './stl-import'
 
 const code = (f: () => unknown) => { try { f() } catch (e) { return e instanceof StlError ? e.code : 'other' } return 'none' }
 
@@ -132,5 +132,24 @@ describe('convexHull', () => {
     expect(convexHull(circle, 32).length).toBe(32)
     expect(convexHull([[0, 0], [1, 1]])).toHaveLength(2)
     expect(convexHull([])).toEqual([])
+  })
+})
+
+describe('sliceLoops', () => {
+  const box = repairMesh(boxSoup(10, 6, 4)).mesh
+  it('замкнутый брус даёт один прямоугольник 10 × 6', () => {
+    const loops = sliceLoops(box.vertProperties, box.triVerts, 2)
+    expect(loops).toHaveLength(1)
+    const xs = loops[0].map((p) => p[0]), ys = loops[0].map((p) => p[1])
+    expect([Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)]).toEqual([0, 10, 0, 6])
+  })
+  it('без одной боковой грани цепочка остаётся и замыкается заливкой', () => {
+    const open = { vertProperties: box.vertProperties, triVerts: box.triVerts.slice(0, box.triVerts.length - 6) }
+    const loops = sliceLoops(open.vertProperties, open.triVerts, 2)
+    expect(loops.length).toBeGreaterThan(0)
+    expect(loops.flat().length).toBeGreaterThanOrEqual(3)
+  })
+  it('плоскость выше детали не даёт контуров', () => {
+    expect(sliceLoops(box.vertProperties, box.triVerts, 5)).toEqual([])
   })
 })
