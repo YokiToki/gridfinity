@@ -10,7 +10,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "test": "vitest run"
+    "test": "vitest run",
+    "art": "tsx scripts/render-art.ts"
   },
   "dependencies": {
     "@fontsource-variable/jetbrains-mono": "^5.3.0",
@@ -39,6 +40,7 @@
     "@vitejs/plugin-react": "^6.1.2",
     "fake-indexeddb": "^6.2.5",
     "jsdom": "^29.1.1",
+    "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vite": "^8.3.4",
     "vitest": "^5.0.3"

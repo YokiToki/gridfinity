@@ -34,6 +34,15 @@
   --color-error-text: #f8b9bf;
   --color-error-bg: #2c1719;
   --color-error-border: #7a3037;
+  /* иллюстрации карточек (src/app/art): тона от тени к свету, цвета подставляются классами .art-t0…6 */
+  --color-art-0: #1b2230;
+  --color-art-1: #283250;
+  --color-art-2: #37446a;
+  --color-art-3: #485a86;
+  --color-art-4: #5d729f;
+  --color-art-5: #7a90ba;
+  --color-art-6: #9fb2d6;
+  --color-art-edge: #0b0d11;
   --radius-xs: 4px;
   --radius-control: 6px;
   --radius-group: 8px;
@@ -46,3 +55,8 @@
 html, body, #root { height: 100%; margin: 0; }
 body { background: var(--color-bg); color: var(--color-text); font: 13px/1.4 var(--font-sans); }
 *:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+
+/* Иллюстрации карточек: в SVG только классы, цвета берутся из токенов темы */
+.art-t0 { fill: var(--color-art-0); } .art-t1 { fill: var(--color-art-1); } .art-t2 { fill: var(--color-art-2); } .art-t3 { fill: var(--color-art-3); }
+.art-t4 { fill: var(--color-art-4); } .art-t5 { fill: var(--color-art-5); } .art-t6 { fill: var(--color-art-6); }
+.art-edge { fill: none; stroke: var(--color-art-edge); stroke-width: .5; stroke-linejoin: round; }
