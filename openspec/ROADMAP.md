@@ -41,7 +41,7 @@ gantt
     07a underside-view      :done, c07a, after c01, 1d
     07 box-mode             :done, c07, after c04a, 2d
     08 cutout-mode          :c08, after c07, 2d
-    09 export-3mf-bambu     :c09, after c06 c08, 1d
+    09 export-3mf-bambu     :done, c09, after c06 c08, 1d
     14 start-page-renders   :c14, after c08 c10, 1d
     section Keychain
     10 product-sections     :c10, after c01, 1d
