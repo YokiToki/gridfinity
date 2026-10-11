@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeAll, describe, expect, it } from 'vitest'
 import { strFromU8, unzipSync } from 'fflate'
-import { buildExport, layout } from './build'
+import { buildExport, layout, plateOffset } from './build'
 import { defaultExportSettings, type ExportSettings } from './settings'
 import { generate, type ModelResult } from '../geometry/model'
 import { defaultSplit } from '../geometry/split'
@@ -59,7 +59,44 @@ describe('buildExport: 3MF', () => {
   })
 })
 
+describe('плиты Bambu Studio: сетка', () => {
+  const bed = { x: 256, y: 256 }
+  it('1 плита — в нуле, 4 плиты — сетка 2 × 2 с шагом 1,2 стола, ряды вниз', () => {
+    expect(plateOffset(0, 1, bed, true)).toEqual([0, 0])
+    const four = [0, 1, 2, 3].map((k) => plateOffset(k, 4, bed, true))
+    expect(four.map(([x, y]) => [Math.round(x * 10) / 10, Math.round(y * 10) / 10])).toEqual([[0, 0], [307.2, 0], [0, -307.2], [307.2, -307.2]])
+  })
+  it('число столбцов: 2 → 2, 3 → 2, 5 → 3, 10 → 4', () => {
+    const cols = (n: number) => new Set(Array.from({ length: n }, (_, k) => plateOffset(k, n, bed, true)[0])).size
+    expect([cols(2), cols(3), cols(5), cols(10)]).toEqual([2, 2, 3, 4])
+  })
+  it('обычный 3MF и объединённый STL — плиты в ряд', () => {
+    expect(plateOffset(2, 4, bed, false)).toEqual([552, 0])
+  })
+  it('экспорт для Bambu: объекты четырёх плит стоят в ячейках сетки, не мимо плит', async () => {
+    const r = buildExport(four.parts, S({ format: '3mf', printerId: 'a1-mini' }), 'plate')
+    expect(r.plates).toBe(4)
+    const xml = (await unzipText(r.files[0].blob))['3D/3dmodel.model']
+    const items = [...xml.matchAll(/transform="1 0 0 0 1 0 0 0 1 (-?[\d.]+) (-?[\d.]+) 0"/g)].map((m) => [+m[1], +m[2]])
+    expect(items).toHaveLength(4)
+    const cell = 180 * 1.2
+    for (const [x, y] of items) {
+      const cx = Math.floor((x + 1e-6) / cell + 1e-9), cy = Math.floor((-y + 180 + 1e-6) / cell)
+      // деталь лежит внутри стола своей ячейки
+      expect(x - cx * cell).toBeGreaterThanOrEqual(0); expect(x - cx * cell).toBeLessThanOrEqual(180)
+      expect(y + cy * cell).toBeGreaterThanOrEqual(0); expect(y + cy * cell).toBeLessThanOrEqual(180)
+    }
+  })
+})
+
 describe('buildExport: раскладка и ориентация', () => {
+  it('одна деталь на плите стоит по центру рабочей области, не в углу у запретной зоны', () => {
+    const { placed } = layout(one.parts, S())
+    const m = placed[0]
+    expect(m.x).toBeCloseTo(5 + (246 - m.mesh.size[0]) / 2, 6)
+    expect(m.y).toBeCloseTo(5 + (246 - m.mesh.size[1]) / 2, 6)
+    expect(m.x).toBeGreaterThan(30)
+  })
   it('все части лежат в пределах стола с полем и не пересекаются', () => {
     const { placed } = layout(four.parts, S())
     expect(placed.filter((p) => p.plate === 1).length).toBeGreaterThan(0)

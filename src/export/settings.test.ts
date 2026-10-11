@@ -20,6 +20,10 @@ describe('export settings', () => {
     const n = normalizeExportSettings({ printerId: 'zzz', margin: -3, gap: 'x', format: 'pdf', multi: 1, orientation: 'up' })
     expect(n).toEqual({ printerId: defaultExportSettings.printerId })
   })
+  it('прежнее значение пластика none заменяется значением по умолчанию', () => {
+    expect(normalizeExportSettings({ filament: 'none' })).toEqual({})
+    expect(defaultExportSettings.filament).toBe('pla')
+  })
   it('изменения сохраняются и читаются после сброса кэша', () => {
     updateExportSettings({ printerId: 'custom', customX: 300, customY: 280 })
     resetExportSettings()

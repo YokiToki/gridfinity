@@ -13,7 +13,7 @@ export interface BambuSelection {
   printer: PrinterPreset
   nozzle: number
   process: string
-  /** id пластика или 'none'. */
+  /** id пластика из FILAMENTS. */
   filament: string
 }
 

@@ -17,6 +17,11 @@ describe('printers', () => {
   it('у принтеров Bambu есть имя модели и суффикс профилей', () => {
     for (const p of PRINTERS) { expect(p.bambu?.model).toBeTruthy(); expect(p.bambu?.suffix).toMatch(/^[A-Z0-9]+$/) }
   })
+  it('есть P2S, а H2D считается по объёму одним соплом', () => {
+    expect(printerById('p2s')).toMatchObject({ x: 256, y: 256, z: 256 })
+    expect(printerById('h2d')).toMatchObject({ x: 325, y: 320, z: 325 })
+    expect(printerById('h2s')).toMatchObject({ x: 340, y: 320, z: 340 })
+  })
   it('поиск по id, процессы и пластики не пустые', () => {
     expect(printerById('a1')?.x).toBe(256)
     expect(printerById('nope')).toBeUndefined()

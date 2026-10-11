@@ -23,7 +23,7 @@ export function ExportOptionsSection() {
         <>
           <Select label={t('export.nozzle')} value={String(s.nozzle)} options={NOZZLES.map((n) => ({ value: String(n), label: `${n} mm` }))} onChange={(v) => update({ nozzle: Number(v) })} />
           <Select label={t('export.process')} value={s.process} options={PROCESSES.map((p) => ({ value: p.id, label: p.label }))} onChange={(v) => update({ process: v })} />
-          <Select label={t('export.filament')} value={s.filament} options={[{ value: 'none', label: t('export.filamentNone') }, ...FILAMENTS.map((f) => ({ value: f.id, label: f.label }))]} onChange={(v) => update({ filament: v })} />
+          <Select label={t('export.filament')} value={s.filament} options={FILAMENTS.map((f) => ({ value: f.id, label: f.label }))} onChange={(v) => update({ filament: v })} />
         </>
       )}
       <div className="flex flex-col gap-1">

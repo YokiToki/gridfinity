@@ -428,7 +428,6 @@
     "nozzle": "Сопло",
     "process": "Профиль печати",
     "filament": "Пластик",
-    "filamentNone": "Не задан",
     "multi": {
       "label": "Несколько деталей",
       "one": "Один {{format}}",

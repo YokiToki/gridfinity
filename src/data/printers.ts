@@ -1,6 +1,6 @@
 /**
- * Пресеты принтеров: размеры стола по опубликованным характеристикам производителя (Bambu Lab Wiki, раздел Specifications
- * каждой модели). Названия профилей Studio проверяются открытием проекта в Bambu Studio (см. export/bambu.ts); данные
+ * Пресеты принтеров: размеры стола по опубликованным характеристикам производителя (страницы specs / tech-specs на bambulab.com).
+ * H2D: берётся объём печати одним соплом 325 × 320 × 325 (полный 350 × 320 содержит зоны только для двух сопел). Названия профилей Studio проверяются открытием проекта в Bambu Studio (см. export/bambu.ts); данные
  * написаны вручную, чужие дампы пресетов (AGPL) не копировались.
  */
 export interface PrinterPreset {
@@ -31,10 +31,11 @@ export const PRINTERS: PrinterPreset[] = [
   { id: 'a1', name: 'Bambu Lab A1', x: 256, y: 256, z: 256, bambu: { model: 'Bambu Lab A1', suffix: 'A1' }, source: 'https://wiki.bambulab.com/en/a1' },
   { id: 'p1p', name: 'Bambu Lab P1P', x: 256, y: 256, z: 256, bambu: { model: 'Bambu Lab P1P', suffix: 'P1P' }, source: 'https://wiki.bambulab.com/en/p1' },
   { id: 'p1s', name: 'Bambu Lab P1S', x: 256, y: 256, z: 256, bambu: { model: 'Bambu Lab P1S', suffix: 'P1S' }, source: 'https://wiki.bambulab.com/en/p1' },
+  { id: 'p2s', name: 'Bambu Lab P2S', x: 256, y: 256, z: 256, bambu: { model: 'Bambu Lab P2S', suffix: 'P2S' }, source: 'https://bambulab.com/en/p2s/specs' },
   { id: 'x1c', name: 'Bambu Lab X1 Carbon', x: 256, y: 256, z: 256, bambu: { model: 'Bambu Lab X1 Carbon', suffix: 'X1C' }, source: 'https://wiki.bambulab.com/en/x1' },
   { id: 'x1e', name: 'Bambu Lab X1E', x: 256, y: 256, z: 256, bambu: { model: 'Bambu Lab X1E', suffix: 'X1E' }, source: 'https://wiki.bambulab.com/en/x1e' },
-  { id: 'h2d', name: 'Bambu Lab H2D', x: 350, y: 320, z: 325, bambu: { model: 'Bambu Lab H2D', suffix: 'H2D' }, source: 'https://wiki.bambulab.com/en/h2' },
-  { id: 'h2s', name: 'Bambu Lab H2S', x: 340, y: 320, z: 340, bambu: { model: 'Bambu Lab H2S', suffix: 'H2S' }, source: 'https://wiki.bambulab.com/en/h2' },
+  { id: 'h2d', name: 'Bambu Lab H2D', x: 325, y: 320, z: 325, bambu: { model: 'Bambu Lab H2D', suffix: 'H2D' }, source: 'https://bambulab.com/en/h2d/tech-specs' },
+  { id: 'h2s', name: 'Bambu Lab H2S', x: 340, y: 320, z: 340, bambu: { model: 'Bambu Lab H2S', suffix: 'H2S' }, source: 'https://bambulab.com/en/h2s/tech-specs' },
 ]
 
 export const printerById = (id: string) => PRINTERS.find((p) => p.id === id)

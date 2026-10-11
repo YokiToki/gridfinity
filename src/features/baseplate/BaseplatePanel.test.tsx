@@ -143,7 +143,7 @@ describe('PlateSection', () => {
     await userEvent.click(screen.getByRole('switch', { name: 'Show build plate' }))
     expect(latest.preview.showPlate).toBe(true)
     await userEvent.selectOptions(screen.getByLabelText('Printer'), 'h2d')
-    expect(bedOf(readExport())).toMatchObject({ x: 350, y: 320 })
+    expect(bedOf(readExport())).toMatchObject({ x: 325, y: 320 })
     await userEvent.selectOptions(screen.getByLabelText('Printer'), 'custom')
     await type('Bed width', '300')
     expect(bedOf(readExport()).x).toBe(300)

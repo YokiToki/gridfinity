@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { loadPersisted } from '../app/usePersistedState'
-import { CUSTOM_PRINTER, printerById } from '../data/printers'
+import { CUSTOM_PRINTER, FILAMENTS, printerById } from '../data/printers'
 
 export type ExportFormat = 'stl' | '3mf'
 export type Orientation = 'auto' | 'asis' | 'flipped'
@@ -19,7 +19,7 @@ export interface ExportSettings {
   gap: number
   nozzle: number
   process: string
-  /** id пластика или 'none'. */
+  /** id пластика из data/printers: Studio без профиля пластика показывает проект как изменённый, поэтому он всегда задан. */
   filament: string
   /** Несколько деталей: один файл 3MF/STL или отдельные файлы. */
   multi: 'one' | 'separate'
@@ -30,7 +30,7 @@ export interface ExportSettings {
 
 export const defaultExportSettings: ExportSettings = {
   format: 'stl', printerId: 'x1c', customX: 220, customY: 220, customZ: 250, margin: 5, gap: 6,
-  nozzle: 0.4, process: '0.20-standard', filament: 'none', multi: 'one', orientation: 'auto', fileName: '',
+  nozzle: 0.4, process: '0.20-standard', filament: 'pla', multi: 'one', orientation: 'auto', fileName: '',
 }
 
 export interface Bed { x: number; y: number; z: number }
@@ -52,6 +52,7 @@ export function normalizeExportSettings(raw: Record<string, unknown>): Record<st
   if (out.printerId !== CUSTOM_PRINTER && typeof out.printerId === 'string' && !printerById(out.printerId)) out.printerId = defaultExportSettings.printerId
   for (const k of ['customX', 'customY', 'customZ', 'gap', 'nozzle'] as const) if (!(typeof out[k] === 'number' && Number.isFinite(out[k]) && (out[k] as number) > 0)) delete out[k]
   if (!(typeof out.margin === 'number' && Number.isFinite(out.margin) && out.margin >= 0)) delete out.margin
+  if (typeof out.filament !== 'string' || !FILAMENTS.some((f) => f.id === out.filament)) delete out.filament // в том числе прежнее 'none'
   if (out.format !== 'stl' && out.format !== '3mf') delete out.format
   if (out.multi !== 'one' && out.multi !== 'separate') delete out.multi
   if (out.orientation !== 'auto' && out.orientation !== 'asis' && out.orientation !== 'flipped') delete out.orientation

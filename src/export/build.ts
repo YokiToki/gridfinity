@@ -15,8 +15,15 @@ export interface ExportResult {
   overflow: boolean
 }
 
-/** Смещение плиты k по X: плиты идут в ряд; Studio раздвигает плиты примерно на 20 % ширины стола. */
-export const plateOffset = (k: number, bedX: number, bambu: boolean) => k * (bambu ? bedX * 1.2 : bedX + 20)
+/**
+ * Положение плиты k в сцене. У Bambu Studio плиты стоят сеткой: столбцов ceil(sqrt(n − 1) + ε), шаг 1,2 размера стола
+ * (зазор 20 %), следующие ряды идут вниз (−Y). Для обычного 3MF и объединённого STL плиты идут в ряд.
+ */
+export function plateOffset(k: number, count: number, bed: { x: number; y: number }, bambu: boolean): [number, number] {
+  if (!bambu) return [k * (bed.x + 20), 0]
+  const cols = Math.floor(Math.sqrt(Math.max(0, count - 1))) + 1
+  return [(k % cols) * bed.x * 1.2, (-Math.floor(k / cols) * bed.y * 1.2) || 0]
+}
 
 /** Раскладка уже ориентированных деталей по плитам с учётом поворота на 90° там, где арранжировщик его выбрал. */
 export function layout(parts: PartMesh[], s: ExportSettings) {
@@ -25,10 +32,14 @@ export function layout(parts: PartMesh[], s: ExportSettings) {
   const area = usableBed(s)
   const plates: Plate[] = arrange(base.map((m) => ({ w: m.size[0], h: m.size[1] })), { x: area.x, y: area.y }, s.gap)
   const placed: { index: number; mesh: PlacedMesh; x: number; y: number; plate: number }[] = []
-  plates.forEach((pl, k) => pl.items.forEach((it) => {
-    const mesh = it.rotated ? orientMesh(parts[it.index].mesh, { flip, rotate: true }) : base[it.index]
-    placed.push({ index: it.index, mesh, x: s.margin + it.x, y: s.margin + it.y, plate: k + 1 })
-  }))
+  plates.forEach((pl, k) => {
+    const meshes = pl.items.map((it) => (it.rotated ? orientMesh(parts[it.index].mesh, { flip, rotate: true }) : base[it.index]))
+    // раскладка по центру рабочей области: у принтеров есть запретные зоны у краёв стола, а Studio отвергает детали рядом с ними
+    let w = 0, h = 0
+    pl.items.forEach((it, i) => { w = Math.max(w, it.x + meshes[i].size[0]); h = Math.max(h, it.y + meshes[i].size[1]) })
+    const dx = pl.overflow ? 0 : Math.max(0, (area.x - w) / 2), dy = pl.overflow ? 0 : Math.max(0, (area.y - h) / 2)
+    pl.items.forEach((it, i) => placed.push({ index: it.index, mesh: meshes[i], x: s.margin + dx + it.x, y: s.margin + dy + it.y, plate: k + 1 }))
+  })
   placed.sort((a, b) => a.index - b.index)
   return { placed, plates, base }
 }
@@ -64,8 +75,8 @@ export function buildExport(parts: PartMesh[], s: ExportSettings, baseName: stri
   const objectsFor = (subset: typeof placed, forceSingle: boolean): ThreeMfObject[] => subset.map((p) => ({
     name: parts[p.index].label,
     mesh: p.mesh,
-    x: forceSingle ? s.margin : p.x + plateOffset(p.plate - 1, bed.x, bambu),
-    y: forceSingle ? s.margin : p.y,
+    x: forceSingle ? Math.max(0, (bed.x - p.mesh.size[0]) / 2) : p.x + plateOffset(p.plate - 1, plates.length, bed, bambu)[0],
+    y: forceSingle ? Math.max(0, (bed.y - p.mesh.size[1]) / 2) : p.y + plateOffset(p.plate - 1, plates.length, bed, bambu)[1],
     plate: forceSingle ? 1 : p.plate,
   }))
   const pack3mf = (objs: ThreeMfObject[], title: string): Blob => {
@@ -80,5 +91,5 @@ export function buildExport(parts: PartMesh[], s: ExportSettings, baseName: stri
   }
   if (parts.length === 1) return res([{ name: `${name}.stl`, blob: stlOf(placed[0].mesh.positions, placed[0].mesh.triangles) }])
   if (separate) return res(placed.map((p) => ({ name: `${name}_${parts[p.index].label}.stl`, blob: stlOf(p.mesh.positions, p.mesh.triangles) })))
-  return res([{ name: `${name}.stl`, blob: mergeStl(placed.map((p) => ({ mesh: p.mesh, x: p.x + plateOffset(p.plate - 1, bed.x, false), y: p.y }))) }])
+  return res([{ name: `${name}.stl`, blob: mergeStl(placed.map((p) => { const [ox, oy] = plateOffset(p.plate - 1, plates.length, bed, false); return { mesh: p.mesh, x: p.x + ox, y: p.y + oy } })) }])
 }
