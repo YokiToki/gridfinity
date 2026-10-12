@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { useState } from 'react'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
+import { openSection, renderOpen as render } from '../../ui/renderOpen'
 import userEvent from '@testing-library/user-event'
 import i18n from '../../i18n'
 import { boxHeightMm, boxLayout, defaultBox, equalDividers, type BoxParams } from '../../geometry/box'
@@ -22,7 +23,7 @@ const type = async (label: string, value: string) => {
   const f = screen.getByLabelText(label)
   await userEvent.clear(f); await userEvent.type(f, value); await userEvent.tab()
 }
-const open = (name: string) => userEvent.click(screen.getByRole('button', { name: `Expand: ${name}` }))
+const open = (name: string) => openSection(name)
 const withGrid = (cols: number, rows: number, removed: string[] = []): BoxParams => {
   const l = boxLayout(defaultBox)
   return { ...defaultBox, compartments: { cols, rows, xDividers: equalDividers(cols, l.cavityX, 1.2), yDividers: equalDividers(rows, l.cavityY, 1.2), removed } }
@@ -211,7 +212,7 @@ describe('BoxPanel: отсеки', () => {
     render(<Harness />)
     expect(screen.getByLabelText('Высота, единицы')).toBeInTheDocument()
     expect(screen.getByText('Стенки и пол')).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Развернуть: Губа' }))
+    await openSection('Губа')
     expect(screen.getByText(/Губа — кромка сверху коробки/)).toBeInTheDocument()
   })
 })

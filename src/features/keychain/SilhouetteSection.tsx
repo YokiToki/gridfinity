@@ -6,6 +6,7 @@ import { Button } from '../../ui/Button'
 import { LengthField } from '../../ui/LengthField'
 import { NumberField } from '../../ui/NumberField'
 import { Section } from '../../ui/Section'
+import { isChanged } from '../../ui/isChanged'
 import { Select } from '../../ui/Select'
 import { Toggle } from '../../ui/Toggle'
 
@@ -39,7 +40,7 @@ export function SilhouetteSection({ value: s, threshold, preview, heightFloor = 
   const summary = auto ? t('keychain.silhouette.summaryAuto', { value: threshold ?? '–' }) : t('keychain.silhouette.summary', { value: s.threshold })
   const modeOptions = MODES.map((m) => ({ value: m, label: t(`keychain.silhouette.areaModes.${m}`) }))
   return (
-    <Section title={t('keychain.silhouette.title')} summary={summary} onReset={() => onChange({ ...defaultKeychain.silhouette })}>
+    <Section title={t('keychain.silhouette.title')} summary={summary} modified={isChanged(s, defaultKeychain.silhouette)} onReset={() => onChange({ ...defaultKeychain.silhouette })}>
       <Toggle label={t('keychain.silhouette.auto')} checked={auto} onChange={(v) => onChange({ threshold: v ? 'auto' : (threshold ?? 128) })} />
       <NumberField label={t('keychain.silhouette.threshold')} value={auto ? (threshold ?? 128) : (s.threshold as number)} min={0} max={255} step={1} digits={0} disabled={auto}
         onChange={(v) => onChange({ threshold: v })} />

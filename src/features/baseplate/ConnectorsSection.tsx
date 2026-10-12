@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { planSplit, toGeometry, type BaseplateParams } from '../../geometry/baseplate'
 import { cutKey, CONNECTOR_TYPES, CUSTOM, defaultConnector, HOLE_PRESETS, withHolePreset, type ConnectorConfig, type ConnectorType } from '../../geometry/connectors'
 import { Section } from '../../ui/Section'
+import { isChanged } from '../../ui/isChanged'
 import { SegmentedControl } from '../../ui/SegmentedControl'
 import { Select } from '../../ui/Select'
 import { LengthField } from '../../ui/LengthField'
@@ -27,7 +28,7 @@ export function ConnectorsSection({ params: p, onChange }: { params: BaseplatePa
   const overrideOptions = [{ value: '', label: t('connector.useDefault') }, ...typeOptions]
 
   return (
-    <Section title={t('connector.title')} summary={summary} defaultOpen={c.type !== 'none'} onReset={() => onChange(defaultConnector)}>
+    <Section title={t('connector.title')} summary={summary} modified={isChanged(c, defaultConnector)} onReset={() => onChange(defaultConnector)}>
       <SegmentedControl fill ariaLabel={t('connector.type')} value={c.type} onChange={(v) => set({ type: v })} options={typeOptions} />
       {c.type === 'holes' && (
         <>

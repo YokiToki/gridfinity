@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { defaultSplit, type KeychainInfo, type KeychainParams, type SplitParams } from '../../geometry/keychain'
 import type { FitIssue } from '../../geometry/keychainFit'
 import { Section } from '../../ui/Section'
+import { isChanged } from '../../ui/isChanged'
 import { Toggle } from '../../ui/Toggle'
 import { Button } from '../../ui/Button'
 import { Banner } from '../../ui/Banner'
@@ -21,7 +22,7 @@ export function SplitSection({ params: p, info, error, onSplit }: { params: Keyc
     feature: t('keychain.editor.pin', { n: i.feature.slice(3) }), actual: formatLength(i.actual, unit), required: formatLength(i.required, unit), u: t(`units.${unit}`),
   })
   return (
-    <Section title={t('keychain.split.title')} summary={summary} defaultOpen={false} onReset={() => onSplit({ ...defaultSplit })}>
+    <Section title={t('keychain.split.title')} summary={summary} modified={isChanged(s, defaultSplit)} onReset={() => onSplit({ ...defaultSplit })}>
       <Toggle label={t('keychain.split.enable')} checked={s.enabled} onChange={(v) => onSplit({ enabled: v })} />
       {s.enabled && (
         <>

@@ -67,10 +67,12 @@ export function ImageMode() {
     }
   }, [params.imageId, setState, t])
 
+  // «Начать заново»: параметры по умолчанию, изображение убирается из модели (сам файл остаётся в хранилище)
+  const startOver = () => { setState(defaults); setImage(null); setNotice(null); setSelectedArea(null) }
   const onDrop = (e: DragEvent) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) void onFile(f) }
   return (
     <KeychainWorkspace
-      mode="image" params={params} image={image} onDrop={onDrop}
+      mode="image" params={params} image={image} onDrop={onDrop} onStartOver={startOver}
       overlay={(info) => (image ? <MaskPreview preview={info?.preview ?? null} selected={selectedArea} onSelect={setSelectedArea} /> : null)}
       panel={(info) => <KeychainPanel params={params} onChange={setState} imageName={imageName} hasImage={!!image} info={info} notice={notice} onFile={(f) => void onFile(f)} selectedArea={selectedArea} onSelectArea={setSelectedArea} />}
     />

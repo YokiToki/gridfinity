@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { baseplateHeights, defaultThickness, type BaseplateError, type BaseplateCore, type BaseplateThickness } from '../../geometry/baseplate'
 import { Section } from '../../ui/Section'
+import { isChanged } from '../../ui/isChanged'
 import { LengthField } from '../../ui/LengthField'
 import { Banner } from '../../ui/Banner'
 import { formatLength, useUnit } from '../../ui/units'
@@ -27,7 +28,7 @@ export function ThicknessSection({ geometry: g, errors, update }: { geometry: Ba
   const hasError = errors.some((e) => e.field.startsWith('thickness.'))
 
   return (
-    <Section title={t('baseplate.thickness.title')} summary={summary} defaultOpen={false} onReset={() => update((o) => ({ ...o, thickness: defaultThickness }))}>
+    <Section title={t('baseplate.thickness.title')} summary={summary} modified={isChanged(th, defaultThickness)} onReset={() => update((o) => ({ ...o, thickness: defaultThickness }))}>
       <div className="grid grid-cols-2 gap-2">
         {FIELDS.map(({ key, min, max, step }) => {
           const e = errors.find((x) => x.field === `thickness.${key}`)

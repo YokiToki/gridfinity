@@ -3,6 +3,7 @@ import 'fake-indexeddb/auto'
 import { IDBFactory } from 'fake-indexeddb'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { openSection } from '../../ui/renderOpen'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { I18nextProvider } from 'react-i18next'
@@ -34,13 +35,17 @@ describe('Keychain: изображение (4.1)', () => {
   it('открывается: подсказка выбрать изображение, секций силуэта пока нет, генерация не идёт', async () => {
     open()
     expect(await screen.findByText(/Choose an image to start/)).toBeInTheDocument()
+    // секция «Изображение» свёрнута, но первый шаг доступен прямо в подсказке
+    expect(screen.getByRole('button', { name: 'Choose image' })).toBeInTheDocument()
+    expect(screen.getByTestId('image-input-empty')).toBeInTheDocument()
+    expect(screen.queryByTestId('image-input')).toBeNull()
     expect(screen.queryByText('Silhouette')).toBeNull()
     expect(screen.getByTestId('viewport')).toBeInTheDocument()
     expect(generate.mock.calls.every((c) => c[2]?.enabled === false)).toBe(true)
   })
   it('допустимый файл: изображение регистрируется в воркере, появляются секции, идёт генерация keychain', async () => {
     open()
-    await userEvent.upload(await screen.findByTestId('image-input'), png())
+    await userEvent.upload(await screen.findByTestId('image-input-empty'), png())
     expect(await screen.findByText('Silhouette')).toBeInTheDocument()
     expect(registered).toHaveLength(1)
     await waitFor(() => expect(generate.mock.calls.some((c) => c[0] === 'keychain' && c[2]?.enabled === true)).toBe(true))
@@ -48,21 +53,22 @@ describe('Keychain: изображение (4.1)', () => {
   })
   it('перетаскивание файла на страницу тоже импортирует', async () => {
     const { container } = open()
-    await screen.findByTestId('image-input')
+    await screen.findByTestId('image-input-empty')
     fireEvent.drop(container.querySelector('div.flex.min-h-0.flex-1')!, { dataTransfer: { files: [png()] } })
     expect(await screen.findByText('Silhouette')).toBeInTheDocument()
   })
   it('текстовый файл: сообщение об ошибке, прежнего состояния не меняет', async () => {
     open()
-    await userEvent.upload(await screen.findByTestId('image-input'), new File(['hello'], 'a.txt', { type: 'text/plain' }), { applyAccept: false })
+    await userEvent.upload(await screen.findByTestId('image-input-empty'), new File(['hello'], 'a.txt', { type: 'text/plain' }), { applyAccept: false })
     expect(await screen.findByRole('alert')).toHaveTextContent('not supported')
     expect(screen.queryByText('Silhouette')).toBeNull()
     expect(registered).toHaveLength(0)
   })
   it('ошибка не стирает уже загруженное изображение', async () => {
     open()
-    await userEvent.upload(await screen.findByTestId('image-input'), png())
+    await userEvent.upload(await screen.findByTestId('image-input-empty'), png())
     await screen.findByText('Silhouette')
+    await openSection('Image')
     await userEvent.upload(screen.getByTestId('image-input'), new File(['hello'], 'a.txt', { type: 'text/plain' }), { applyAccept: false })
     expect(await screen.findByRole('alert')).toHaveTextContent('not supported')
     expect(screen.getByText('Silhouette')).toBeInTheDocument()
@@ -70,7 +76,7 @@ describe('Keychain: изображение (4.1)', () => {
   })
   it('перезагрузка: то же изображение берётся из IndexedDB и снова регистрируется в воркере; параметры сохраняются', async () => {
     const first = open()
-    await userEvent.upload(await screen.findByTestId('image-input', {}, { timeout: 5000 }), png())
+    await userEvent.upload(await screen.findByTestId('image-input-empty', {}, { timeout: 5000 }), png())
     await screen.findByText('Silhouette', {}, { timeout: 5000 })
     const saved = JSON.parse(localStorage.getItem('keychain.relief')!)
     saved.silhouette.threshold = 77

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { defaultShape, effectiveRadius, SHAPE_KINDS, SHAPE_PRESETS, type ShapeKind, type ShapeParams } from '../../geometry/shapes'
 import { Section } from '../../ui/Section'
+import { isChanged } from '../../ui/isChanged'
 import { Select } from '../../ui/Select'
 import { LengthField } from '../../ui/LengthField'
 import { NumberField } from '../../ui/NumberField'
@@ -36,7 +37,7 @@ export function ShapeSection({ value: s, error, onChange }: { value: ShapeParams
   const clamped = hasRadius && s.radius > eff + 1e-9
   const widthLabel = round ? t('keychain.shape.diameter') : s.kind === 'polygon' ? t('keychain.shape.acrossCorners') : t('keychain.shape.width')
   return (
-    <Section title={t('keychain.shape.title')} summary={summary} onReset={() => onChange({ ...defaultShape, rim: s.rim })}>
+    <Section title={t('keychain.shape.title')} summary={summary} modified={isChanged({ ...s, rim: null }, { ...defaultShape, rim: null })} onReset={() => onChange({ ...defaultShape, rim: s.rim })}>
       <div role="radiogroup" aria-label={t('keychain.shape.kind')} className="grid grid-cols-5 gap-1">
         {SHAPE_KINDS.map((k) => (
           <button key={k} type="button" role="radio" aria-checked={s.kind === k} aria-label={t(`keychain.shape.kinds.${k}`)} title={t(`keychain.shape.kinds.${k}`)} data-testid={`kind-${k}`}

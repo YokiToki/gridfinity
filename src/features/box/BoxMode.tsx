@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { defaultBox, validateBox, type BoxParams } from '../../geometry/box'
 import { axisMm } from '../../geometry/baseplate'
 import { usePersistedState } from '../../app/usePersistedState'
@@ -12,6 +13,7 @@ import { BoxPanel } from './BoxPanel'
 const PARAMS_KEY = 'gridfinity.box'
 
 export function BoxMode() {
+  const { t } = useTranslation()
   const [p, setP] = usePersistedState<BoxParams>(PARAMS_KEY, defaultBox, migrateBox)
   // не пересоздаём объект параметров, пока значения те же
   const key = JSON.stringify(p)
@@ -28,6 +30,7 @@ export function BoxMode() {
   return (
     <Workspace
       model={model} busy={busy}
+      onStartOver={() => setP(defaultBox)} modeName={t('modes.box')}
       panel={<BoxPanel params={p} onChange={setP} />}
       footer={<ExportPanel model={model} busy={pending} name={`box_${Math.round(axisMm(p.x, p.pitch))}x${Math.round(axisMm(p.y, p.pitch))}`} />}
     />

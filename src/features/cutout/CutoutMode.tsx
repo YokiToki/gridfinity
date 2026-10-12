@@ -90,6 +90,7 @@ export function CutoutMode() {
   return (
     <Workspace
       model={model} busy={busy}
+      onStartOver={() => { setP(defaultCutout); setSelectedId(null); setDraft(null); setMessage(null) }} modeName={t('modes.cutout')}
       panel={<CutoutPanel params={p} onChange={setP} selectedId={selectedId} onSelect={setSelectedId} meshes={meshes} onImport={(f) => void onImport(f)} importMessage={message}
         draft={draft} onDraft={setDraft} snap={snap} onSnap={setSnap} generationError={error} />}
       footer={<ExportPanel model={model} busy={pending} name={nameBase} />}

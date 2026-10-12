@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useState } from 'react'
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
+import { openSection, renderOpen as render } from '../../ui/renderOpen'
 import userEvent from '@testing-library/user-event'
 import { I18nextProvider } from 'react-i18next'
 import i18n from '../../i18n'
@@ -33,7 +34,7 @@ function Harness({ start = {} as Partial<S>, inf = info(), unit = 'mm' as 'mm' |
   )
 }
 const type = async (label: string, v: string) => { const f = screen.getByLabelText(label); await userEvent.clear(f); await userEvent.type(f, v); await userEvent.tab() }
-const open = (name: string) => userEvent.click(screen.getByRole('button', { name: `Expand: ${name}` }))
+const open = (name: string) => openSection(name)
 
 describe('MountSection (3.2)', () => {
   beforeEach(async () => { await i18n.changeLanguage('en') })

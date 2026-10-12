@@ -20,12 +20,14 @@ export type SharedParams = Pick<KeychainParams, 'source' | 'relief' | 'detail' |
  * Секции, общие для обоих режимов Keychain: рельеф, детали, узор, подложка, крепление, половины, разрешение.
  * `S` — состояние режима (оно шире общей части); `params` — полные параметры для проверок.
  */
-export function SharedSections<S extends SharedParams>({ params: p, info, onChange, imageOnly = true }: {
+export function SharedSections<S extends SharedParams>({ params: p, info, onChange, imageOnly = true, defaults }: {
   params: KeychainParams
   info: KeychainInfo | null
   onChange: Dispatch<SetStateAction<S>>
   /** Рельеф (профиль, источник высоты) и линии детали — только для изображения: у фигуры высота задаётся подложкой и бортиком. */
   imageOnly?: boolean
+  /** Умолчания режима: подложка у формы тоньше, чем у изображения, и «изменено» считается от них. */
+  defaults?: SharedParams
 }) {
   const { t } = useTranslation()
   const { errors } = validateKeychain(p)
@@ -52,7 +54,7 @@ export function SharedSections<S extends SharedParams>({ params: p, info, onChan
       <TextSection value={p.text} error={err} splitOn={p.split.enabled} cell={info?.cell ?? null} minCell={info?.minCell ?? null} clipped={!!info?.text?.clipped}
         onChange={patch('text')} onRaise={(c) => patch('quality')({ cell: c })}
         editor={p.text.enabled && info?.size && info.preview && info.text ? <PlacementEditor params={p} info={info} onPlace={place} onPick={() => {}} rejectedShown={false} only="text" /> : null} />
-      <BaseSection value={p.base} error={err} plateError={plateError} onChange={patch('base')} />
+      <BaseSection value={p.base} defaults={defaults?.base} error={err} plateError={plateError} onChange={patch('base')} />
       <MountSection params={p} info={info} error={err} onMount={patch('mount')} onPlace={place} />
       <SplitSection params={p} info={info} error={err} onSplit={patch('split')} />
       <QualitySection value={p.quality} effective={info?.cell ?? null} reduced={!!info?.reduced} error={err} onChange={patch('quality')} />

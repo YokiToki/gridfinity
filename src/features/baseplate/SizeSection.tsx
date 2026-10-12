@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { axisMm, baseplateLayout, defaultParams, MAX_SIZE, type AxisSize, type BaseplateCore, type BaseplateError } from '../../geometry/baseplate'
 import { Section } from '../../ui/Section'
+import { isChanged } from '../../ui/isChanged'
 import { LengthField } from '../../ui/LengthField'
 import { SizeInput, type SizeSource } from '../../ui/SizeInput'
 import { Banner } from '../../ui/Banner'
@@ -25,7 +26,8 @@ export function SizeSection({ geometry: g, errors, update }: { geometry: Basepla
   const reset = () => update((o) => ({ ...o, pitch: defaultParams.pitch, x: defaultParams.x, y: defaultParams.y }))
 
   return (
-    <Section title={t('baseplate.size.title')} summary={`${fmt(layout.sizeX)} × ${fmt(layout.sizeY)} ${t(`units.${unit}`)}`} onReset={reset}>
+    <Section title={t('baseplate.size.title')} summary={`${fmt(layout.sizeX)} × ${fmt(layout.sizeY)} ${t(`units.${unit}`)}`}
+      modified={isChanged({ pitch: g.pitch, x: g.x, y: g.y }, { pitch: defaultParams.pitch, x: defaultParams.x, y: defaultParams.y })} onReset={reset}>
       <LengthField label={t('baseplate.size.pitch')} value={g.pitch} min={20} max={60} onChange={(v) => update((o) => ({ ...o, pitch: v }))} />
       {(['x', 'y'] as const).map((axis) => (
         <SizeInput key={axis} axis={axis} label={t(`baseplate.size.${axis}`)} valueMm={axisMm(g[axis], g.pitch)} pitch={g.pitch}

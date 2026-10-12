@@ -1,7 +1,10 @@
 import type { Dispatch, SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
 import { validateKeychain, type KeychainInfo, type KeychainParams } from '../../geometry/keychain'
+import { useRef } from 'react'
+import { IconUpload } from '@tabler/icons-react'
 import { Banner } from '../../ui/Banner'
+import { Button } from '../../ui/Button'
 import { ImageSection, type ImageNotice } from './ImageSection'
 import { SilhouetteSection } from './SilhouetteSection'
 import { SizeSection } from './SizeSection'
@@ -20,6 +23,19 @@ export interface KeychainPanelProps {
   onSelectArea?: (id: number | null) => void
 }
 
+/** Кнопка выбора изображения в подсказке пустого режима: тот же обработчик, что у секции «Изображение». */
+function PickImageButton({ onFile }: { onFile: (f: File) => void }) {
+  const { t } = useTranslation()
+  const input = useRef<HTMLInputElement>(null)
+  return (
+    <>
+      <Button primary onClick={() => input.current?.click()}><IconUpload size={16} stroke={1.75} />{t('keychain.image.pick')}</Button>
+      <input ref={input} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml,.svg" hidden data-testid="image-input-empty"
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); e.target.value = '' }} />
+    </>
+  )
+}
+
 /** Панель режима «Изображение»: изображение, силуэт, размер, затем общие секции (рельеф … разрешение). Макета нет: собрана из компонентов ui/. */
 export function KeychainPanel({ params: p, onChange, imageName, hasImage, info, notice, onFile, selectedArea = null, onSelectArea }: KeychainPanelProps) {
   const { t } = useTranslation()
@@ -30,9 +46,14 @@ export function KeychainPanel({ params: p, onChange, imageName, hasImage, info, 
 
   return (
     <>
-      <ImageSection name={imageName} notice={notice} onFile={onFile} photoLike={!!info?.photoLike && p.source.kind === 'distance'} />
+      {/* без изображения секция «Изображение» свёрнута, поэтому первый шаг — кнопка прямо в подсказке; ошибка первого файла видна здесь же */}
+      <ImageSection name={imageName} notice={hasImage ? notice : null} onFile={onFile} photoLike={!!info?.photoLike && p.source.kind === 'distance'} />
       {!hasImage ? (
-        <div className="p-4"><Banner>{t('keychain.empty')}</Banner></div>
+        <div className="flex flex-col gap-3 p-4">
+          <Banner>{t('keychain.empty')}</Banner>
+          <PickImageButton onFile={onFile} />
+          {notice && <Banner kind={notice.kind}>{notice.text}</Banner>}
+        </div>
       ) : (
         <>
           {otherError && <div className="px-4 pt-3"><Banner kind="warn">{t(otherError)}</Banner></div>}

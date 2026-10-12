@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { defaultRim, type RimParams } from '../../geometry/shapes'
 import { Section } from '../../ui/Section'
+import { isChanged } from '../../ui/isChanged'
 import { Toggle } from '../../ui/Toggle'
 import { LengthField } from '../../ui/LengthField'
 import { formatLength, useUnit } from '../../ui/units'
@@ -11,7 +12,7 @@ export function RimSection({ value: r, error, onChange }: { value: RimParams; er
   const { unit } = useUnit()
   const summary = r.enabled ? t('keychain.rim.summary', { w: formatLength(r.width, unit), h: formatLength(r.height, unit), u: t(`units.${unit}`) }) : t('keychain.rim.off')
   return (
-    <Section title={t('keychain.rim.title')} summary={summary} defaultOpen={false} onReset={() => onChange({ ...defaultRim })}>
+    <Section title={t('keychain.rim.title')} summary={summary} modified={isChanged(r, defaultRim)} onReset={() => onChange({ ...defaultRim })}>
       <Toggle label={t('keychain.rim.enabled')} checked={r.enabled} onChange={(v) => onChange({ enabled: v })} />
       {r.enabled && (
         <div className="grid grid-cols-2 gap-2">

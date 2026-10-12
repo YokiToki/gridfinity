@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useState } from 'react'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { openSection, renderOpen as render } from '../../ui/renderOpen'
 import userEvent from '@testing-library/user-event'
 import { I18nextProvider } from 'react-i18next'
 import i18n from '../../i18n'
@@ -67,7 +68,8 @@ describe('Silhouette (4.2)', () => {
     expect(screen.getByText('Area 1 · 120 px')).toBeInTheDocument()
     expect(screen.getByText('Area 2 · 80 px')).toBeInTheDocument()
     expect(modeOf(1).value).toBe('follow')
-    expect(screen.queryByText(/[Hh]ole/)).toBeNull()
+    expect(within(screen.getByTestId('area-1')).queryByText(/hole/i)).toBeNull()
+    expect(within(screen.getByTestId('area-2')).queryByText(/hole/i)).toBeNull()
   })
   it('режим области меняется на «Открыта» и обратно; остальные не затрагиваются', async () => {
     render(<Harness />)
@@ -162,7 +164,7 @@ describe('Размер, рельеф, подложка (4.3)', () => {
   })
   it('рельеф: поля меняют параметры; heightFloor ≥ hmax показывает ошибку', async () => {
     render(<Harness />)
-    await userEvent.click(screen.getByRole('button', { name: 'Expand: Relief' }))
+    await openSection('Relief')
     await type('Plateau height', '3')
     expect(latest.relief.hmax).toBe(3)
     await type('Minimum rim height', '3.5')
@@ -191,7 +193,7 @@ describe('Размер, рельеф, подложка (4.3)', () => {
   })
   it('разрешение: шаг и бюджет; уведомление, когда шаг увеличен', async () => {
     render(<Harness inf={info({ reduced: true, cell: 0.4 })} />)
-    await userEvent.click(screen.getByRole('button', { name: 'Expand: Resolution' }))
+    await openSection('Resolution')
     expect(screen.getByRole('alert')).toHaveTextContent('grid step is 0.4 mm')
     await type('Triangle budget', '200000')
     expect(latest.quality.maxTriangles).toBe(200000)
@@ -304,7 +306,7 @@ describe('Области на маске: выбор щелчком (2.2)', () =
 
 describe('Профиль и источник высоты (3.1)', () => {
   beforeEach(async () => { await i18n.changeLanguage('en') })
-  const openRelief = async () => userEvent.click(screen.getByRole('button', { name: 'Expand: Relief' }))
+  const openRelief = async () => await openSection('Relief')
 
   it('пресет задаёт профиль; правка значения превращает его в «Свой», выбор пресета возвращает', async () => {
     render(<Harness />)
@@ -358,7 +360,7 @@ describe('Профиль и источник высоты (3.1)', () => {
 
 describe('Сглаживание (2.1)', () => {
   beforeEach(async () => { await i18n.changeLanguage('en') })
-  const openRelief = async () => userEvent.click(screen.getByRole('button', { name: 'Expand: Relief' }))
+  const openRelief = async () => await openSection('Relief')
   const bright = (over: Record<string, unknown> = {}) => ({ source: { kind: 'brightness' as const, contrast: 1, gamma: 1, invert: false, smooth: 0.4, despeckle: false, ...over } })
 
   it('«Сгладить поверхность» есть для любого источника, «Сглаживание» и «Убрать пятна» — только для яркости', async () => {
@@ -431,11 +433,11 @@ describe('Сглаживание (2.1)', () => {
 
 describe('Линии детали и узоры (3.2)', () => {
   beforeEach(async () => { await i18n.changeLanguage('en') })
-  const openPattern = async () => userEvent.click(screen.getByRole('button', { name: 'Expand: Surface pattern' }))
+  const openPattern = async () => await openSection('Surface pattern')
 
   it('хребет и канавка: ширины появляются при ненулевой величине', async () => {
     render(<Harness />)
-    await userEvent.click(screen.getByRole('button', { name: 'Expand: Detail lines' }))
+    await openSection('Detail lines')
     expect(screen.queryByLabelText('Spine width')).toBeNull()
     await type('Spine height', '0.3')
     expect(latest.detail.spineAmp).toBeCloseTo(0.3, 6)

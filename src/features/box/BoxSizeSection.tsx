@@ -4,10 +4,14 @@ import { boxHeightMm, MAX_BOX_SIZE } from '../../geometry/box'
 import { binLayout, type BinParams } from '../../geometry/bin'
 import { HEIGHT_UNIT } from '../../geometry/spec'
 import { Section } from '../../ui/Section'
+import { isChanged } from '../../ui/isChanged'
 import { LengthField } from '../../ui/LengthField'
 import { NumberField } from '../../ui/NumberField'
 import { SizeInput, type SizeSource } from '../../ui/SizeInput'
 import { formatLength, useUnit } from '../../ui/units'
+
+/** Размер по умолчанию: именно его пишет «Сбросить», с ним же сравнивается сводка. */
+const DEFAULT_SIZE = { pitch: 42, x: { mode: 'units', value: 2, align: 'center' }, y: { mode: 'units', value: 2, align: 'center' }, height: { mode: 'units', value: 3 } } as const
 
 type Patch<T> = (f: (p: T) => T) => void
 interface FieldError { field: string; key: string }
@@ -29,7 +33,8 @@ export function BoxSizeSection<T extends BinParams>({ params: p, errors, update 
   const summary = t('box.size.summary', { x: fmt(l.sizeX), y: fmt(l.sizeY), h: Number((hMm / HEIGHT_UNIT).toFixed(2)) })
 
   return (
-    <Section title={t('box.size.title')} summary={summary} onReset={() => update((o) => ({ ...o, pitch: 42, x: { mode: 'units', value: 2, align: 'center' }, y: { mode: 'units', value: 2, align: 'center' }, height: { mode: 'units', value: 3 } }))}>
+    <Section title={t('box.size.title')} summary={summary} modified={isChanged({ pitch: p.pitch, x: p.x, y: p.y, height: p.height }, DEFAULT_SIZE)}
+      onReset={() => update((o) => ({ ...o, pitch: DEFAULT_SIZE.pitch, x: { ...DEFAULT_SIZE.x }, y: { ...DEFAULT_SIZE.y }, height: { ...DEFAULT_SIZE.height } }))}>
       <LengthField label={t('baseplate.size.pitch')} value={p.pitch} min={20} max={60} onChange={(v) => update((o) => ({ ...o, pitch: v }))} />
       {(['x', 'y'] as const).map((axis) => (
         <SizeInput key={axis} axis={axis} label={t(`baseplate.size.${axis}`)} valueMm={axisMm(p[axis], p.pitch)} pitch={p.pitch}

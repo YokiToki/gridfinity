@@ -30,6 +30,8 @@
   --color-warn-text: #f1d79b;
   --color-warn-bg: #2a2314;
   --color-warn-border: #6b5524;
+  /* значение секции изменено относительно умолчаний (сводка в заголовке): оранжевый, отличен от жёлтого warn и синего accent; 7.5:1 на surface-1 */
+  --color-changed: #f0944a;
   --color-error: #f0707b;
   --color-error-text: #f8b9bf;
   --color-error-bg: #2c1719;

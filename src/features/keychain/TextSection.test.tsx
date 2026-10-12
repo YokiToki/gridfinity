@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { useState } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { openSection, renderOpen as render } from '../../ui/renderOpen'
 import userEvent from '@testing-library/user-event'
 import { I18nextProvider } from 'react-i18next'
 import i18n from '../../i18n'
@@ -37,7 +38,7 @@ function Harness({ start = {}, splitOn = false, cell = 0.25, minCell = 0.05, cli
 }
 const type = async (label: string, v: string) => { const f = screen.getByLabelText(label); await userEvent.clear(f); await userEvent.type(f, v); await userEvent.tab() }
 // секции открыты по умолчанию; после изменения 21 они закрыты — помощник работает в обоих случаях
-const open = async () => { const b = screen.queryByRole('button', { name: 'Expand: Text' }); if (b) await userEvent.click(b) }
+const open = async () => { const b = screen.queryByRole('button', { name: /^Expand: Text( \(changed\))?$/ }); if (b) await userEvent.click(b) }
 const on = (over: Partial<TextParams> = {}) => ({ enabled: true, content: 'ANNA', ...over })
 
 describe('TextSection', () => {

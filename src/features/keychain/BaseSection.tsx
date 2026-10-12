@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { defaultKeychain, type BaseParams, type PlateShape } from '../../geometry/keychain'
 import { Section } from '../../ui/Section'
+import { isChanged } from '../../ui/isChanged'
 import { Select } from '../../ui/Select'
 import { Toggle } from '../../ui/Toggle'
 import { LengthField } from '../../ui/LengthField'
@@ -10,13 +11,13 @@ import { formatLength, useUnit } from '../../ui/units'
 const SHAPES: PlateShape[] = ['silhouette', 'rect', 'rounded', 'circle']
 
 /** Подложка: толщина, форма (по силуэту, прямоугольник, скруглённый, круг), смещение, поле, радиус, размер. */
-export function BaseSection({ value: b, error, plateError, onChange }: { value: BaseParams; error: (field: string) => string | undefined; plateError: string | null; onChange: (p: Partial<BaseParams>) => void }) {
+export function BaseSection({ value: b, defaults = defaultKeychain.base, error, plateError, onChange }: { value: BaseParams; defaults?: BaseParams; error: (field: string) => string | undefined; plateError: string | null; onChange: (p: Partial<BaseParams>) => void }) {
   const { t } = useTranslation()
   const { unit } = useUnit()
   const summary = b.thickness > 0 ? `${formatLength(b.thickness, unit)} ${t(`units.${unit}`)} · ${t(`keychain.base.shapes.${b.shape}`)}` : t('keychain.base.none')
   const sized = b.shape === 'rect' || b.shape === 'rounded' || b.shape === 'circle'
   return (
-    <Section title={t('keychain.base.title')} summary={summary} onReset={() => onChange({ ...defaultKeychain.base })}>
+    <Section title={t('keychain.base.title')} summary={summary} modified={isChanged(b, defaults)} onReset={() => onChange({ ...defaults })}>
       <LengthField label={t('keychain.base.thickness')} value={b.thickness} min={0} max={10} step={0.2} error={error('base.thickness')} onChange={(v) => onChange({ thickness: v })} />
       {b.thickness > 0 && (
         <>

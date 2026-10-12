@@ -1,15 +1,16 @@
 import { useRef, useState, type ReactNode, type PointerEvent } from 'react'
 import type { ModelResult } from '../geometry/model'
 import { useTranslation } from 'react-i18next'
-import { IconChevronDown, IconFocusCentered, IconShape } from '@tabler/icons-react'
+import { IconChevronDown, IconFocusCentered, IconRestore, IconShape } from '@tabler/icons-react'
 import { Viewport, type BuildPlate } from '../features/viewport/Viewport'
 import { usePersistedState } from './usePersistedState'
 import { ExportOptionsSection } from '../features/export/ExportOptionsSection'
 import { useElementHeight } from './useElementHeight'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { MeasurementsBar } from '../features/viewport/MeasurementsBar'
 
 /** Раскладка режима: панель параметров, закреплённый блок экспорта и 3D-вид. На узком экране панель — нижняя шторка. */
-export function Workspace({ panel, footer, model, plate, gap, busy, exportOptions = true, overlay }: {
+export function Workspace({ panel, footer, model, plate, gap, busy, exportOptions = true, overlay, onStartOver, modeName }: {
   panel: ReactNode
   footer?: ReactNode
   model: ModelResult | null
@@ -21,6 +22,10 @@ export function Workspace({ panel, footer, model, plate, gap, busy, exportOption
   exportOptions?: boolean
   /** Плавающий блок поверх вьюпорта (например, предпросмотр маски Keychain). */
   overlay?: ReactNode
+  /** Вернуть параметры режима к умолчаниям: кнопка «Начать заново» над параметрами с подтверждением. Не у заглушек. */
+  onStartOver?: () => void
+  /** Название режима для текста подтверждения. */
+  modeName?: string
 }) {
   const { t } = useTranslation()
   const [view, setView] = usePersistedState('gridfinity.viewport', { tools: true })
@@ -28,6 +33,9 @@ export function Workspace({ panel, footer, model, plate, gap, busy, exportOption
   const fitRef = useRef<() => void>(() => {})
   const [drawerTop, setDrawerTop] = useState(300) // отступ верха шторки на мобильном, px
   const [footerRef, footerH] = useElementHeight<HTMLDivElement>()
+  const [confirming, setConfirming] = useState(false)
+  const startOverBtn = useRef<HTMLButtonElement>(null)
+  const closeConfirm = () => { setConfirming(false); setTimeout(() => startOverBtn.current?.focus(), 0) }
   const drag = useRef<{ y: number; top: number; moved: boolean } | null>(null)
 
   const onDown = (e: PointerEvent) => {
@@ -62,9 +70,23 @@ export function Workspace({ panel, footer, model, plate, gap, busy, exportOption
           <button type="button" aria-label={t('shell.collapseDrawer')} onClick={() => setDrawerTop(window.innerHeight - 140)}
             className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-control border-0 bg-transparent text-text-muted"><IconChevronDown size={18} stroke={1.75} /></button>
         </div>
+        {onStartOver && (
+          <div className="flex flex-none items-center border-b border-border px-3 py-2" data-testid="start-over-strip">
+            <button ref={startOverBtn} type="button" onClick={() => setConfirming(true)}
+              className="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-control border border-border-strong bg-surface-2 px-3 text-sm font-medium text-text hover:bg-surface-3">
+              <IconRestore size={16} stroke={1.75} />{t('startOver.button')}
+            </button>
+          </div>
+        )}
         <div className="min-h-0 flex-1 overflow-auto" style={{ paddingBottom: footerH }} data-testid="panel-scroller">{panel}{exportOptions && <ExportOptionsSection />}</div>
         {footer && <div ref={footerRef} className="flex-none border-t border-border bg-surface-1 px-4 py-3 shadow-sticky">{footer}</div>}
       </aside>
+      {confirming && onStartOver && (
+        <ConfirmDialog title={t('startOver.title')} confirmLabel={t('startOver.confirm')} cancelLabel={t('startOver.cancel')}
+          onConfirm={() => { onStartOver(); closeConfirm() }} onCancel={closeConfirm}>
+          {t('startOver.text', { mode: modeName ?? '' })}
+        </ConfirmDialog>
+      )}
       <section aria-label={t('viewport.label')} className="relative min-w-0 flex-1 overflow-hidden bg-[radial-gradient(ellipse_at_50%_40%,#1a2029_0%,#0b0d10_75%)]">
         <Viewport model={model} plate={plate ?? null} gap={gap ?? 0} showTools={view.tools} onFitReady={(f) => (fitRef.current = f)} />
         <button type="button" aria-label={t('viewport.fit')} title={t('viewport.fit')} onClick={() => fitRef.current()}

@@ -2,7 +2,8 @@
 import 'fake-indexeddb/auto'
 import { IDBFactory } from 'fake-indexeddb'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
+import { openSection, renderOpen as render } from '../../ui/renderOpen'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { I18nextProvider } from 'react-i18next'
@@ -39,6 +40,7 @@ describe('режим Cutout: импорт STL', () => {
     await userEvent.upload(screen.getByTestId('stl-input'), fileOf(binaryStl(tSoup()), 'tool.stl'))
     expect(await screen.findByRole('button', { name: 'Select tool' })).toBeInTheDocument()
     expect(registered).toHaveLength(1)
+    await openSection('Selected cutout')
     expect(screen.getByText('File: tool.stl')).toBeInTheDocument()
     expect(screen.getByText('Size: 60 mm × 60 mm × 10 mm')).toBeInTheDocument()
     await userEvent.upload(screen.getByTestId('stl-input'), fileOf(asciiStl(boxSoup(20, 10, 5)), 'box.STL'))
@@ -97,6 +99,7 @@ describe('режим Cutout: импорт STL', () => {
     localStorage.setItem('gridfinity.cutout', JSON.stringify({ cutouts: [{ id: 'z', name: 'Gone', source: { kind: 'mesh', meshId: 'nope', filename: 'gone.stl', unit: 'mm', orientation: { faceDown: null, rx: 0, ry: 0, rz: 0 }, mode: 'projected', size: [10, 10, 5], hull: [[-5, -5], [5, -5], [5, 5], [-5, 5]] } }] }))
     open()
     await userEvent.click(await screen.findByRole('button', { name: 'Select Gone' }))
+    await openSection('Selected cutout')
     expect(await screen.findByText(/not stored on this device/)).toBeInTheDocument()
   })
 })

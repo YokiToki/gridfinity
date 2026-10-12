@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { useState } from 'react'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
+import { openSection, renderOpen as render } from '../../ui/renderOpen'
 import userEvent from '@testing-library/user-event'
 import { I18nextProvider } from 'react-i18next'
 import i18n from '../../i18n'
@@ -105,7 +106,7 @@ describe('ShapeSection', () => {
 
 describe('RimSection', () => {
   beforeEach(async () => { await i18n.changeLanguage('en'); latest = defaultShape })
-  const open = () => userEvent.click(screen.getByRole('button', { name: 'Expand: Rim' }))
+  const open = () => openSection('Rim')
 
   it('выключен: полей ширины и высоты нет; включение показывает их', async () => {
     render(<Harness />)

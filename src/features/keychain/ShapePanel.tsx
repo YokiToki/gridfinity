@@ -6,7 +6,7 @@ import { Banner } from '../../ui/Banner'
 import { SharedSections } from './SharedSections'
 import { ShapeSection } from './ShapeSection'
 import { RimSection } from './RimSection'
-import type { ShapeState } from './shapeState'
+import { defaultShapeState, type ShapeState } from './shapeState'
 
 /** Панель режима «Форма»: фигура, бортик, затем общие секции (рельеф … разрешение). Секций изображения нет. */
 export function ShapePanel({ state, params, info, onChange }: { state: ShapeState; params: KeychainParams; info: KeychainInfo | null; onChange: Dispatch<SetStateAction<ShapeState>> }) {
@@ -21,7 +21,7 @@ export function ShapePanel({ state, params, info, onChange }: { state: ShapeStat
       {otherError && <div className="px-4 pt-3"><Banner kind="warn">{t(otherError)}</Banner></div>}
       <ShapeSection value={state.shape} error={err} onChange={patchShape} />
       <RimSection value={state.shape.rim} error={err} onChange={patchRim} />
-      <SharedSections params={params} info={info} onChange={onChange} imageOnly={false} />
+      <SharedSections params={params} info={info} onChange={onChange} imageOnly={false} defaults={defaultShapeState} />
     </>
   )
 }

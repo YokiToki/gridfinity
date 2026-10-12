@@ -5,6 +5,7 @@ import { MAX_PARTS, resolveCuts, splitParts, defaultSplitSettings, type SplitSet
 import type { Part } from '../../geometry/split'
 import { toGeometry } from '../../geometry/baseplate'
 import { Section } from '../../ui/Section'
+import { isChanged } from '../../ui/isChanged'
 import { Toggle } from '../../ui/Toggle'
 import { Select } from '../../ui/Select'
 import { LengthField } from '../../ui/LengthField'
@@ -52,7 +53,7 @@ export function SplitSection({ params: p, onChange }: { params: BaseplateParams;
   const summary = !s.enabled ? t('split.off') : t('split.summary', { n: parts.length })
 
   return (
-    <Section title={t('split.title')} summary={summary} defaultOpen={s.enabled} onReset={() => onChange({ ...defaultSplitSettings, connector: s.connector })}>
+    <Section title={t('split.title')} summary={summary} modified={isChanged({ ...s, connector: null }, { ...defaultSplitSettings, connector: null })} onReset={() => onChange({ ...defaultSplitSettings, connector: s.connector })}>
       <Toggle label={t('split.enable')} checked={s.enabled} onChange={(v) => onChange({ enabled: v })} />
       {s.enabled && (
         <>

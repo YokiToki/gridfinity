@@ -1,7 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import { FILAMENTS, NOZZLES, PROCESSES, printerById } from '../../data/printers'
-import { useExportSettings, type Orientation } from '../../export/settings'
+import { defaultExportSettings, useExportSettings, type Orientation } from '../../export/settings'
 import { Section } from '../../ui/Section'
+import { isChanged } from '../../ui/isChanged'
 import { Select } from '../../ui/Select'
 import { SegmentedControl } from '../../ui/SegmentedControl'
 import { LengthField } from '../../ui/LengthField'
@@ -16,7 +17,7 @@ export function ExportOptionsSection() {
   const summary = `${s.format.toUpperCase()} · ${printer ? printer.name.replace('Bambu Lab ', '') : t('export.printer.custom')}`
 
   return (
-    <Section title={t('export.options')} summary={summary} defaultOpen={false}>
+    <Section title={t('export.options')} summary={summary} modified={isChanged(s, defaultExportSettings)}>
       <PrinterFields withMargin />
       <LengthField label={t('export.gap')} value={s.gap} min={0} max={50} step={1} onChange={(v) => update({ gap: v })} />
       {bambu && (

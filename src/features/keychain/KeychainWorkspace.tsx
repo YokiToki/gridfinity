@@ -13,13 +13,15 @@ import { TextRasterContext, useTextRaster } from './useTextRaster'
  * Общая раскладка обоих режимов Keychain: модель (воркер), 3D-вид, панель, блок экспорта и запись последнего сеанса.
  * Режим даёт параметры, изображение (только Изображение) и содержимое панели; `info` приходит из ответа воркера.
  */
-export function KeychainWorkspace({ mode, params, image, panel, overlay, onDrop }: {
+export function KeychainWorkspace({ mode, params, image, panel, overlay, onDrop, onStartOver }: {
   mode: 'image' | 'shape'
   params: KeychainParams
   image: GrayImage | null
   panel: (info: KeychainInfo | null) => ReactNode
   overlay?: (info: KeychainInfo | null) => ReactNode
   onDrop?: DragEventHandler
+  /** Вернуть параметры режима к умолчаниям (кнопка «Начать заново»). */
+  onStartOver: () => void
 }) {
   const { t } = useTranslation()
   // надпись растрируется здесь (шрифты и canvas только в главном потоке), воркеру уходит готовая маска; в параметры модели идёт её ключ
@@ -35,7 +37,7 @@ export function KeychainWorkspace({ mode, params, image, panel, overlay, onDrop 
     <TextRasterContext.Provider value={textState}>
     <div className="flex min-h-0 flex-1" onDragOver={onDrop ? (e) => e.preventDefault() : undefined} onDrop={onDrop}>
       <Workspace
-        model={model} busy={busy}
+        model={model} busy={busy} onStartOver={onStartOver} modeName={t(`keychain.modes.${mode}`)}
         overlay={overlay?.(info) ?? null}
         panel={panel(info)}
         footer={<><ExportPanel model={model} busy={pending} name={name} /><SheetSize sheet={info?.mountInfo?.sheet} /></>}

@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { useState } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
+import { openSection, renderOpen as render } from '../../ui/renderOpen'
 import userEvent from '@testing-library/user-event'
 import i18n from '../../i18n'
 import { defaultParams, type BaseplateParams } from '../../geometry/baseplate'
@@ -36,7 +37,7 @@ describe('SplitSection', () => {
   })
   it('включение разделения: плита 300×200 на столе 256 даёт две части с размерами', async () => {
     render(<Harness start={{ ...big(), split: defaultSplitSettings }} />)
-    await userEvent.click(screen.getByRole('button', { name: 'Expand: Split to fit bed' }))
+    await openSection('Split to fit bed')
     await userEvent.click(screen.getByRole('switch', { name: 'Split into parts' }))
     expect(latest.split.enabled).toBe(true)
     const list = screen.getByRole('list', { name: 'Parts' })
@@ -128,7 +129,7 @@ describe('ConnectorsSection', () => {
     expect(screen.queryByRole('button', { name: /Connectors/ })).toBeNull()
     expect(screen.queryByText('Connectors')).toBeNull()
   })
-  const expand = () => userEvent.click(screen.getByRole('button', { name: 'Expand: Connectors' }))
+  const expand = () => openSection('Connectors')
 
   it('тип соединителя меняет настройки, отверстия: пресет и размеры', async () => {
     render(<Harness />)

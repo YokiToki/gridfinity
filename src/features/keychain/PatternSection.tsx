@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { defaultPattern, patternResolution, type KeychainParams } from '../../geometry/keychain'
 import { coverage, PATTERN_KINDS, type PatternKind, type PatternParams, type PatternScope } from '../../geometry/patterns/fields'
 import { Section } from '../../ui/Section'
+import { isChanged } from '../../ui/isChanged'
 import { Toggle } from '../../ui/Toggle'
 import { Button } from '../../ui/Button'
 import { Banner } from '../../ui/Banner'
@@ -48,7 +49,7 @@ export function PatternSection({ value: pat, quality, cell, minCell, error, onCh
   const summary = on ? `${t(`keychain.pattern.kinds.${pat.kind}`)} · ${formatLength(pat.pitch, unit)} ${t(`units.${unit}`)}` : t('keychain.pattern.kinds.none')
   void quality
   return (
-    <Section title={t('keychain.pattern.title')} summary={summary} defaultOpen={false} onReset={() => onChange({ ...defaultPattern })}>
+    <Section title={t('keychain.pattern.title')} summary={summary} modified={isChanged(pat, defaultPattern)} onReset={() => onChange({ ...defaultPattern })}>
       <div role="radiogroup" aria-label={t('keychain.pattern.kind')} className="grid grid-cols-3 gap-1.5">
         {PATTERN_KINDS.map((k) => (
           <button key={k} type="button" role="radio" aria-checked={pat.kind === k} aria-label={t(`keychain.pattern.kinds.${k}`)} onClick={() => onChange({ kind: k })}

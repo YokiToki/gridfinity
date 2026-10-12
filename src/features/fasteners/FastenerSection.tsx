@@ -6,6 +6,7 @@ import {
 } from '../../geometry/fasteners'
 import type { Footprint } from '../../geometry/footprint'
 import { Section } from '../../ui/Section'
+import { isChanged } from '../../ui/isChanged'
 import { SegmentedControl } from '../../ui/SegmentedControl'
 import { LengthField } from '../../ui/LengthField'
 import { Select } from '../../ui/Select'
@@ -33,7 +34,7 @@ export function FastenerSection({ config, onChange, footprint, children }: {
   const numeric = (min: number, max: number) => ({ min, max })
 
   return (
-    <Section title={t('fastener.title')} summary={summary} onReset={() => onChange(defaultFasteners)}>
+    <Section title={t('fastener.title')} summary={summary} modified={isChanged(config, defaultFasteners)} onReset={() => onChange(defaultFasteners)}>
       <div className="flex flex-col gap-2">
         <span className="text-xs font-semibold text-text-muted">{t('fastener.magnets')}</span>
         <SegmentedControl fill ariaLabel={`${t('fastener.magnets')}: ${t('fastener.mode.label')}`} value={config.magnets.mode} onChange={(m) => setKind('magnets', m)} options={modeOptions} />

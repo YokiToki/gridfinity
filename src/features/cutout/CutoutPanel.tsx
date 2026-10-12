@@ -10,6 +10,7 @@ import { defaultOrientation, describeMesh, flatFaces, type IndexedMesh, type Ori
 import { defaultBoxThickness } from '../../geometry/box'
 import type { LipStyle } from '../../geometry/profiles'
 import { Section } from '../../ui/Section'
+import { isChanged } from '../../ui/isChanged'
 import { LengthField } from '../../ui/LengthField'
 import { NumberField } from '../../ui/NumberField'
 import { SegmentedControl } from '../../ui/SegmentedControl'
@@ -84,12 +85,12 @@ export function CutoutPanel({ params, onChange, selectedId, onSelect, meshes, on
   return (
     <>
       <BoxSizeSection params={params} errors={errors} update={update} />
-      <Section title={t('box.walls.title')} summary={t('box.walls.summary', { w: fmt(params.thickness.outerWall), f: fmt(params.thickness.floor) })} defaultOpen={false}
+      <Section title={t('box.walls.title')} summary={t('box.walls.summary', { w: fmt(params.thickness.outerWall), f: fmt(params.thickness.floor) })} modified={isChanged(params.thickness, defaultBoxThickness)}
         onReset={() => update((o) => ({ ...o, thickness: defaultBoxThickness }))}>
         <LengthField label={t('box.walls.outer')} value={params.thickness.outerWall} min={0.4} max={10} step={0.05} onChange={(v) => update((o) => ({ ...o, thickness: { ...o.thickness, outerWall: v } }))} />
         <LengthField label={t('box.walls.floor')} value={params.thickness.floor} min={0} max={20} step={0.1} onChange={(v) => update((o) => ({ ...o, thickness: { ...o.thickness, floor: v } }))} />
       </Section>
-      <Section title={t('box.lip.title')} summary={t('box.lip.summary', { style: t(`box.lip.${params.lip}`) })} defaultOpen={false} onReset={() => update((o) => ({ ...o, lip: 'default' }))}>
+      <Section title={t('box.lip.title')} summary={t('box.lip.summary', { style: t(`box.lip.${params.lip}`) })} modified={isChanged(params.lip, 'default')} onReset={() => update((o) => ({ ...o, lip: 'default' }))}>
         <SegmentedControl fill ariaLabel={t('box.lip.style')} value={params.lip} onChange={(v: LipStyle) => update((o) => ({ ...o, lip: v }))}
           options={(['default', 'thin', 'none'] as const).map((v) => ({ value: v, label: t(`box.lip.${v}`) }))} />
         <Banner>{t('box.lip.help')}</Banner>
@@ -156,7 +157,7 @@ export function CutoutPanel({ params, onChange, selectedId, onSelect, meshes, on
         </Section>
       )}
 
-      <Section title={t('cutout.place.title')} defaultOpen={false}>
+      <Section title={t('cutout.place.title')}>
         <div className="grid grid-cols-3 gap-1.5">
           <SmallBtn disabled={!sel} onClick={() => apply((c) => centerCutout(c, 'both'))}>{t('cutout.place.center')}</SmallBtn>
           <SmallBtn disabled={!sel} onClick={() => apply((c) => centerCutout(c, 'x'))}>{t('cutout.place.centerX')}</SmallBtn>

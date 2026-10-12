@@ -4,6 +4,7 @@ import { IconWand } from '@tabler/icons-react'
 import { defaultMount, RING_PRESETS, type KeychainInfo, type KeychainParams, type MountParams, type MountStyle } from '../../geometry/keychain'
 import type { FitIssue } from '../../geometry/keychainFit'
 import { Section } from '../../ui/Section'
+import { isChanged } from '../../ui/isChanged'
 import { Select } from '../../ui/Select'
 import { Toggle } from '../../ui/Toggle'
 import { Button } from '../../ui/Button'
@@ -50,7 +51,7 @@ export function MountSection({ params: p, info, error, onMount, onPlace }: {
   })
 
   return (
-    <Section title={t('keychain.mount.title')} summary={summary} defaultOpen={false} onReset={() => onMount({ ...defaultMount })}>
+    <Section title={t('keychain.mount.title')} summary={summary} modified={isChanged(mo, defaultMount)} onReset={() => onMount({ ...defaultMount })}>
       <SegmentedControl fill ariaLabel={t('keychain.mount.style')} value={mo.style} onChange={(v: MountStyle) => { setNoSpot(false); onMount({ style: v }) }}
         options={STYLES.map((s) => ({ value: s, label: t(`keychain.mount.styles.${s}`) }))} />
       {mo.style === 'channel' && !p.split.enabled && <Banner kind="warn">{t('keychain.mount.channelNeedsSplit')}</Banner>}

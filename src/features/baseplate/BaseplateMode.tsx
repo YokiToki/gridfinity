@@ -38,6 +38,7 @@ export function BaseplateMode() {
   return (
     <Workspace
       model={model} busy={busy}
+      onStartOver={() => setP(defaultParams)} modeName={t('modes.baseplate')}
       gap={p.split.enabled && p.split.exploded ? p.split.gap : 0}
       plate={p.preview.showPlate ? { x: p.preview.plateX, y: p.preview.plateY, margin: ex.margin } : null}
       panel={<BaseplatePanel params={p} onChange={setP} />}

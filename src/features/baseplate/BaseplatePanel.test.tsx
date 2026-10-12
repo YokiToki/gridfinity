@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { useState } from 'react'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
+import { openSection, renderOpen as render } from '../../ui/renderOpen'
 import userEvent from '@testing-library/user-event'
 import i18n from '../../i18n'
 import { axisMm, defaultParams, type BaseplateParams } from '../../geometry/baseplate'
@@ -85,7 +86,7 @@ describe('SizeSection', () => {
 
 describe('ThicknessSection', () => {
   beforeEach(async () => { await i18n.changeLanguage('en'); latest = defaultParams })
-  const open = () => userEvent.click(screen.getByRole('button', { name: 'Expand: Thickness' }))
+  const open = () => openSection('Thickness')
 
   it('поля толщин и сводка, пол меняет высоту в сводке', async () => {
     render(<Harness />)
@@ -124,7 +125,7 @@ describe('ThicknessSection', () => {
   it('русская локаль', async () => {
     await i18n.changeLanguage('ru')
     render(<Harness />)
-    await userEvent.click(screen.getByRole('button', { name: 'Развернуть: Толщины' }))
+    await openSection('Толщины')
     expect(screen.getByLabelText('Пол (0 = открытая рама)')).toBeInTheDocument()
   })
 })
@@ -140,7 +141,7 @@ describe('PlateSection', () => {
   })
   it('включение стола и выбор принтера', async () => {
     render(<Harness />)
-    await userEvent.click(screen.getByRole('button', { name: 'Expand: Build plate' }))
+    await openSection('Build plate')
     await userEvent.click(screen.getByRole('switch', { name: 'Show build plate' }))
     expect(latest.preview.showPlate).toBe(true)
     await userEvent.selectOptions(screen.getByLabelText('Printer'), 'h2d')

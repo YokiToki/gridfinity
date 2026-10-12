@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { BRIGHTNESS_SMOOTH_DEFAULT, defaultKeychain, MAX_SMOOTH, smoothResolution, type HeightSource, type ReliefParams, type SourceParams } from '../../geometry/keychain'
 import { applyPreset, PROFILE_KINDS, presetOf, type ProfileKind } from '../../geometry/patterns/profile'
 import { Section } from '../../ui/Section'
+import { isChanged } from '../../ui/isChanged'
 import { Select } from '../../ui/Select'
 import { Toggle } from '../../ui/Toggle'
 import { SegmentedControl } from '../../ui/SegmentedControl'
@@ -45,7 +46,7 @@ export function ProfileSection({ relief: r, source: s, error, onRelief, onSource
   }
   const usesPow = r.profile === 'bevel' || r.profile === 'engraved'
   return (
-    <Section title={t('keychain.relief.title')} summary={summary} defaultOpen={false} onReset={() => { onRelief({ ...defaultKeychain.relief }); onSource({ ...defaultKeychain.source }) }}>
+    <Section title={t('keychain.relief.title')} summary={summary} modified={isChanged({ relief: r, source: s }, { relief: defaultKeychain.relief, source: defaultKeychain.source })} onReset={() => { onRelief({ ...defaultKeychain.relief }); onSource({ ...defaultKeychain.source }) }}>
       <SegmentedControl fill ariaLabel={t('keychain.profile.source')} value={s.kind} onChange={(v: HeightSource) => onSource({ kind: v, ...(v === 'brightness' && !((s.smooth ?? 0) > 0) ? { smooth: BRIGHTNESS_SMOOTH_DEFAULT } : {}) })}
         options={[{ value: 'distance', label: t('keychain.profile.sources.distance') }, { value: 'brightness', label: t('keychain.profile.sources.brightness') }]} />
       {s.kind === 'brightness' && (

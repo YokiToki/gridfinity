@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { useState } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
+import { openSection, renderOpen as render } from '../../ui/renderOpen'
 import userEvent from '@testing-library/user-event'
 import i18n from '../../i18n'
 import { defaultCutout, rectCutout, type Cutout, type CutoutParams, type MeshSource, cutoutBounds } from '../../geometry/cutout'
@@ -48,6 +49,7 @@ describe('CutoutPanel: список', () => {
     expect([latest.cutouts[0].x, latest.cutouts[0].y]).toEqual([0, 0])
     expect(latest.cutouts[0].source).toMatchObject({ kind: 'rect', width: 40, length: 20, radius: 3 })
     expect(selection).toBe(latest.cutouts[0].id)
+    await openSection('Selected cutout')
     expect(screen.getByLabelText('Name')).toHaveValue('Rectangle')
     expect(screen.getByText('1 cutouts')).toBeInTheDocument()
   })
@@ -103,7 +105,7 @@ describe('CutoutPanel: свойства и размещение', () => {
   })
   it('по центру: габарит выреза встаёт в центр полости', async () => {
     render(<Harness start={withCuts(r({ id: 'a', x: 13, y: -7 }))} />)
-    await userEvent.click(screen.getByRole('button', { name: 'Expand: Placement' }))
+    await openSection('Placement')
     await userEvent.click(screen.getByRole('button', { name: 'Centre X' }))
     expect([latest.cutouts[0].x, latest.cutouts[0].y]).toEqual([0, -7])
     await userEvent.click(screen.getByRole('button', { name: 'Centre' }))
@@ -111,13 +113,13 @@ describe('CutoutPanel: свойства и размещение', () => {
   })
   it('к левой стенке с отступом 5 мм', async () => {
     render(<Harness start={withCuts(r({ id: 'a', x: 3 }))} />)
-    await userEvent.click(screen.getByRole('button', { name: 'Expand: Placement' }))
+    await openSection('Placement')
     await userEvent.click(screen.getAllByRole('button', { name: 'Left' }).at(-1)!) // последняя «Left» — в блоке расположения
     expect(cutoutBounds(latest.cutouts[0]).minX).toBeCloseTo(-40.8 + 5, 9)
   })
   it('распределение по X и подгонка габарита', async () => {
     render(<Harness start={withCuts(r({ id: 'a', x: -30 }), r({ id: 'b', x: 10 }))} />)
-    await userEvent.click(screen.getByRole('button', { name: 'Expand: Placement' }))
+    await openSection('Placement')
     await userEvent.click(screen.getByRole('button', { name: 'Distribute along X' }))
     const [a, b] = latest.cutouts.map(cutoutBounds)
     expect(a.minX).toBeCloseTo(-40.8 + 5, 6)
@@ -178,7 +180,7 @@ describe('CutoutPanel: вид сверху', () => {
     fireEvent.pointerMove(svg, { clientX: 50 - 9.2, clientY: 50 + 8.8, altKey: true })
     fireEvent.pointerUp(svg)
     expect(latest.cutouts[0].x).toBeCloseTo(0.8, 6)
-    await userEvent.click(screen.getByRole('button', { name: 'Expand: Placement' }))
+    await openSection('Placement')
     await userEvent.click(screen.getByRole('switch', { name: 'Snap while dragging' }))
     fireEvent.pointerDown(shape(), { clientX: 50, clientY: 50 })
     fireEvent.pointerMove(svg, { clientX: 49.4, clientY: 50 })

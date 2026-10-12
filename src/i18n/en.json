@@ -12,7 +12,8 @@
     "generating": "Generating model…",
     "ready": "Updated",
     "fit": "Fit to view",
-    "download": "Download"
+    "download": "Download",
+    "changed": "changed"
   },
   "units": {
     "label": "Units",
@@ -846,5 +847,12 @@
       "clipped": "Part of the text is outside the material and is not generated: move it onto the base plate.",
       "summary": "{{text}}"
     }
+  },
+  "startOver": {
+    "button": "Start over",
+    "title": "Start over?",
+    "text": "All settings of “{{mode}}” return to their defaults. Other modes, the language, the units and the export settings stay as they are. This cannot be undone.",
+    "confirm": "Reset settings",
+    "cancel": "Cancel"
   }
 }

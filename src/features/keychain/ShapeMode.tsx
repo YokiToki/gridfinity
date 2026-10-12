@@ -14,7 +14,7 @@ export function ShapeMode() {
   const params = useMemo(() => shapeParams(state), [key])
   return (
     <KeychainWorkspace
-      mode="shape" params={params} image={null}
+      mode="shape" params={params} image={null} onStartOver={() => setState(defaultShapeState)}
       panel={(info) => <ShapePanel state={state} params={params} info={info} onChange={setState} />}
     />
   )

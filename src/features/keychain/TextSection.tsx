@@ -7,6 +7,7 @@ import { Button } from '../../ui/Button'
 import { LengthField } from '../../ui/LengthField'
 import { NumberField } from '../../ui/NumberField'
 import { Section } from '../../ui/Section'
+import { isChanged } from '../../ui/isChanged'
 import { SegmentedControl } from '../../ui/SegmentedControl'
 import { Toggle } from '../../ui/Toggle'
 import { formatLength, useUnit } from '../../ui/units'
@@ -71,7 +72,7 @@ export function TextSection({ value: t, error, splitOn, cell = null, minCell = n
   }
 
   return (
-    <Section title={tr('keychain.text.title')} summary={summary} onReset={() => { setFontError(null); onChange({ ...defaultText, font: { ...defaultText.font } }) }}>
+    <Section title={tr('keychain.text.title')} summary={summary} modified={isChanged(t, defaultText)} onReset={() => { setFontError(null); onChange({ ...defaultText, font: { ...defaultText.font } }) }}>
       <Toggle label={tr('keychain.text.enabled')} checked={t.enabled} onChange={(v) => onChange({ enabled: v })} />
       {t.enabled && (
         <>
