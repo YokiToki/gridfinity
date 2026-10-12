@@ -14,5 +14,5 @@
 
 ## 3. Verification
 
-- [ ] 3.1 `npm test` and `npm run build` are green; no console errors.
-- [ ] 3.2 In the browser: a JPEG photo with the brightness source, smoothing 0 vs 0.4 mm vs 1 mm (visible grain removal, outline unchanged); a terraced emblem with surface smoothing; export STL and compare the height profile along a line in the file; confirm default keychains keep the volume of change 11.
+- [x] 3.1 `npm test` and `npm run build` are green; no console errors.
+- [x] 3.2 In the browser: a JPEG photo with the brightness source, smoothing 0 vs 0.4 mm vs 1 mm (visible grain removal, outline unchanged); a terraced emblem with surface smoothing; export STL and compare the height profile along a line in the file; confirm default keychains keep the volume of change 11.
