@@ -1,4 +1,5 @@
 import { IconGridDots, IconKey, type Icon } from '@tabler/icons-react'
+import type { ArtId } from './ModeArt'
 import { GRIDFINITY_PATH, KEYCHAIN_MODES, KEYCHAIN_PATH, MODES, type ProductMode } from './modes'
 
 export type ProductId = 'gridfinity' | 'keychain'
@@ -10,11 +11,13 @@ export interface Product {
   Icon: Icon
   /** Режимы продукта; у продуктов без режимов переключатель режимов скрыт. */
   modes?: ProductMode[]
+  /** Иллюстрация карточки продукта на корневой странице (ключ в `ART`). */
+  artId: ArtId
 }
 
 export const PRODUCTS: Product[] = [
-  { id: 'gridfinity', path: GRIDFINITY_PATH, Icon: IconGridDots, modes: MODES },
-  { id: 'keychain', path: KEYCHAIN_PATH, Icon: IconKey, modes: KEYCHAIN_MODES },
+  { id: 'gridfinity', path: GRIDFINITY_PATH, Icon: IconGridDots, modes: MODES, artId: 'box' },
+  { id: 'keychain', path: KEYCHAIN_PATH, Icon: IconKey, modes: KEYCHAIN_MODES, artId: 'keychainImage' },
 ]
 
 /** Продукт по пути: совпадает сам путь или его подпуть (граница по «/»). */

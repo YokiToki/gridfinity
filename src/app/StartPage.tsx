@@ -5,6 +5,7 @@ import { IconHistory } from '@tabler/icons-react'
 import { PRODUCTS, productById } from './products'
 import { readSession } from './lastSession'
 import { ChoiceCard, StartLayout, useNumberHotkeys } from './StartLayout'
+import { ModeArt } from './ModeArt'
 
 function relativeTime(ms: number, lng: string, justNow: string) {
   const sec = Math.round((ms - Date.now()) / 1000)
@@ -34,9 +35,9 @@ export function StartPage() {
   return (
     <StartLayout tagline={t('start.tagline')} title={t('start.title')}>
       <div className="relative flex flex-wrap justify-center gap-6">
-        {PRODUCTS.map(({ id, path, Icon }, i) => (
+        {PRODUCTS.map(({ id, path, artId }, i) => (
           <ChoiceCard key={id} to={path} testId={`card-${id}`} index={i + 1}
-            art={<Icon size={96} stroke={1} className="text-accent transition-transform group-hover:-translate-y-1 group-hover:scale-105" aria-hidden />}
+            art={<ModeArt id={artId} />}
             name={t(`products.${id}.name`)} desc={t(`products.${id}.desc`)} tags={[t(`products.${id}.tag1`), t(`products.${id}.tag2`)]} />
         ))}
       </div>

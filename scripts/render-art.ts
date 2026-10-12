@@ -1,15 +1,22 @@
 /**
- * Генерация иллюстраций карточек стартовой страницы: настоящие детали 2×2 ячейки через generate(), изометрия, z-буфер, трассировка.
- * Запуск: npm run art. Для выреза нужен образец tmp/cutout.stl (в репозитории его нет: картинки готовые лежат в src/app/art, CI этот скрипт не запускает).
+ * Генерация иллюстраций карточек стартовой страницы: настоящие детали через generate(), изометрия, z-буфер, трассировка.
+ * Две группы со своим масштабом: Gridfinity (baseplate, box, cutout: детали 2×2 ячейки) и Keychain (keychainImage, keychainShape).
+ * Запуск: npm run art. Брелки не требуют файлов: растр для режима «Изображение» рисуется здесь же. Для выреза нужен образец
+ * tmp/cutout.stl (в репозитории его нет: готовые картинки лежат в src/app/art, CI этот скрипт не запускает); без него группа
+ * Gridfinity не пересоздаётся, а картинки брелков всё равно записываются.
  */
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
-import { generate, registerMesh, type ModelResult } from '../src/geometry/model'
+import { generate, registerImage, registerMesh, type ModelResult } from '../src/geometry/model'
 import { toGeometry, defaultParams } from '../src/geometry/baseplate'
 import { defaultBox, equalDividers, boxLayout } from '../src/geometry/box'
 import { defaultCutout, newCutoutId, type Cutout } from '../src/geometry/cutout'
 import { defaultFasteners } from '../src/geometry/fasteners'
+import { defaultKeychain, defaultMount } from '../src/geometry/keychain'
+import { defaultShape } from '../src/geometry/shapes'
+import { defaultShapeState, shapeParams } from '../src/features/keychain/shapeState'
+import type { GrayImage } from '../src/geometry/raster/threshold'
 import { defaultOrientation, describeMesh, parseStl, repairMesh } from '../src/geometry/stl-import'
 import { ISO } from '../src/geometry/art/projection'
 import { defaultArtOptions, projectedSize, renderSvg } from '../src/geometry/art/svg'
@@ -27,7 +34,7 @@ const meshOf = (r: ModelResult): TriMesh => {
   return { positions, triangles: m.triVerts }
 }
 
-async function models(): Promise<Record<string, TriMesh>> {
+async function gridfinityModels(): Promise<Record<string, TriMesh>> {
   if (!existsSync(SAMPLE)) throw new Error(`Нужен образец для выреза: ${SAMPLE} (STL, любая закрытая деталь). Положите файл и запустите npm run art ещё раз.`)
   const fasteners = { ...defaultFasteners, magnets: { mode: 'corner' as const, slots: [] } }
   const baseplate = await generate('baseplate', toGeometry({ ...defaultParams, fasteners }))
@@ -50,13 +57,67 @@ async function models(): Promise<Record<string, TriMesh>> {
   return { baseplate: meshOf(baseplate), box: meshOf(box), cutout: meshOf(block) }
 }
 
-const all = await models()
-// общий масштаб: самая большая из деталей определяет его для всех
-const o = defaultArtOptions
-const scale = Math.min(...Object.values(all).map((m) => { const s = projectedSize(m, ISO); return Math.min((o.width - 2 * o.pad) / s.w, (o.height - 2 * o.pad) / s.h) }))
-mkdirSync(OUT, { recursive: true })
-for (const [name, mesh] of Object.entries(all)) {
-  const svg = renderSvg(mesh, ISO, o, scale)
-  writeFileSync(resolve(OUT, `${name}.svg`), svg)
-  console.log(`${name}.svg  ${(svg.length / 1024).toFixed(1)} KB`)
+
+/** Растр для режима «Изображение»: тёмный диск с пятиконечной звездой-вырезом, нарисованные чистой математикой (без файлов). */
+function badgeBitmap(): GrayImage {
+  const W = 420, H = 420, gray = new Uint8Array(W * H).fill(255)
+  const star: [number, number][] = Array.from({ length: 10 }, (_, k) => {
+    const a = -Math.PI / 2 + (k * Math.PI) / 5, r = k % 2 === 0 ? 120 : 52
+    return [210 + r * Math.cos(a), 220 + r * Math.sin(a)]
+  })
+  const inStar = (x: number, y: number) => {
+    let inside = false
+    for (let i = 0, j = star.length - 1; i < star.length; j = i++) {
+      const [xi, yi] = star[i], [xj, yj] = star[j]
+      if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside
+    }
+    return inside
+  }
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    if (Math.hypot(x + 0.5 - 210, y + 0.5 - 220) <= 190) gray[y * W + x] = inStar(x + 0.5, y + 0.5) ? 255 : 0
+  }
+  return { width: W, height: H, gray, alpha: null }
 }
+
+async function keychainModels(): Promise<Record<string, TriMesh>> {
+  registerImage('art-badge', badgeBitmap())
+  const quality = { cell: 0.25, maxTriangles: 400_000 }
+  // «Изображение»: диск со звездой-вырезом, скос по краю, ушко
+  const image = await generate('keychain', {
+    ...defaultKeychain, imageId: 'art-badge', size: { ...defaultKeychain.size, longest: 56 }, quality,
+    silhouette: { ...defaultKeychain.silhouette, areas: { 1: { mode: 'open', level: 0.6 } } },
+    relief: { ...defaultKeychain.relief, hmax: 2.4, edgeWidth: 5 },
+    base: { ...defaultKeychain.base, thickness: 1.6 },
+    mount: { ...defaultMount, style: 'eyelet', x: 0.5, y: 1.02, diameter: 4, outer: 9 },
+  })
+  // «Форма»: скруглённая бирка с бортиком и отверстием под кольцо
+  const shape = await generate('keychain', {
+    ...shapeParams({
+      ...defaultShapeState, quality,
+      shape: { ...defaultShape, kind: 'rect', width: 54, height: 30, radius: 8, rim: { enabled: true, width: 2, height: 1.6 } },
+      mount: { ...defaultMount, style: 'hole', x: 0.12, y: 0.5, diameter: 4 },
+    }),
+  })
+  return { keychainImage: meshOf(image), keychainShape: meshOf(shape) }
+}
+
+
+/** Рендерит группу с общим для неё масштабом и пишет SVG. */
+function writeGroup(all: Record<string, TriMesh>) {
+  const o = defaultArtOptions
+  const scale = Math.min(...Object.values(all).map((m) => { const s = projectedSize(m, ISO); return Math.min((o.width - 2 * o.pad) / s.w, (o.height - 2 * o.pad) / s.h) }))
+  mkdirSync(OUT, { recursive: true })
+  for (const [name, mesh] of Object.entries(all)) {
+    const svg = renderSvg(mesh, ISO, o, scale)
+    writeFileSync(resolve(OUT, `${name}.svg`), svg)
+    console.log(`${name}.svg  ${(svg.length / 1024).toFixed(1)} KB`)
+  }
+}
+
+// брелки не требуют файлов; Gridfinity — только при наличии образца выреза
+writeGroup(await keychainModels())
+if (!existsSync(SAMPLE)) {
+  console.error(`Группа Gridfinity пропущена: нужен образец выреза ${SAMPLE} (STL, любая закрытая деталь). Картинки брелков записаны.`)
+  process.exit(1)
+}
+writeGroup(await gridfinityModels())

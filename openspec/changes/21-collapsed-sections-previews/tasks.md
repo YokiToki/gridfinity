@@ -14,9 +14,9 @@
 
 ## 3. Start page previews
 
-- [ ] 3.1 `scripts/render-art.ts`: add the keychain image render (synthesised bitmap, no external file) and the shape render; scale computed per product group so the Gridfinity SVGs stay unchanged; write `keychainImage.svg`, `keychainShape.svg`. Verify: `npm run art` produces both files, `git diff` shows no change in the three existing SVGs, each file ≤ 60 KB, the images are legible in the browser.
-- [ ] 3.2 Cards: `ART`/`ModeArt` keyed by art id, `artId` on `Product` and `ProductMode`, `StartPage` and `ModeChooser` use `ModeArt` (no Icon as card art). `ModeArt.test.tsx` covers all five ids and the size budget; start page tests check that the Gridfinity card shows the box, that Keychain cards show their renders and that no worker/WebGL is used. Verify in the browser against the existing cards in en/ru and at 390 px.
+- [x] 3.1 `scripts/render-art.ts`: add the keychain image render (synthesised bitmap, no external file) and the shape render; scale computed per product group so the Gridfinity SVGs stay unchanged; write `keychainImage.svg`, `keychainShape.svg`. Verify: `npm run art` produces both files, `git diff` shows no change in the three existing SVGs, each file ≤ 60 KB, the images are legible in the browser.
+- [x] 3.2 Cards: `ART`/`ModeArt` keyed by art id, `artId` on `Product` and `ProductMode`, `StartPage` and `ModeChooser` use `ModeArt` (no Icon as card art). `ModeArt.test.tsx` covers all five ids and the size budget; start page tests check that the Gridfinity card shows the box, that Keychain cards show their renders and that no worker/WebGL is used. Verify in the browser against the existing cards in en/ru and at 390 px.
 
 ## 4. Close-out
 
-- [ ] 4.1 `npm test` and `npm run build` are green, dev server console has no errors; update the CLAUDE.md Architecture notes (Section API, Start over, `isChanged`, start page art ids, `npm run art` now also renders keychain parts) and `openspec/ROADMAP.md` (row 21, depends on 16).
+- [x] 4.1 `npm test` and `npm run build` are green, dev server console has no errors; update the CLAUDE.md Architecture notes (Section API, Start over, `isChanged`, start page art ids, `npm run art` now also renders keychain parts) and `openspec/ROADMAP.md` (row 21, depends on 16).
