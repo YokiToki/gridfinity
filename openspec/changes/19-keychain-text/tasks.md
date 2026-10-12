@@ -12,9 +12,9 @@
 
 - [x] 2.1 `TextSection`: enable, content (textarea), font select (grouped list of bundled families, generic, user), load-font button with error banner, size/spacing/alignment/rotation, emboss/engrave with height/depth (`LengthField` with steppers). Component tests. No artboard: build from `ui/` components.
 - [x] 2.2 `PlacementEditor` text target: draw the text box and baseline to scale, drag, numeric X/Y; component tests.
-- [ ] 2.3 en/ru strings (parity), IndexedDB storage of the user font, restore on reload; check labels at 380 px and in Russian.
+- [x] 2.3 en/ru strings (parity), IndexedDB storage of the user font, restore on reload; check labels at 380 px and in Russian.
 
 ## 3. Verification
 
-- [ ] 3.1 `npm test` and `npm run build` are green; no console errors.
+- [x] 3.1 `npm test` and `npm run build` are green; no console errors.
 - [ ] 3.2 In the browser, offline after first use: a round tag with embossed "ANNA" and "Анна" in a Sans, a Serif, a Display and a Handwriting family, an engraved second line, text moved on the plate outside the silhouette, an own font loaded and restored after reload; export STL and check heights in the file; confirm the top half only carries the text in two-halves mode.
