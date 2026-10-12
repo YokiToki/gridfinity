@@ -1,0 +1,48 @@
+import { useEffect, type DragEventHandler, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
+import { recordSession } from '../../app/lastSession'
+import { Workspace } from '../../app/Workspace'
+import type { KeychainInfo, KeychainParams } from '../../geometry/keychain'
+import type { GrayImage } from '../../geometry/raster/threshold'
+import { ExportPanel } from '../export/ExportPanel'
+import { formatLength, useUnit } from '../../ui/units'
+import { useKeychainModel } from './useKeychainModel'
+
+/**
+ * Общая раскладка обоих режимов Keychain: модель (воркер), 3D-вид, панель, блок экспорта и запись последнего сеанса.
+ * Режим даёт параметры, изображение (только Изображение) и содержимое панели; `info` приходит из ответа воркера.
+ */
+export function KeychainWorkspace({ mode, params, image, panel, overlay, onDrop }: {
+  mode: 'image' | 'shape'
+  params: KeychainParams
+  image: GrayImage | null
+  panel: (info: KeychainInfo | null) => ReactNode
+  overlay?: (info: KeychainInfo | null) => ReactNode
+  onDrop?: DragEventHandler
+}) {
+  const { t } = useTranslation()
+  const { model, info, busy, pending } = useKeychainModel(params, image)
+  const size = info?.size
+
+  useEffect(() => { if (size) recordSession(mode, `${size[0].toFixed(0)} × ${size[1].toFixed(0)} ${t('units.mm')}`, 'keychain') }, [mode, size, t])
+
+  const name = size ? `keychain_${Math.round(size[0])}x${Math.round(size[1])}` : 'keychain'
+  return (
+    <div className="flex min-h-0 flex-1" onDragOver={onDrop ? (e) => e.preventDefault() : undefined} onDrop={onDrop}>
+      <Workspace
+        model={model} busy={busy}
+        overlay={overlay?.(info) ?? null}
+        panel={panel(info)}
+        footer={<><ExportPanel model={model} busy={pending} name={name} /><SheetSize sheet={info?.mountInfo?.sheet} /></>}
+      />
+    </div>
+  )
+}
+
+/** Размер листа печати (две половины и штифты) под кнопками экспорта. */
+function SheetSize({ sheet }: { sheet?: { w: number; h: number } }) {
+  const { t } = useTranslation()
+  const { unit } = useUnit()
+  if (!sheet) return null
+  return <span className="mt-2 block text-xs text-text-muted" data-testid="sheet-size">{t('keychain.split.sheet', { w: formatLength(sheet.w, unit), h: formatLength(sheet.h, unit), u: t(`units.${unit}`) })}</span>
+}

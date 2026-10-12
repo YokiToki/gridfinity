@@ -108,6 +108,6 @@ describe('ModeChooser (/keychain)', () => {
     unmount()
     renderAt('/keychain')
     await userEvent.keyboard('2')
-    expect(await screen.findByText('Shape is coming soon')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /Expand: Relief/ })).toBeInTheDocument()
   })
 })

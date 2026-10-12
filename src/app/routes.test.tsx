@@ -49,10 +49,16 @@ describe('маршруты', () => {
     expect(screen.getByTestId('card-shape')).toHaveAttribute('href', '/keychain/shape')
     expect(a.state.location.pathname).toBe('/keychain')
   })
-  it.each([['/keychain/image', /Choose an image to start/], ['/keychain/shape', /Shape is coming soon/]])('прямая ссылка %s', async (path, text) => {
-    const r = at(path)
-    expect(await screen.findByText(text)).toBeInTheDocument()
-    expect(r.state.location.pathname).toBe(path)
+  it('прямая ссылка /keychain/image открывает режим Изображение', async () => {
+    const r = at('/keychain/image')
+    expect(await screen.findByText(/Choose an image to start/)).toBeInTheDocument()
+    expect(r.state.location.pathname).toBe('/keychain/image')
+  })
+  it('прямая ссылка /keychain/shape открывает режим Форма без секций изображения', async () => {
+    const r = at('/keychain/shape')
+    expect(await screen.findByRole('button', { name: /Expand: Relief/ })).toBeInTheDocument()
+    expect(screen.queryByText(/Choose an image to start/)).toBeNull()
+    expect(r.state.location.pathname).toBe('/keychain/shape')
   })
   it('неизвестный путь в Keychain ведёт на выбор режима', () => {
     expect(at('/keychain/zzz').state.location.pathname).toBe('/keychain')

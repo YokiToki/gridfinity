@@ -3,7 +3,7 @@
 ## 1. Structure
 
 - [x] 1.1 Registry and routes: `keychain.modes` (image, shape), mode label keys per product, generalised `ModeChooser`/header switcher/mobile select, `lastSession` mode as a string, `/keychain` chooser, `/keychain/image`, `/keychain/shape`, unknown path back to the chooser. Tests: registry paths, routes (direct links, unknown paths), header switcher per product, Continue chip, chooser hotkeys 1/2, legacy `#/keychain` shows the chooser. UI task: no artboard for the Keychain chooser; reuse the Gridfinity chooser cards (`Main.dc.html` card style) and say so.
-- [ ] 1.2 Split `KeychainMode` into `KeychainWorkspace` (shared) + `ImageMode` (image store, decoding, drop zone, image-only sections) + `ShapeMode`; the panel composes shared sections from a list; Image mode behaviour and persisted key `keychain.relief` unchanged. Tests: all existing Keychain mode/panel tests still pass; Shape mode renders without image sections.
+- [x] 1.2 Split `KeychainMode` into `KeychainWorkspace` (shared) + `ImageMode` (image store, decoding, drop zone, image-only sections) + `ShapeMode`; the panel composes shared sections from a list; Image mode behaviour and persisted key `keychain.relief` unchanged. Tests: all existing Keychain mode/panel tests still pass; Shape mode renders without image sections.
 
 ## 2. Shapes and geometry
 

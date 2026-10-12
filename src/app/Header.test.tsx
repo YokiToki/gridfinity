@@ -60,7 +60,7 @@ describe('Header: продукты и режимы', () => {
     at('/keychain/image')
     await screen.findByText(/Choose an image to start/)
     await userEvent.click(within(screen.getByRole('navigation', { name: 'Mode' })).getByRole('link', { name: 'Shape' }))
-    expect(await screen.findByText('Shape is coming soon')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /Expand: Relief/ })).toBeInTheDocument()
     await userEvent.click(within(screen.getByRole('navigation', { name: 'Mode' })).getByRole('link', { name: 'Image' }))
     expect(await screen.findByText(/Choose an image to start/)).toBeInTheDocument()
     expect(JSON.parse(localStorage.getItem('keychain.relief')!).relief.hmax).toBe(3)

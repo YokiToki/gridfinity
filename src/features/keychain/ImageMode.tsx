@@ -1,19 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { usePersistedState } from '../../app/usePersistedState'
-import { recordSession } from '../../app/lastSession'
-import { Workspace } from '../../app/Workspace'
 import { defaultKeychain, type KeychainParams } from '../../geometry/keychain'
 import type { GrayImage } from '../../geometry/raster/threshold'
-import { ExportPanel } from '../export/ExportPanel'
-import { formatLength, useUnit } from '../../ui/units'
 import { decodeImage, ImageError } from './decodeImage'
 import { openImageStore, type ImageStore } from './imageStore'
 import { migrateKeychain } from './migrate'
 import { KeychainPanel } from './KeychainPanel'
 import { MaskPreview } from './MaskPreview'
 import type { ImageNotice } from './ImageSection'
-import { useKeychainModel } from './useKeychainModel'
+import { KeychainWorkspace } from './KeychainWorkspace'
 
 const KEY = 'keychain.relief'
 type State = KeychainParams & { imageName: string }
@@ -22,8 +18,8 @@ const defaults: State = { ...defaultKeychain, imageName: '' }
 let counter = 0
 const newImageId = () => `img${Date.now().toString(36)}${(counter++).toString(36)}`
 
-/** Keychain Master: изображение → силуэт → рельеф с подложкой. Параметры под ключом keychain.relief, пиксели изображения в IndexedDB. */
-export function KeychainMode() {
+/** Режим «Изображение» Keychain Master: изображение → силуэт → рельеф с подложкой. Параметры под ключом keychain.relief, пиксели изображения в IndexedDB. */
+export function ImageMode() {
   const { t } = useTranslation()
   const [state, setState] = usePersistedState<State>(KEY, defaults, migrateKeychain)
   const { imageName, ...rest } = state
@@ -70,29 +66,12 @@ export function KeychainMode() {
     }
   }, [params.imageId, setState, t])
 
-  const { model, info, busy, pending } = useKeychainModel(params, image)
-  const size = info?.size
-
-  useEffect(() => { if (size) recordSession('image', `${size[0].toFixed(0)} × ${size[1].toFixed(0)} ${t('units.mm')}`, 'keychain') }, [size, t])
-
   const onDrop = (e: DragEvent) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) void onFile(f) }
-  const name = size ? `keychain_${Math.round(size[0])}x${Math.round(size[1])}` : 'keychain'
   return (
-    <div className="flex min-h-0 flex-1" onDragOver={(e) => e.preventDefault()} onDrop={onDrop}>
-      <Workspace
-        model={model} busy={busy}
-        overlay={image ? <MaskPreview preview={info?.preview ?? null} /> : null}
-        panel={<KeychainPanel params={params} onChange={setState} imageName={imageName} hasImage={!!image} info={info} notice={notice} onFile={(f) => void onFile(f)} />}
-        footer={<><ExportPanel model={model} busy={pending} name={name} /><SheetSize sheet={info?.mountInfo?.sheet} /></>}
-      />
-    </div>
+    <KeychainWorkspace
+      mode="image" params={params} image={image} onDrop={onDrop}
+      overlay={(info) => (image ? <MaskPreview preview={info?.preview ?? null} /> : null)}
+      panel={(info) => <KeychainPanel params={params} onChange={setState} imageName={imageName} hasImage={!!image} info={info} notice={notice} onFile={(f) => void onFile(f)} />}
+    />
   )
-}
-
-/** Размер листа печати (две половины и штифты) под кнопками экспорта. */
-function SheetSize({ sheet }: { sheet?: { w: number; h: number } }) {
-  const { t } = useTranslation()
-  const { unit } = useUnit()
-  if (!sheet) return null
-  return <span className="mt-2 block text-xs text-text-muted" data-testid="sheet-size">{t('keychain.split.sheet', { w: formatLength(sheet.w, unit), h: formatLength(sheet.h, unit), u: t(`units.${unit}`) })}</span>
 }
