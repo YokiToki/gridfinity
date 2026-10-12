@@ -28,6 +28,7 @@ export function ImageMode() {
   const params = useMemo<KeychainParams>(() => rest, [key])
   const [image, setImage] = useState<GrayImage | null>(null)
   const [notice, setNotice] = useState<ImageNotice | null>(null)
+  const [selectedArea, setSelectedArea] = useState<number | null>(null)
   const store = useRef<ImageStore | null>(null)
 
   // при открытии: хранилище и сохранённое изображение
@@ -55,7 +56,7 @@ export function ImageMode() {
       await store.current?.save(id, decoded.image)
       if (old) void store.current?.remove(old)
       setImage(decoded.image)
-      setState((o) => ({ ...o, imageId: id, imageName: file.name, silhouette: { ...o.silhouette, keepOpen: [] } }))
+      setState((o) => ({ ...o, imageId: id, imageName: file.name, silhouette: { ...o.silhouette, areas: {} } }))
       const warns: string[] = []
       if (decoded.downscaled) warns.push(t('keychain.image.downscaled', { w: decoded.original.width, h: decoded.original.height, nw: decoded.image.width, nh: decoded.image.height }))
       if (store.current && !store.current.persistent) warns.push(t('keychain.image.notPersisted'))
@@ -70,8 +71,8 @@ export function ImageMode() {
   return (
     <KeychainWorkspace
       mode="image" params={params} image={image} onDrop={onDrop}
-      overlay={(info) => (image ? <MaskPreview preview={info?.preview ?? null} /> : null)}
-      panel={(info) => <KeychainPanel params={params} onChange={setState} imageName={imageName} hasImage={!!image} info={info} notice={notice} onFile={(f) => void onFile(f)} />}
+      overlay={(info) => (image ? <MaskPreview preview={info?.preview ?? null} selected={selectedArea} onSelect={setSelectedArea} /> : null)}
+      panel={(info) => <KeychainPanel params={params} onChange={setState} imageName={imageName} hasImage={!!image} info={info} notice={notice} onFile={(f) => void onFile(f)} selectedArea={selectedArea} onSelectArea={setSelectedArea} />}
     />
   )
 }

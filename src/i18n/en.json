@@ -507,21 +507,34 @@
       "close": "Close gaps",
       "speck": "Remove specks smaller than",
       "grow": "Grow (negative shrinks)",
-      "fillHoles": "Fill holes",
-      "holes": "Holes",
-      "noHoles": "No holes",
-      "holeRow": "Hole {{id}} · {{size}} px",
-      "keepOpen": "Keep hole {{id}} open",
-      "open": "Keep open",
+      "fillHoles": "Fill enclosed areas",
       "summary": "Threshold {{value}}",
-      "summaryAuto": "Auto, {{value}}"
+      "summaryAuto": "Auto, {{value}}",
+      "areas": "Areas",
+      "noAreas": "No areas",
+      "areaRow": "Area {{id}} · {{size}} px",
+      "areaMode": "Mode of area {{id}}",
+      "areaModes": {
+        "follow": "Follow relief",
+        "open": "Open",
+        "level": "Level"
+      },
+      "areaLevel": "Level of area {{id}}",
+      "levelHint": "A levelled area is flat at this height above the plate, with a sharp step at its border; patterns, detail lines and smoothing skip it.",
+      "selectArea": "Select area {{id}}",
+      "all": {
+        "title": "All areas",
+        "mode": "Mode for all areas",
+        "level": "Level for all areas",
+        "apply": "Apply to all areas"
+      }
     },
     "preview": {
       "title": "Silhouette mask",
       "enlarge": "Enlarge mask",
       "close": "Close",
       "large": "Enlarged silhouette mask",
-      "label": "Mask of the silhouette with numbered holes",
+      "label": "Mask of the silhouette with numbered areas",
       "empty": "The mask is empty"
     },
     "size": {
@@ -599,7 +612,8 @@
       "pins": "Use 0 to 6 pins",
       "clearance": "The clearance must be smaller than the pin radius",
       "sides": "Sides must be a whole number from 3 to 12",
-      "smooth": "The smoothing radius must be between 0 and 3 mm"
+      "smooth": "The smoothing radius must be between 0 and 3 mm",
+      "areaLevel": "The level of an area must be 0 or more"
     },
     "profile": {
       "source": "Height source",
@@ -734,7 +748,8 @@
       "pinTooBig": "{{feature}} would break the surface (available {{actual}} {{u}}, required {{required}} {{u}}) and is not used.",
       "noBreach": "The channel does not open to the outside: move its exit to the edge of the silhouette.",
       "cavityBreach": "The channel exit ends in a closed cavity, not outside.",
-      "coarse": "{{feature}} is narrower than two grid steps ({{actual}} {{u}}): raise the resolution."
+      "coarse": "{{feature}} is narrower than two grid steps ({{actual}} {{u}}): raise the resolution.",
+      "areaGone": "Settings of area {{ids}} are ignored: with the current silhouette settings there is no such area."
     },
     "modes": {
       "image": "Image",

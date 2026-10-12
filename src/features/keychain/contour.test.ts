@@ -7,7 +7,7 @@ const preview = (): MaskPreview => {
   const data = new Uint8Array(400)
   for (let y = 4; y < 16; y++) for (let x = 4; x < 16; x++) data[y * 20 + x] = 1
   for (let y = 9; y < 11; y++) for (let x = 9; x < 11; x++) data[y * 20 + x] = 2
-  return { width: 20, height: 20, data, box: [4, 4, 16, 16], holes: [{ id: 1, size: 4, cx: 10, cy: 10, open: true }] }
+  return { width: 20, height: 20, data, box: [4, 4, 16, 16], labels: new Uint16Array(400), areas: [{ id: 1, size: 4, cx: 10, cy: 10, open: true, mode: 'open', level: 0.6 }] }
 }
 
 describe('контур редактора положения', () => {

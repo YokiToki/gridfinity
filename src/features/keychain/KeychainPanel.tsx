@@ -15,10 +15,13 @@ export interface KeychainPanelProps {
   info: KeychainInfo | null
   notice: ImageNotice | null
   onFile: (f: File) => void
+  /** Выбранная область (подсвечена на маске и в списке) и её смена. */
+  selectedArea?: number | null
+  onSelectArea?: (id: number | null) => void
 }
 
 /** Панель режима «Изображение»: изображение, силуэт, размер, затем общие секции (рельеф … разрешение). Макета нет: собрана из компонентов ui/. */
-export function KeychainPanel({ params: p, onChange, imageName, hasImage, info, notice, onFile }: KeychainPanelProps) {
+export function KeychainPanel({ params: p, onChange, imageName, hasImage, info, notice, onFile, selectedArea = null, onSelectArea }: KeychainPanelProps) {
   const { t } = useTranslation()
   const { errors } = validateKeychain(p)
   const err = (field: string) => { const e = errors.find((x) => x.field === field); return e ? t(e.key) : undefined }
@@ -33,7 +36,7 @@ export function KeychainPanel({ params: p, onChange, imageName, hasImage, info, 
       ) : (
         <>
           {otherError && <div className="px-4 pt-3"><Banner kind="warn">{t(otherError)}</Banner></div>}
-          <SilhouetteSection value={p.silhouette} threshold={info?.threshold ?? null} preview={info?.preview ?? null} onChange={patch('silhouette')} />
+          <SilhouetteSection value={p.silhouette} threshold={info?.threshold ?? null} preview={info?.preview ?? null} heightFloor={p.relief.heightFloor} goneAreas={info?.goneAreas ?? []} selected={selectedArea} onSelect={onSelectArea} onChange={patch('silhouette')} />
           <SizeSection value={p.size} resolved={info?.size ?? null} error={err} onChange={patch('size')} />
           <SharedSections params={p} info={info} onChange={onChange} />
         </>

@@ -1,16 +1,43 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { defaultKeychain, type MaskPreview, type SilhouetteParams } from '../../geometry/keychain'
-import { Section } from '../../ui/Section'
-import { Toggle } from '../../ui/Toggle'
+import { DEFAULT_AREA_LEVEL, defaultKeychain, type AreaMode, type AreaSetting, type MaskPreview, type SilhouetteParams } from '../../geometry/keychain'
+import { Banner } from '../../ui/Banner'
+import { Button } from '../../ui/Button'
+import { LengthField } from '../../ui/LengthField'
 import { NumberField } from '../../ui/NumberField'
+import { Section } from '../../ui/Section'
+import { Select } from '../../ui/Select'
+import { Toggle } from '../../ui/Toggle'
 
-/** Силуэт: порог (авто или вручную), инверсия, смыкание, заливка дырок, пятна, расширение; список дырок с «оставить открытой». */
-export function SilhouetteSection({ value: s, threshold, preview, onChange }: { value: SilhouetteParams; threshold: number | null; preview: MaskPreview | null; onChange: (p: Partial<SilhouetteParams>) => void }) {
+const MODES: AreaMode[] = ['follow', 'open', 'level']
+
+/**
+ * Силуэт: порог (авто или вручную), инверсия, смыкание, пятна, расширение, заливка областей и список областей
+ * (замкнутый фон) с режимом каждой: по рельефу, открыта, свой уровень. Строка выбирается и подсвечивается на маске.
+ * Макета нет: собрана из компонентов ui/.
+ */
+export function SilhouetteSection({ value: s, threshold, preview, heightFloor = 0.06, goneAreas = [], selected = null, onSelect, onChange }: {
+  value: SilhouetteParams
+  threshold: number | null
+  preview: MaskPreview | null
+  /** Минимальная высота рельефа: ниже неё уровень области не бывает. */
+  heightFloor?: number
+  /** Номера областей с настройками, которых больше нет. */
+  goneAreas?: number[]
+  selected?: number | null
+  onSelect?: (id: number | null) => void
+  onChange: (p: Partial<SilhouetteParams>) => void
+}) {
   const { t } = useTranslation()
   const auto = s.threshold === 'auto'
-  const holes = preview?.holes ?? []
-  const toggleOpen = (id: number) => onChange({ keepOpen: s.keepOpen.includes(id) ? s.keepOpen.filter((x) => x !== id) : [...s.keepOpen, id] })
+  const areas = preview?.areas ?? []
+  const settings = s.areas ?? {}
+  const get = (id: number): AreaSetting => settings[id] ?? { mode: 'follow', level: DEFAULT_AREA_LEVEL }
+  const setArea = (id: number, patch: Partial<AreaSetting>) => onChange({ areas: { ...settings, [id]: { ...get(id), ...patch } } })
+  const [all, setAll] = useState<AreaSetting>({ mode: 'open', level: DEFAULT_AREA_LEVEL })
+  const applyAll = () => onChange({ areas: Object.fromEntries(areas.map((a) => [a.id, { mode: all.mode, level: Math.max(all.level, heightFloor) }])) })
   const summary = auto ? t('keychain.silhouette.summaryAuto', { value: threshold ?? '–' }) : t('keychain.silhouette.summary', { value: s.threshold })
+  const modeOptions = MODES.map((m) => ({ value: m, label: t(`keychain.silhouette.areaModes.${m}`) }))
   return (
     <Section title={t('keychain.silhouette.title')} summary={summary} onReset={() => onChange({ ...defaultKeychain.silhouette })}>
       <Toggle label={t('keychain.silhouette.auto')} checked={auto} onChange={(v) => onChange({ threshold: v ? 'auto' : (threshold ?? 128) })} />
@@ -22,20 +49,42 @@ export function SilhouetteSection({ value: s, threshold, preview, onChange }: { 
       <NumberField label={t('keychain.silhouette.grow')} value={s.grow} min={-30} max={30} step={1} digits={0} unit="px" onChange={(v) => onChange({ grow: v })} />
       <Toggle label={t('keychain.silhouette.fillHoles')} checked={s.fillHoles} onChange={(v) => onChange({ fillHoles: v })} />
       <div className="flex flex-col gap-1.5">
-        <span className="text-xs text-text-muted">{t('keychain.silhouette.holes')}</span>
-        {holes.length === 0 && <span className="text-xs text-text-subtle">{t('keychain.silhouette.noHoles')}</span>}
-        <ul className="m-0 flex list-none flex-col gap-1 p-0">
-          {holes.map((h) => (
-            <li key={h.id} className="flex items-center justify-between gap-2 rounded-control border border-border bg-bg px-2 py-1">
-              <span className="text-xs">{t('keychain.silhouette.holeRow', { id: h.id, size: h.size })}</span>
-              <button type="button" role="switch" aria-checked={s.keepOpen.includes(h.id)} aria-label={t('keychain.silhouette.keepOpen', { id: h.id })} disabled={!s.fillHoles}
-                onClick={() => toggleOpen(h.id)}
-                className={`inline-flex h-7 cursor-pointer items-center rounded-control border px-2 text-xs disabled:opacity-50 ${s.keepOpen.includes(h.id) ? 'border-accent bg-accent-muted text-white' : 'border-border-strong bg-surface-2 text-text-muted'}`}>
-                {t('keychain.silhouette.open')}
-              </button>
-            </li>
-          ))}
+        <span className="text-xs text-text-muted">{t('keychain.silhouette.areas')}</span>
+        {areas.length === 0 && <span className="text-xs text-text-subtle">{t('keychain.silhouette.noAreas')}</span>}
+        {goneAreas.length > 0 && <Banner kind="warn">{t('keychain.warning.areaGone', { ids: goneAreas.join(', ') })}</Banner>}
+        <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
+          {areas.map((a) => {
+            const cur = get(a.id), on = selected === a.id
+            return (
+              <li key={a.id} data-testid={`area-${a.id}`} aria-current={on ? 'true' : undefined}
+                className={`flex flex-col gap-1.5 rounded-control border bg-bg px-2 py-1.5 ${on ? 'border-accent shadow-[0_0_0_1px_var(--color-accent)]' : 'border-border'}`}>
+                <button type="button" aria-pressed={on} aria-label={t('keychain.silhouette.selectArea', { id: a.id })} onClick={() => onSelect?.(on ? null : a.id)}
+                  className="flex w-full cursor-pointer items-center justify-between border-0 bg-transparent p-0 text-left text-xs text-text">
+                  <span>{t('keychain.silhouette.areaRow', { id: a.id, size: a.size })}</span>
+                </button>
+                <div className={cur.mode === 'level' && s.fillHoles ? 'grid grid-cols-2 gap-2' : ''}>
+                  <Select label={t('keychain.silhouette.areaMode', { id: a.id })} value={s.fillHoles ? cur.mode : 'open'} disabled={!s.fillHoles} options={modeOptions}
+                    onChange={(v) => setArea(a.id, { mode: v as AreaMode })} />
+                  {cur.mode === 'level' && s.fillHoles && (
+                    <LengthField label={t('keychain.silhouette.areaLevel', { id: a.id })} value={Math.max(cur.level, heightFloor)} min={heightFloor} max={20} step={0.1}
+                      onChange={(v) => setArea(a.id, { level: v })} />
+                  )}
+                </div>
+              </li>
+            )
+          })}
         </ul>
+        {areas.length > 0 && s.fillHoles && (
+          <div className="flex flex-col gap-2 rounded-control border border-border p-2">
+            <span className="text-xs font-medium text-text-muted">{t('keychain.silhouette.all.title')}</span>
+            <div className={all.mode === 'level' ? 'grid grid-cols-2 gap-2' : ''}>
+              <Select label={t('keychain.silhouette.all.mode')} value={all.mode} options={modeOptions} onChange={(v) => setAll((o) => ({ ...o, mode: v as AreaMode }))} />
+              {all.mode === 'level' && <LengthField label={t('keychain.silhouette.all.level')} value={Math.max(all.level, heightFloor)} min={heightFloor} max={20} step={0.1} onChange={(v) => setAll((o) => ({ ...o, level: v }))} />}
+            </div>
+            <Button onClick={applyAll}>{t('keychain.silhouette.all.apply')}</Button>
+          </div>
+        )}
+        {areas.some((a) => (s.areas?.[a.id]?.mode ?? 'follow') === 'level') && <span className="text-xs text-text-subtle">{t('keychain.silhouette.levelHint')}</span>}
       </div>
     </Section>
   )

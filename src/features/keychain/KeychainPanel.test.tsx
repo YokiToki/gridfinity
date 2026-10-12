@@ -1,30 +1,39 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useState } from 'react'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { I18nextProvider } from 'react-i18next'
 import i18n from '../../i18n'
 import { UnitContext } from '../../ui/units'
 import { defaultKeychain, type KeychainInfo, type KeychainParams } from '../../geometry/keychain'
 import { KeychainPanel } from './KeychainPanel'
-import { MaskPreview } from './MaskPreview'
+import { areaAt, MaskPreview } from './MaskPreview'
 import { expectAllNumericSteppers } from '../../ui/stepperAssert'
 
 type S = KeychainParams & { imageName: string }
 let latest: S
 
-const preview = { width: 4, height: 4, data: new Uint8Array(16).fill(1), box: [0, 0, 4, 4] as [number, number, number, number], holes: [{ id: 1, size: 120, cx: 1, cy: 1, open: false }, { id: 2, size: 80, cx: 3, cy: 3, open: false }] }
+// 4 × 4: область 1 — левый верхний квадрат 2 × 2, область 2 — правый нижний
+const labels = new Uint16Array(16)
+for (const [i, j] of [[0, 0], [1, 0], [0, 1], [1, 1]]) labels[j * 4 + i] = 1
+for (const [i, j] of [[2, 2], [3, 2], [2, 3], [3, 3]]) labels[j * 4 + i] = 2
+const area = (id: number, size: number, cx: number, cy: number) => ({ id, size, cx, cy, open: false, mode: 'follow' as const, level: 0.6 })
+const preview = { width: 4, height: 4, data: new Uint8Array(16).fill(1), labels, box: [0, 0, 4, 4] as [number, number, number, number], areas: [area(1, 120, 1, 1), area(2, 80, 3, 3)] }
 const info = (over: Partial<KeychainInfo> = {}): KeychainInfo => ({ threshold: 140, photoLike: false, preview, size: [70, 45], cell: 0.25, reduced: false, minCell: 0.1, triangles: 1000, ...over })
 
-function Harness({ unit = 'mm' as 'mm' | 'in', start = {} as Partial<S>, inf = info() }) {
+let selectedNow: number | null = null
+function Harness({ unit = 'mm' as 'mm' | 'in', start = {} as Partial<S>, inf = info(), withPreview = false }) {
   const [s, setS] = useState<S>({ ...defaultKeychain, imageId: 'i', imageName: 'logo.png', ...start })
+  const [sel, setSel] = useState<number | null>(null)
   latest = s
+  selectedNow = sel
   const { imageName, ...params } = s
   return (
     <I18nextProvider i18n={i18n}>
       <UnitContext.Provider value={{ unit, setUnit: () => {} }}>
-        <KeychainPanel params={params} onChange={setS} imageName={imageName} hasImage info={inf} notice={null} onFile={() => {}} />
+        <KeychainPanel params={params} onChange={setS} imageName={imageName} hasImage info={inf} notice={null} onFile={() => {}} selectedArea={sel} onSelectArea={setSel} />
+        {withPreview && <MaskPreview preview={inf.preview} selected={sel} onSelect={setSel} />}
       </UnitContext.Provider>
     </I18nextProvider>
   )
@@ -52,20 +61,80 @@ describe('Silhouette (4.2)', () => {
     await type('Grow (negative shrinks)', '-2')
     expect(latest.silhouette).toMatchObject({ close: 5, speck: 300, grow: -2 })
   })
-  it('список дырок: переключатель «оставить открытой» меняет keepOpen и снимается обратно', async () => {
+  const modeOf = (id: number) => screen.getByLabelText(`Mode of area ${id}`) as HTMLSelectElement
+  it('список областей: строки с размером, по умолчанию «По рельефу», слова «дырка» нет', () => {
     render(<Harness />)
-    expect(screen.getByText('Hole 1 · 120 px')).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('switch', { name: 'Keep hole 2 open' }))
-    expect(latest.silhouette.keepOpen).toEqual([2])
-    await userEvent.click(screen.getByRole('switch', { name: 'Keep hole 2 open' }))
-    expect(latest.silhouette.keepOpen).toEqual([])
+    expect(screen.getByText('Area 1 · 120 px')).toBeInTheDocument()
+    expect(screen.getByText('Area 2 · 80 px')).toBeInTheDocument()
+    expect(modeOf(1).value).toBe('follow')
+    expect(screen.queryByText(/[Hh]ole/)).toBeNull()
   })
-  it('без заливки дырок переключатели отключены; без дырок — подсказка', async () => {
+  it('режим области меняется на «Открыта» и обратно; остальные не затрагиваются', async () => {
+    render(<Harness />)
+    await userEvent.selectOptions(modeOf(2), 'open')
+    expect(latest.silhouette.areas[2]).toMatchObject({ mode: 'open' })
+    expect(latest.silhouette.areas[1]).toBeUndefined()
+    await userEvent.selectOptions(modeOf(2), 'follow')
+    expect(latest.silhouette.areas[2].mode).toBe('follow')
+  })
+  it('поле уровня есть только у режима «Свой уровень», запоминает значение и зажимает его снизу минимальной высотой', async () => {
+    render(<Harness />)
+    expect(screen.queryByLabelText('Level of area 1')).toBeNull()
+    await userEvent.selectOptions(modeOf(1), 'level')
+    expect(latest.silhouette.areas[1]).toMatchObject({ mode: 'level', level: 0.6 })
+    await type('Level of area 1', '1.4')
+    expect(latest.silhouette.areas[1]).toEqual({ mode: 'level', level: 1.4 })
+    await type('Level of area 1', '0.01')
+    expect(latest.silhouette.areas[1].level).toBe(0.06) // минимум = heightFloor
+    expect(screen.getByRole('button', { name: 'Increase: Level of area 1' })).toBeInTheDocument()
+    expect(screen.queryByLabelText('Level of area 2')).toBeNull()
+  })
+  it('«Применить ко всем»: режим и уровень записываются во все области', async () => {
+    render(<Harness />)
+    await userEvent.selectOptions(screen.getByLabelText('Mode for all areas'), 'level')
+    await type('Level for all areas', '1.2')
+    await userEvent.click(screen.getByRole('button', { name: 'Apply to all areas' }))
+    expect(latest.silhouette.areas).toEqual({ 1: { mode: 'level', level: 1.2 }, 2: { mode: 'level', level: 1.2 } })
+    await userEvent.selectOptions(screen.getByLabelText('Mode for all areas'), 'open')
+    await userEvent.click(screen.getByRole('button', { name: 'Apply to all areas' }))
+    expect(Object.values(latest.silhouette.areas).map((a) => a.mode)).toEqual(['open', 'open'])
+  })
+  it('предупреждение об исчезнувшей области называет номер', () => {
+    render(<Harness inf={info({ goneAreas: [4, 7] })} />)
+    expect(screen.getByText(/area 4, 7 are ignored/)).toBeInTheDocument()
+    expect(screen.queryByText(/are ignored/)).not.toBeNull()
+  })
+  it('выбор строки подсвечивает её, повторный щелчок снимает выбор', async () => {
+    render(<Harness />)
+    await userEvent.click(screen.getByRole('button', { name: 'Select area 2' }))
+    expect(selectedNow).toBe(2)
+    expect(screen.getByTestId('area-2')).toHaveAttribute('aria-current', 'true')
+    expect(screen.getByTestId('area-1')).not.toHaveAttribute('aria-current')
+    await userEvent.click(screen.getByRole('button', { name: 'Select area 2' }))
+    expect(selectedNow).toBeNull()
+  })
+  it('без заливки областей режимы отключены; без областей — подсказка и нет «Применить ко всем»', async () => {
     const { unmount } = render(<Harness start={{ silhouette: { ...defaultKeychain.silhouette, fillHoles: false } }} />)
-    expect(screen.getByRole('switch', { name: 'Keep hole 1 open' })).toBeDisabled()
+    expect(modeOf(1)).toBeDisabled()
+    expect(modeOf(1).value).toBe('open')
+    expect(screen.queryByRole('button', { name: 'Apply to all areas' })).toBeNull()
     unmount()
-    render(<Harness inf={info({ preview: { ...preview, holes: [] } })} />)
-    expect(screen.getByText('No holes')).toBeInTheDocument()
+    render(<Harness inf={info({ preview: { ...preview, areas: [], labels: new Uint16Array(16) } })} />)
+    expect(screen.getByText('No areas')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Apply to all areas' })).toBeNull()
+  })
+  it('щелчок по маске выбирает область в списке, мимо областей снимает выбор', async () => {
+    const rect = () => ({ left: 0, top: 0, width: 400, height: 400, right: 400, bottom: 400, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
+    render(<Harness withPreview />)
+    const canvas = screen.getByRole('img', { name: /Mask of the silhouette/ })
+    canvas.getBoundingClientRect = rect
+    fireEvent.click(canvas, { clientX: 300, clientY: 300 }) // правый нижний квадрат
+    expect(selectedNow).toBe(2)
+    expect(screen.getByTestId('area-2')).toHaveAttribute('aria-current', 'true')
+    fireEvent.click(canvas, { clientX: 50, clientY: 50 })
+    expect(selectedNow).toBe(1)
+    fireEvent.click(canvas, { clientX: 350, clientY: 50 }) // вне областей
+    expect(selectedNow).toBeNull()
   })
   it('сброс секции возвращает силуэт по умолчанию', async () => {
     render(<Harness start={{ silhouette: { ...defaultKeychain.silhouette, invert: true, close: 9 } }} />)
@@ -199,6 +268,37 @@ describe('MaskPreview: большой вид', () => {
   it('без маски кнопки «Увеличить» нет', () => {
     render(ui(null as never))
     expect(screen.queryByRole('button', { name: 'Enlarge mask' })).toBeNull()
+  })
+})
+
+describe('Области на маске: выбор щелчком (2.2)', () => {
+  beforeEach(async () => { await i18n.changeLanguage('en') })
+  it('areaAt: доли картинки → номер области из плоскости labels, края и вне картинки', () => {
+    expect(areaAt(preview, 0.1, 0.1)).toBe(1)
+    expect(areaAt(preview, 0.49, 0.49)).toBe(1)
+    expect(areaAt(preview, 0.9, 0.9)).toBe(2)
+    expect(areaAt(preview, 0.9, 0.1)).toBeNull()
+    expect(areaAt(preview, 0.999, 0.999)).toBe(2)
+    expect(areaAt(preview, -0.1, 0.5)).toBeNull()
+    expect(areaAt(preview, 1, 0.5)).toBeNull()
+    expect(areaAt(preview, NaN, 0.5)).toBeNull()
+  })
+  it('большой вид: щелчок по маске выбирает область, выбор общий с малым видом и списком', async () => {
+    render(<Harness withPreview />)
+    await userEvent.click(screen.getByRole('button', { name: 'Enlarge mask' }))
+    const big = screen.getByRole('dialog').querySelector('canvas')!
+    big.getBoundingClientRect = () => ({ left: 0, top: 0, width: 800, height: 800, right: 800, bottom: 800, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect
+    fireEvent.click(big, { clientX: 700, clientY: 700 })
+    expect(selectedNow).toBe(2)
+    expect(screen.getByRole('dialog')).toBeInTheDocument() // щелчок по маске диалог не закрывает
+    fireEvent.click(big, { clientX: 100, clientY: 100 })
+    expect(selectedNow).toBe(1)
+  })
+  it('выбор из списка виден на маске: выбранный номер передаётся в отрисовку (канвас перерисовывается)', async () => {
+    render(<Harness withPreview />)
+    await userEvent.click(screen.getByRole('button', { name: 'Select area 1' }))
+    expect(selectedNow).toBe(1)
+    expect(screen.getByTestId('area-1')).toHaveAttribute('aria-current', 'true')
   })
 })
 

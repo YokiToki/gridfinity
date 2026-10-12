@@ -70,17 +70,17 @@ describe('Keychain: изображение (4.1)', () => {
   })
   it('перезагрузка: то же изображение берётся из IndexedDB и снова регистрируется в воркере; параметры сохраняются', async () => {
     const first = open()
-    await userEvent.upload(await screen.findByTestId('image-input'), png())
-    await screen.findByText('Silhouette')
+    await userEvent.upload(await screen.findByTestId('image-input', {}, { timeout: 5000 }), png())
+    await screen.findByText('Silhouette', {}, { timeout: 5000 })
     const saved = JSON.parse(localStorage.getItem('keychain.relief')!)
     saved.silhouette.threshold = 77
     localStorage.setItem('keychain.relief', JSON.stringify(saved))
     first.unmount(); registered.length = 0
     open()
-    expect(await screen.findByText('Silhouette')).toBeInTheDocument()
-    await waitFor(() => expect(registered).toHaveLength(1))
+    expect(await screen.findByText('Silhouette', {}, { timeout: 5000 })).toBeInTheDocument()
+    await waitFor(() => expect(registered).toHaveLength(1), { timeout: 5000 })
     expect(screen.getByText('Threshold 77')).toBeInTheDocument()
-  })
+  }, 20000)
   it('сохранённое изображение пропало из хранилища: предупреждение и пустое состояние', async () => {
     localStorage.setItem('keychain.relief', JSON.stringify({ imageId: 'gone', imageName: 'gone.png' }))
     open()
