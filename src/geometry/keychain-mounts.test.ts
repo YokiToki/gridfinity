@@ -66,6 +66,13 @@ describe('сквозное отверстие (2.1)', () => {
     expect(r.info.mountInfo!.rejected.length).toBeGreaterThan(0)
     expect(r.info.mountInfo!.rejected.every((x) => ['outside', 'rim', 'thin', 'spacing'].includes(x.reason))).toBe(true)
   })
+  it('Suggest канала: у кандидата есть выход на край, ближайший по восьми направлениям', async () => {
+    const r = await run(P({ split: split({ pins: 0 }), mount: mount({ style: 'channel', diameter: 3, minWall: 1 }) }))
+    const c = r.info.mountInfo!.candidates
+    expect(c.length).toBeGreaterThan(0)
+    expect(c[0].exit).toBeTruthy()
+    expect(Math.hypot(c[0].exit!.x, c[0].exit!.y)).toBeGreaterThan(30) // у края диска радиусом 35
+  })
   it('нет безопасного места: candidates пуст', async () => {
     const tiny = shape(120, 120, 40, 40)
     const r = await run(P({ size: { ...defaultKeychain.size, longest: 8 }, mount: mount({ style: 'hole', diameter: 6 }) }), tiny)
@@ -253,3 +260,23 @@ describe('лист печати (2.6)', () => {
     for (const q of r.parts) expect(q.solid.genus()).toBe(1)
   })
 })
+
+describe('крепления вместе с узорами (12)', () => {
+  it('отверстие, штифты и канал работают при включённом узоре: тела валидны, отверстие режется после узора', async () => {
+    const pattern = { ...defaultKeychain.pattern, kind: 'lines' as const, pitch: 1.5, width: 0.5, depth: 0.3, angle: 45, scope: 'relief' as const }
+    const r = await solids(P({ pattern, split: split({ pins: 2 }), mount: mount({ style: 'channel', diameter: 3, x: 0.5, y: 0.8, exitX: 0.5, exitY: 1, minWall: 1 }) }))
+    for (const q of r.parts) expectValidSolid(q.solid)
+    expect(r.parts.map((x) => x.label)).toEqual(['top', 'bottom', 'pin1', 'pin2'])
+    expect(r.info.mountInfo!.issues.filter((i) => i.kind === 'noBreach' || i.kind === 'cavityBreach')).toEqual([])
+    const hole = await solids(P({ pattern, mount: mount({ style: 'hole', x: 0.5, y: 0.5, diameter: 4 }) }))
+    expectValidSolid(hole.parts[0].solid)
+    expect(hole.parts[0].solid.genus()).toBe(1)
+  })
+  it('узор на подложке (подложка в сетке) и ушко: тело одно и валидно', async () => {
+    const pattern = { ...defaultKeychain.pattern, kind: 'dots' as const, pitch: 2, width: 1, depth: 0.4, scope: 'base' as const }
+    const e = (await solids(P({ pattern, base: { ...defaultKeychain.base, shape: 'circle', margin: 4 }, mount: mount({ style: 'eyelet', x: 0.5, y: 1.2, diameter: 4, outer: 9 }) }))).parts[0].solid
+    expectValidSolid(e)
+    expect(components(e)).toBe(1)
+  })
+})
+

@@ -21,14 +21,14 @@ export function ExportPanel({ model, busy, name }: { model: ModelResult | null; 
   const { t } = useTranslation()
   const [s, update] = useExportSettings()
   const parts = model?.parts ?? []
-  const plan = useMemo(() => (parts.length ? layout(parts, s) : null), [model, s.orientation, s.margin, s.gap, s.printerId, s.customX, s.customY]) // eslint-disable-line react-hooks/exhaustive-deps
+  const plan = useMemo(() => (parts.length ? layout(parts, s, !!model?.sheetLayout) : null), [model, s.orientation, s.margin, s.gap, s.printerId, s.customX, s.customY]) // eslint-disable-line react-hooks/exhaustive-deps
   const overflow = plan?.plates.filter((p) => p.overflow).length ?? 0
   const plates = plan?.plates.length ?? 0
   const disabled = !model || busy || parts.length === 0
   const many = parts.length > 1 && s.multi === 'separate'
   const fmt = s.format.toUpperCase()
   const label = many ? t('export.downloadFiles', { n: parts.length, format: fmt }) : t('export.download', { format: fmt })
-  const go = () => buildExport(parts, s, name).files.forEach((f) => download(f.blob, f.name))
+  const go = () => buildExport(parts, s, name, !!model?.sheetLayout).files.forEach((f) => download(f.blob, f.name))
   const options = [...PRINTERS.map((p) => ({ value: p.id, label: p.name })), { value: CUSTOM_PRINTER, label: t('export.printer.custom') }]
 
   return (

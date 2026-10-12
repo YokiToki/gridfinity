@@ -20,9 +20,9 @@
 - [x] 3.1 `PlacementEditor` (SVG contour, mm grid, rulers, drag, numeric entry, snap to outline); unit conversion in the display only. Component tests for drag and numeric entry. No artboard: build from `ui/` components and `theme.css` tokens.
 - [x] 3.2 `MountSection` (style, diameters, presets, Suggest with candidate/rejected overlay, warnings). Component tests: channel disabled without split, Suggest places the mount.
 - [x] 3.3 `SplitSection` (toggle, pins count/radius/clearance/depth) and export block Sheet/Top/Bottom with sheet size. Component tests; persistence and migrate for old records.
-- [ ] 3.4 en/ru strings (parity test); compare with the component library, 390 px drawer, long Russian labels.
+- [x] 3.4 en/ru strings (parity test); compare with the component library, 390 px drawer, long Russian labels.
 
 ## 4. Verification
 
-- [ ] 4.1 `npm test` and `npm run build` are green; no console errors.
-- [ ] 4.2 In the browser: take the `v_form` reference, place the ring channel at the reference entrance scaled to the chosen size, 3 pins, export the sheet; check halves in a slicer view for no overhangs, pins fit the holes, channel opens to the edge. Repeat with a through hole and an eyelet, and with a pattern from `12` if archived.
+- [x] 4.1 `npm test` and `npm run build` are green; no console errors.
+- [x] 4.2 In the browser: take the `v_form` reference, place the ring channel at the reference entrance scaled to the chosen size, 3 pins, export the sheet; check halves in a slicer view for no overhangs, pins fit the holes, channel opens to the edge. Repeat with a through hole and an eyelet, and with a pattern from `12` if archived.

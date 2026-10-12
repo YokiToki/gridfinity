@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { strFromU8, unzipSync } from 'fflate'
 import { buildExport, layout, plateOffset } from './build'
 import { defaultExportSettings, type ExportSettings } from './settings'
-import { generate, type ModelResult } from '../geometry/model'
+import { generate, type ModelResult, type PartMesh } from '../geometry/model'
 import { defaultSplit } from '../geometry/split'
 import { sharpParams, mm } from '../geometry/testing'
 import { defaultCutout } from '../geometry/cutout'
@@ -151,5 +151,33 @@ describe('buildExport: STL', () => {
   })
   it('своё имя файла очищается от запрещённых символов', () => {
     expect(buildExport(one.parts, S({ fileName: 'my box/v1?' }), 'x').files[0].name).toBe('my_box_v1_.stl')
+  })
+})
+
+describe('buildExport: лист печати с заданным положением (Keychain)', () => {
+  const part = (label: string, x0: number, y0: number): PartMesh => ({ label, col: 0, row: 0, oversize: false, mesh: { vertProperties: Float32Array.from([x0, y0, 0, x0 + 20, y0, 0, x0, y0 + 10, 0, x0, y0, 5]), triVerts: Uint32Array.from([0, 2, 1, 0, 1, 3, 0, 3, 2, 1, 2, 3]), numProp: 3, min: [x0, y0, 0], max: [x0 + 20, y0 + 10, 5], volume: 1 } })
+  const sheet = [part('top', 0, 0), part('bottom', 30, 4), part('pin1', 0, -20)]
+  it('взаимное положение деталей сохраняется, лист стоит по центру области, одна плита', () => {
+    const { placed, plates } = layout(sheet, S(), true)
+    expect(plates).toHaveLength(1)
+    const [t, b, p] = placed
+    expect(b.x - t.x).toBeCloseTo(30, 9); expect(b.y - t.y).toBeCloseTo(4, 9); expect(t.y - p.y).toBeCloseTo(20, 9)
+    const w = 50, h = 34 // габарит листа: x от 0 до 50, y от −20 до 14
+    expect(t.x).toBeCloseTo(5 + (246 - w) / 2, 9)
+    expect(p.y).toBeCloseTo(5 + (246 - h) / 2, 9)
+  })
+  it('без фиксации детали раскладываются заново (другое взаимное положение)', () => {
+    const fixed = layout(sheet, S(), true).placed, auto = layout(sheet, S(), false).placed
+    expect(auto[1].x - auto[0].x).not.toBeCloseTo(fixed[1].x - fixed[0].x, 3)
+  })
+  it('экспорт одним файлом: один STL с тем же числом треугольников; отдельные файлы — по одному на деталь', () => {
+    const one = buildExport(sheet, S(), 'k', true)
+    expect(one.files).toHaveLength(1)
+    expect(one.files[0].blob.size).toBe(84 + 50 * 12)
+    expect(buildExport(sheet, S({ multi: 'separate' }), 'k', true).files.map((f) => f.name)).toEqual(['k_top.stl', 'k_bottom.stl', 'k_pin1.stl'])
+  })
+  it('лист больше стола: переполнение плиты отмечено', () => {
+    const wide = [part('top', 0, 0), part('bottom', 300, 0)]
+    expect(layout(wide, S(), true).plates[0].overflow).toBe(true)
   })
 })

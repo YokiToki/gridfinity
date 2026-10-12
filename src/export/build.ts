@@ -26,10 +26,18 @@ export function plateOffset(k: number, count: number, bed: { x: number; y: numbe
 }
 
 /** Раскладка уже ориентированных деталей по плитам с учётом поворота на 90° там, где арранжировщик его выбрал. */
-export function layout(parts: PartMesh[], s: ExportSettings) {
+export function layout(parts: PartMesh[], s: ExportSettings, fixed = false) {
   const flip = shouldFlip(s.orientation)
   const base = parts.map((p) => orientMesh(p.mesh, { flip }))
   const area = usableBed(s)
+  if (fixed && parts.length > 0) {
+    // детали уже стоят на листе (Keychain): сохраняем взаимное положение, одна плита по центру области
+    const gx = Math.min(...parts.map((q) => q.mesh.min[0])), gy = Math.min(...parts.map((q) => q.mesh.min[1]))
+    const w = Math.max(...parts.map((q) => q.mesh.max[0])) - gx, h = Math.max(...parts.map((q) => q.mesh.max[1])) - gy
+    const ox = Math.max(0, (area.x - w) / 2), oy = Math.max(0, (area.y - h) / 2)
+    const placed = parts.map((q, index) => ({ index, mesh: base[index], x: s.margin + ox + (q.mesh.min[0] - gx), y: s.margin + oy + (q.mesh.min[1] - gy), plate: 1 }))
+    return { placed, plates: [{ items: placed.map((q) => ({ index: q.index, x: q.x, y: q.y, rotated: false })), overflow: w > area.x + 1e-9 || h > area.y + 1e-9 }] as Plate[], base }
+  }
   const plates: Plate[] = arrange(base.map((m) => ({ w: m.size[0], h: m.size[1] })), { x: area.x, y: area.y }, s.gap)
   const placed: { index: number; mesh: PlacedMesh; x: number; y: number; plate: number }[] = []
   plates.forEach((pl, k) => {
@@ -63,9 +71,9 @@ const stlOf = (positions: Float32Array, triangles: Uint32Array) => toBinaryStl({
 const slug = (s: string) => s.trim().replace(/[\\/:*?"<>|]+/g, '_').replace(/\s+/g, '_')
 
 /** Собирает файлы экспорта по настройкам: STL (один или по частям) или 3MF (один или по частям). */
-export function buildExport(parts: PartMesh[], s: ExportSettings, baseName: string): ExportResult {
+export function buildExport(parts: PartMesh[], s: ExportSettings, baseName: string, fixedLayout = false): ExportResult {
   const name = slug(s.fileName) || baseName
-  const { placed, plates } = layout(parts, s)
+  const { placed, plates } = layout(parts, s, fixedLayout && s.multi !== 'separate')
   const bed = bedOf(s)
   const printer = s.printerId === CUSTOM_PRINTER ? undefined : printerById(s.printerId)
   const bambu = s.format === '3mf' && !!printer?.bambu

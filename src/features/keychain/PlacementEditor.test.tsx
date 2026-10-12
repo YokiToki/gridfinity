@@ -79,7 +79,7 @@ describe('PlacementEditor (3.1)', () => {
     const { rerender } = wrap(<PlacementEditor params={P()} info={info()} onPlace={() => {}} onPick={onPick} rejectedShown={false} />)
     expect(screen.queryAllByTestId('rejected')).toHaveLength(0)
     await userEvent.click(screen.getByTestId('candidate'))
-    expect(onPick).toHaveBeenCalledWith({ x: -10, y: 5 })
+    expect(onPick).toHaveBeenCalledWith({ x: -10, y: 5, exit: undefined })
     rerender(<I18nextProvider i18n={i18n}><UnitContext.Provider value={{ unit: 'mm', setUnit: () => {} }}><PlacementEditor params={P()} info={info()} onPlace={() => {}} onPick={onPick} rejectedShown /></UnitContext.Provider></I18nextProvider>)
     expect(screen.getAllByTestId('rejected')).toHaveLength(1)
     expect(screen.getByText('Too close to the edge')).toBeInTheDocument()

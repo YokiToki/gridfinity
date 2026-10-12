@@ -33,9 +33,11 @@ export function MountSection({ params: p, info, error, onMount, onPlace }: {
   const preset = RING_PRESETS.find((r) => Math.abs(r.diameter - mo.diameter) < 1e-9)?.id ?? 'custom'
   const summary = mo.style === 'none' ? t('keychain.mount.styles.none') : `${t(`keychain.mount.styles.${mo.style}`)} · ${formatLength(mo.diameter, unit)} ${t(`units.${unit}`)}`
 
-  const pick = (pos: { x: number; y: number }) => {
+  const pick = (pos: { x: number; y: number; exit?: { x: number; y: number } }) => {
     if (!size) return
-    onMount({ x: (pos.x + size[0] / 2) / size[0], y: (pos.y + size[1] / 2) / size[1] })
+    const rel = (q: { x: number; y: number }) => ({ x: (q.x + size[0] / 2) / size[0], y: (q.y + size[1] / 2) / size[1] })
+    // у канала вместе с внутренним концом выбирается и ближайший выход на край
+    onMount({ x: rel(pos).x, y: rel(pos).y, ...(mo.style === 'channel' && pos.exit ? { exitX: rel(pos.exit).x, exitY: rel(pos.exit).y } : {}) })
     setNoSpot(false)
   }
   const suggest = () => {

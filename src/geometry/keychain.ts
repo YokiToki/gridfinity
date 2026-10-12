@@ -10,7 +10,7 @@ import { midtoneShare, otsu, toMask, type GrayImage } from './raster/threshold'
 import { profileValue, type ProfileParams } from './patterns/profile'
 import { coverage, type PatternParams } from './patterns/fields'
 import { skeleton } from './raster/thin'
-import { anchorField, exitRay, findAnchors, relToMm, type Anchor, type AnchorField, type Rejected } from './anchors'
+import { anchorField, exitRay, findAnchors, nearestExit, relToMm, type Anchor, type AnchorField, type Rejected } from './anchors'
 import { fitChecks, type FitIssue } from './keychainFit'
 import { cylinderAlong, cylinderZ, lugJoin, lugSolid, pinLength, pinRadiusLoose, pinSolid } from './keychainMounts'
 
@@ -617,11 +617,14 @@ function resolveMounts(p: KeychainParams, f: AnchorField, wMm: number, hMm: numb
   if (mo.style === 'hole' || mo.style === 'channel') {
     const q = findAnchors(f, { radius: r, minHeight: mo.style === 'channel' ? r + mo.minWall : mo.minWall, minRim: mo.minWall }, { count: 5, spacing: Math.max(4, mo.diameter * 2), near: undefined })
     candidates = q.accepted; rejected = q.rejected
+    if (mo.style === 'channel') candidates = candidates.map((c) => ({ ...c, exit: nearestExit(f, c) ?? undefined }))
   } else if (mo.style === 'eyelet') {
     // ушко подсказывается у края: из центра по восьми направлениям до выхода из материала, центр ушка смещается наружу
     const R = mo.outer / 2
+    // лучи идут из самого «толстого» места (центр габарита у ажурной фигуры может лежать вне материала)
+    const origin = findAnchors(f, { radius: 1, minHeight: 0.05, minRim: 0 }, { count: 1, spacing: 1, rejectedSample: 0 }).accepted[0] ?? { x: 0, y: 0 }
     for (const [dx, dy] of eightDirs) {
-      const e = exitRay(f, { x: 0, y: 0 }, { x: dx, y: dy })
+      const e = exitRay(f, origin, { x: dx, y: dy })
       if (!e) continue
       const l = Math.hypot(dx, dy)
       const x = e.x + (dx / l) * (R - mo.minWall), y = e.y + (dy / l) * (R - mo.minWall)

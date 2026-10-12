@@ -22,7 +22,7 @@ export function PlacementEditor({ params: p, info, onPlace, onPick, rejectedShow
   info: KeychainInfo
   onPlace: (patch: PlacementPatch) => void
   /** Выбрать подсказанное место. */
-  onPick: (pos: { x: number; y: number }) => void
+  onPick: (pos: { x: number; y: number; exit?: { x: number; y: number } }) => void
   rejectedShown: boolean
 }) {
   const { t } = useTranslation()
@@ -100,7 +100,7 @@ export function PlacementEditor({ params: p, info, onPlace, onPick, rejectedShow
             <path d={`M${q.x - 0.6},${sy(q.y) - 0.6}l1.2,1.2m0,-1.2l-1.2,1.2`} stroke="var(--color-error-text)" strokeWidth={0.25} opacity={0.7} /></g>
         ))}
         {mi?.candidates.map((q, i) => (
-          <g key={`cd${i}`} data-testid="candidate" onClick={() => onPick({ x: q.x, y: q.y })} className="cursor-pointer">
+          <g key={`cd${i}`} data-testid="candidate" onClick={() => onPick({ x: q.x, y: q.y, exit: q.exit })} className="cursor-pointer">
             <title>{t('keychain.editor.candidate', { n: i + 1 })}</title>
             <circle cx={q.x} cy={sy(q.y)} r={Math.max(1, mo.diameter / 2)} fill="none" stroke="var(--color-success-text)" strokeWidth={0.4} strokeDasharray="1 0.8" />
             <text x={q.x} y={sy(q.y) + 0.8} fontSize={2.4} textAnchor="middle" fill="var(--color-success-text)">{i + 1}</text>

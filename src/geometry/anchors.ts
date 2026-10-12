@@ -87,7 +87,7 @@ export function minHeightField(f: AnchorField, radiusMm: number): Float32Array {
 export interface AnchorReq { radius: number; minHeight: number; minRim: number }
 export type RejectReason = 'outside' | 'rim' | 'thin' | 'spacing'
 
-export interface Anchor { x: number; y: number; /** Запас по худшему из требований, мм (больше — надёжнее). */ margin: number; height: number; rim: number }
+export interface Anchor { x: number; y: number; /** Запас по худшему из требований, мм (больше — надёжнее). */ margin: number; height: number; rim: number; /** Для канала: ближайший выход на край по одному из восьми направлений. */ exit?: { x: number; y: number } }
 export interface Rejected { x: number; y: number; reason: RejectReason; actual: number; required: number }
 
 export interface FindOptions {
@@ -140,6 +140,18 @@ export function findAnchors(f: AnchorField, req: AnchorReq, opt: FindOptions): {
 function nearSolid(f: AnchorField, i: number, j: number) {
   for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) if (inGrid(f, i + di, j + dj) && f.solid[(j + dj) * f.nx + i + di]) return true
   return false
+}
+
+/** Ближайший выход на край из точки по восьми направлениям (кратчайший луч внутри материала), мм. */
+export function nearestExit(f: AnchorField, from: { x: number; y: number }): { x: number; y: number } | null {
+  let best: { x: number; y: number } | null = null, bd = Infinity
+  for (const [dx, dy] of [[0, 1], [1, 1], [-1, 1], [1, 0], [-1, 0], [0, -1], [1, -1], [-1, -1]] as const) {
+    const e = exitRay(f, from, { x: dx, y: dy })
+    if (!e) continue
+    const d = Math.hypot(e.x - from.x, e.y - from.y)
+    if (d < bd) { bd = d; best = e }
+  }
+  return best
 }
 
 /** Узел поля у точки (мм) или null вне сетки. */

@@ -21,6 +21,19 @@ The reference stages 4–6: bisect at `z=0` (`clear_inner` keeps +Z, `clear_oute
 - **Fit checks** run on the same data used for generation (no extra boolean needed except the breach test, done on the grid) and return `{feature, kind, actual, required}` objects mapped to `keychain.warning.*` keys.
 - **Export.** The export block gets a segmented choice Sheet / Top / Bottom; STL only (3MF is `09`).
 
+## Implementation notes
+
+- **One cut, two halves:** the pin holes and the channel are cut from the top half as symmetric cylinders about the mating plane; the bottom half is `top.mirror(z)` rotated 180° about X, so both halves always carry identical features and the combined volume of the pair is exactly twice the single-sided model.
+- **Anchor field:** built from the same heightfield grid as the mesh (`Grid.solid`, `Grid.top`); when the plate is a separate extrusion the grid is rebuilt once with the plate rasterised so spots on the plate are searchable. Grid cells are never rescaled with the model: the "coarse grid" warning fires when a footprint is narrower than two cells.
+- **Eyelet lug:** extruded to the plate thickness (so it needs a plate) and joined to the plate by a hull toward a point one wall inside the plate; it is added to the relief before the halves are made, so both halves get it.
+- **Channel Suggest** also proposes the nearest exit to the edge (shortest of eight rays inside the material), so one click gives a channel that opens outside.
+- **Sheet:** `generate()` returns parts already placed on the sheet (top at the origin, bottom `gap` to its right, loose pins in a row below) and `ModelResult.sheetLayout` tells the export to keep that layout instead of re-arranging for the printer bed.
+- **Placement editor:** the contour is traced from the mask preview (`MaskPreview.box` maps preview pixels to millimetres); positions are stored as fractions of the silhouette box with Y up. Dragging is a local draft and the model is rebuilt on release.
+
+## Verification (task 4.2)
+
+Browser, `v_form.jpeg`, 70 × 59 mm, 3 pins, ring channel: Suggest put the channel's inner end at (27.9, 19.3) mm with the nearest exit to the edge, no fit warnings; top and bottom halves 70 × 59.08 × 4 mm, 2120 mm³ each (single-sided 2180.6 minus pins and channel), min z = 0; loose pin 1.6 × 1.6 × 1.6 mm (hole radius 0.9, clearance 0.1, depth 1 per half); print sheet 150 × 70.68 mm, exported as one STL with the same layout. Eyelet: Suggest placed it at the left tip (0.33, 46.8) mm, sheet grew to 158.35 mm. Hole: on this thin emblem no spot keeps the required wall, so Suggest reports it and offers the eyelet (as designed). With lines (12) enabled the geometry tests keep all solids valid. Checking the halves in a slicer for overhangs is left to the user.
+
 ## Risks / Trade-offs
 
 - Splitting dense meshes is slower → use the same budget as 11, debounce, and compute fit checks on the grid rather than on the mesh.

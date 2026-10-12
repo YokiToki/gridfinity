@@ -22,7 +22,7 @@ export type ModeId = keyof ModeParams
 export interface PartMesh { label: string; col: number; row: number; oversize: boolean; mesh: MeshData }
 /** Вырезающий инструмент: только для превью, не часть модели (габариты, объём и экспорт его не учитывают). */
 export interface ToolMesh { id: string; name: string; mesh: MeshData }
-export interface ModelResult { parts: PartMesh[]; tools?: ToolMesh[]; /** Только у keychain: сведения о силуэте и размерах, ошибка построения. */ keychain?: KeychainInfo }
+export interface ModelResult { parts: PartMesh[]; tools?: ToolMesh[]; /** Только у keychain: сведения о силуэте и размерах, ошибка построения. */ keychain?: KeychainInfo; /** Детали уже стоят на листе печати: экспорт сохраняет их взаимное положение, а не раскладывает заново. */ sheetLayout?: boolean }
 
 /** Габариты всей модели в собранных координатах. */
 export function modelBounds(r: ModelResult): { min: [number, number, number]; max: [number, number, number] } {
@@ -55,7 +55,7 @@ export async function generate<M extends ModeId>(mode: M, params: ModeParams[M],
     case 'keychain': {
       const { parts, info } = await buildKeychainSheet(params as KeychainParams, imageRegistry, wasmUrl)
       try {
-        return { parts: parts.map((q) => ({ label: q.label, col: q.col, row: q.row, oversize: false, mesh: meshOf(q.solid) })), keychain: info }
+        return { parts: parts.map((q) => ({ label: q.label, col: q.col, row: q.row, oversize: false, mesh: meshOf(q.solid) })), keychain: info, ...(parts.length > 1 ? { sheetLayout: true } : {}) }
       } finally { parts.forEach((q) => q.solid.delete()) }
     }
     default:

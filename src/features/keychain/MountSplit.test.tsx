@@ -85,6 +85,13 @@ describe('MountSection (3.2)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Suggest a place' }))
     expect(screen.getByRole('alert')).toHaveTextContent('Try the eyelet style')
   })
+  it('Suggest для канала ставит и внутренний конец, и ближайший выход на край', async () => {
+    render(<Harness start={{ mount: { ...defaultMount, style: 'channel' }, split: { ...defaultSplit, enabled: true } }} inf={info({ candidates: [{ x: -10, y: 5, margin: 1, height: 3, rim: 5, exit: { x: -10, y: 20 } }] })} />)
+    await open('Ring mount')
+    await userEvent.click(screen.getByRole('button', { name: 'Suggest a place' }))
+    expect(latest.mount.exitX).toBeCloseTo((-10 + 35) / 70, 6)
+    expect(latest.mount.exitY).toBeCloseTo((20 + 22.5) / 45, 6)
+  })
   it('предупреждения посадки: имя элемента и значения в текущей единице (дюймы)', async () => {
     render(<Harness start={{ mount: { ...defaultMount, style: 'hole' } }} unit="in" inf={info({ issues: [{ feature: 'hole', kind: 'thinWall', actual: 0.5, required: 1.2 }] })} />)
     await open('Ring mount')
