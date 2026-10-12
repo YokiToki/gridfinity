@@ -2,6 +2,7 @@ import { buildBaseplateParts, type BaseplateGeometry } from './baseplate'
 import { buildBox, type BoxParams } from './box'
 import { buildKeychainSheet, type ImageRegistry, type KeychainInfo, type KeychainParams } from './keychain'
 import type { GrayImage } from './raster/threshold'
+import type { TextRaster, TextRegistry } from './text'
 import { buildCutout, buildCutoutTools, type CutoutParams, type MeshRegistry } from './cutout'
 import type { IndexedMesh } from './stl-import'
 import { getWasm } from './wasm'
@@ -16,6 +17,9 @@ export const registerMesh = (id: string, mesh: IndexedMesh) => { meshRegistry.se
 /** Изображения Keychain в этом потоке (воркере): параметры ссылаются на них по id. */
 export const imageRegistry: ImageRegistry = new Map()
 export const registerImage = (id: string, image: GrayImage) => { imageRegistry.set(id, image) }
+/** Растры надписей Keychain в этом потоке (воркере): параметры ссылаются на них по maskId. */
+export const textRegistry: TextRegistry = new Map()
+export const registerText = (id: string, raster: TextRaster) => { textRegistry.set(id, raster) }
 export type ModeId = keyof ModeParams
 
 /** Одна часть модели: сетка и описание для превью. Без разделения часть одна (A1). */
@@ -53,7 +57,7 @@ export async function generate<M extends ModeId>(mode: M, params: ModeParams[M],
       } finally { m.delete() }
     }
     case 'keychain': {
-      const { parts, info } = await buildKeychainSheet(params as KeychainParams, imageRegistry, wasmUrl)
+      const { parts, info } = await buildKeychainSheet(params as KeychainParams, imageRegistry, wasmUrl, textRegistry)
       try {
         return { parts: parts.map((q) => ({ label: q.label, col: q.col, row: q.row, oversize: false, mesh: meshOf(q.solid) })), keychain: info, ...(parts.length > 1 ? { sheetLayout: true } : {}) }
       } finally { parts.forEach((q) => q.solid.delete()) }

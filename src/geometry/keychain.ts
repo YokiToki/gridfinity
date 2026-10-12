@@ -14,6 +14,7 @@ import { gaussianBlur, median3, sigmaCells } from './raster/blur'
 import { anchorField, exitRay, findAnchors, nearestExit, relToMm, type Anchor, type AnchorField, type Rejected } from './anchors'
 import { fitChecks, type FitIssue } from './keychainFit'
 import { inflateShape, shapeMask, type ShapeParams } from './shapes'
+import { defaultText, MAX_TEXT_CHARS, MAX_TEXT_LINES, type TextParams, type TextRegistry } from './text'
 import { shapeCrossSection } from './shapeOutline'
 import { cylinderAlong, cylinderZ, lugJoin, lugSolid, pinLength, pinRadiusLoose, pinSolid } from './keychainMounts'
 
@@ -163,6 +164,8 @@ export interface KeychainParams {
   base: BaseParams
   mount: MountParams
   split: SplitParams
+  /** Надпись: общая для обоих режимов. */
+  text: TextParams
   quality: QualityParams
 }
 
@@ -188,6 +191,7 @@ export const defaultKeychain: KeychainParams = {
   base: { thickness: 2, shape: 'silhouette', offset: 0, margin: 3, radius: 4, auto: true, width: 80, height: 60 },
   mount: defaultMount,
   split: defaultSplit,
+  text: defaultText,
   quality: { cell: 0.25, maxTriangles: 400_000 },
 }
 
@@ -277,6 +281,17 @@ export function validateKeychain(p: KeychainParams): { ok: boolean; errors: Keyc
       if (!pos(sp.pinDepth)) bad('split.pinDepth', 'keychain.error.size')
     }
     if (!nonneg(sp.gap)) bad('split.gap', 'keychain.error.negative')
+  }
+  const tx = p.text
+  if (tx?.enabled) {
+    if (!pos(tx.size)) bad('text.size', 'keychain.error.size')
+    if (!Number.isFinite(tx.letterSpacing)) bad('text.letterSpacing', 'keychain.error.size')
+    if (!pos(tx.lineSpacing)) bad('text.lineSpacing', 'keychain.error.size')
+    if (!Number.isFinite(tx.rotation)) bad('text.rotation', 'keychain.error.size')
+    if (![tx.x, tx.y].every(Number.isFinite)) bad('text.x', 'keychain.error.size')
+    if (tx.mode === 'emboss' && !nonneg(tx.height)) bad('text.height', 'keychain.error.negative')
+    if (tx.mode === 'engrave' && !nonneg(tx.depth)) bad('text.depth', 'keychain.error.negative')
+    if (tx.content.length > MAX_TEXT_CHARS || tx.content.split('\n').length > MAX_TEXT_LINES) bad('text.content', 'keychain.error.textLength')
   }
   const q = p.quality
   if (!(Number.isFinite(q.cell) && q.cell >= 0.02 && q.cell <= 5)) bad('quality.cell', 'keychain.error.cell')
@@ -793,7 +808,7 @@ function layoutSheet(w: ManifoldToplevel, top: Manifold, bottom: Manifold, pins:
 }
 
 /** Сборка частей: одна деталь A1 (односторонний рельеф) или лист из двух половин и штифтов. */
-export function buildKeychainParts(w: ManifoldToplevel, p: KeychainParams, registry: ImageRegistry): { parts: KeychainPart[]; info: KeychainInfo } {
+export function buildKeychainParts(w: ManifoldToplevel, p: KeychainParams, registry: ImageRegistry, texts: TextRegistry = new Map()): { parts: KeychainPart[]; info: KeychainInfo } {
   const shape = p.origin.kind === 'shape' ? p.origin.shape : null
   let img: GrayImage, mask: Uint8Array, b: [number, number, number, number], wMm: number, hMm: number
   let base: { threshold: number; photoLike: boolean; preview: MaskPreview | null; goneAreas?: number[] }
@@ -932,18 +947,18 @@ function nodeIndex(f: AnchorField, x: number, y: number): number | null {
 }
 
 /** Совместимость: один Manifold (односторонняя деталь, а в режиме половин — верхняя половина) и сведения. */
-export function buildKeychainSolid(w: ManifoldToplevel, p: KeychainParams, registry: ImageRegistry): { solid: Manifold | null; info: KeychainInfo } {
-  const r = buildKeychainParts(w, p, registry)
+export function buildKeychainSolid(w: ManifoldToplevel, p: KeychainParams, registry: ImageRegistry, texts: TextRegistry = new Map()): { solid: Manifold | null; info: KeychainInfo } {
+  const r = buildKeychainParts(w, p, registry, texts)
   const first = r.parts[0]?.solid ?? null
   r.parts.slice(1).forEach((q) => q.solid.delete())
   return { solid: first, info: r.info }
 }
 
-export async function buildKeychain(p: KeychainParams, registry: ImageRegistry, wasmUrl?: string) {
-  return buildKeychainSolid(await getWasm(wasmUrl), p, registry)
+export async function buildKeychain(p: KeychainParams, registry: ImageRegistry, wasmUrl?: string, texts?: TextRegistry) {
+  return buildKeychainSolid(await getWasm(wasmUrl), p, registry, texts)
 }
 
-export async function buildKeychainSheet(p: KeychainParams, registry: ImageRegistry, wasmUrl?: string) {
-  return buildKeychainParts(await getWasm(wasmUrl), p, registry)
+export async function buildKeychainSheet(p: KeychainParams, registry: ImageRegistry, wasmUrl?: string, texts?: TextRegistry) {
+  return buildKeychainParts(await getWasm(wasmUrl), p, registry, texts)
 }
 

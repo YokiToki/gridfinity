@@ -16,6 +16,7 @@ export const defaultShapeState: ShapeState = {
   base: { ...defaultKeychain.base, thickness: 1.6 },
   mount: defaultKeychain.mount,
   split: defaultKeychain.split,
+  text: defaultKeychain.text,
   quality: defaultKeychain.quality,
 }
 

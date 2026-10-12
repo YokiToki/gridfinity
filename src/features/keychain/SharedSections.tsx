@@ -12,7 +12,7 @@ import type { PlacementPatch } from './PlacementEditor'
 import { mmToRelPos } from './place'
 
 /** Часть параметров, общая для режимов Изображение и Форма: сюда пишут общие секции. */
-export type SharedParams = Pick<KeychainParams, 'source' | 'relief' | 'detail' | 'pattern' | 'base' | 'mount' | 'split' | 'quality'>
+export type SharedParams = Pick<KeychainParams, 'source' | 'relief' | 'detail' | 'pattern' | 'base' | 'mount' | 'split' | 'text' | 'quality'>
 
 /**
  * Секции, общие для обоих режимов Keychain: рельеф, детали, узор, подложка, крепление, половины, разрешение.

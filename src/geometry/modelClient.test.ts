@@ -75,4 +75,17 @@ describe('ModelClient', () => {
     expect(await a).toBeNull()
     expect((await b)?.parts[0].mesh.volume).toBe(2)
   })
+
+  it('registerText: сообщение kind=text с копией маски, исходный буфер цел, передаётся владение копией', () => {
+    const w = new FakeWorker()
+    const c = new ModelClient(w)
+    const raster = { mask: Uint8Array.from([0, 255, 128, 0]), width: 2, height: 2, pxPerMm: 12 }
+    c.registerText('t1', raster)
+    expect(raster.mask.length).toBe(4)
+    const m = w.meshes[0] as Extract<WorkerMessage, { kind: 'text' }>
+    expect(m).toMatchObject({ kind: 'text', textId: 't1' })
+    expect(m.raster).toMatchObject({ width: 2, height: 2, pxPerMm: 12 })
+    expect(Array.from(m.raster.mask)).toEqual([0, 255, 128, 0])
+    expect(m.raster.mask).not.toBe(raster.mask)
+  })
 })

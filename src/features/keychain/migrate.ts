@@ -1,8 +1,27 @@
 import { DEFAULT_AREA_LEVEL, defaultKeychain, type AreaSetting } from '../../geometry/keychain'
+import { defaultText, MAX_TEXT_CHARS, type TextParams } from '../../geometry/text'
 import { PATTERN_KINDS } from '../../geometry/patterns/fields'
 import { PROFILE_KINDS } from '../../geometry/patterns/profile'
 
 const obj = (v: unknown) => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {})
+
+/** Надпись из сохранённого: вложенный шрифт сливается с умолчаниями, числа и перечисления приводятся к допустимому, maskId не хранится. */
+export function normalizeText(raw: unknown): TextParams {
+  const r = obj(raw), d = defaultText
+  const num = (v: unknown, def: number) => (typeof v === 'number' && Number.isFinite(v) ? v : def)
+  const f = obj(r.font)
+  return {
+    enabled: r.enabled === true,
+    content: typeof r.content === 'string' ? r.content.slice(0, MAX_TEXT_CHARS) : d.content,
+    font: { id: typeof f.id === 'string' && f.id ? f.id : d.font.id, bold: f.bold === true, italic: f.italic === true, ...(typeof f.name === 'string' ? { name: f.name } : {}) },
+    size: num(r.size, d.size), letterSpacing: num(r.letterSpacing, d.letterSpacing), lineSpacing: num(r.lineSpacing, d.lineSpacing),
+    align: r.align === 'left' || r.align === 'right' ? r.align : 'center',
+    rotation: num(r.rotation, d.rotation),
+    mode: r.mode === 'engrave' ? 'engrave' : 'emboss',
+    height: num(r.height, d.height), depth: num(r.depth, d.depth),
+    x: num(r.x, d.x), y: num(r.y, d.y),
+  }
+}
 
 /** Состояние режима: параметры геометрии и подпись изображения (сами пиксели лежат в IndexedDB). */
 export interface KeychainState { imageName: string; [k: string]: unknown }
@@ -54,6 +73,7 @@ export function migrateKeychain(raw: Record<string, unknown>): Record<string, un
     pattern,
     mount,
     split,
+    text: normalizeText(raw.text),
     base: { ...defaultKeychain.base, ...obj(raw.base) },
     quality: { ...defaultKeychain.quality, ...obj(raw.quality) },
   }

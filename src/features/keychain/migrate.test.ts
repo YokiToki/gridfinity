@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { migrateKeychain } from './migrate'
 import { defaultKeychain } from '../../geometry/keychain'
+import { defaultText } from '../../geometry/text'
 
 describe('migrateKeychain', () => {
   it('пустое сохранённое дополняется умолчаниями', () => {
@@ -72,6 +73,33 @@ describe('migrateKeychain', () => {
     it('мусор вместо areas не ломает загрузку', () => {
       expect(areasOf({ areas: 7 })).toEqual({})
       expect(areasOf({ areas: [1, 2] })).toEqual({})
+    })
+  })
+
+  describe('надпись', () => {
+    const textOf = (t: unknown) => migrateKeychain({ text: t }).text as Record<string, unknown>
+    it('нет записи — умолчания: выключена, пустая, Roboto', () => {
+      expect(migrateKeychain({}).text).toEqual(defaultText)
+    })
+    it('сохранённое сохраняется, maskId отбрасывается', () => {
+      const t = textOf({ enabled: true, content: 'Анна', font: { id: 'lobster', bold: true, italic: false, name: 'x' }, size: 10, letterSpacing: 0.5, lineSpacing: 1.3, align: 'left', rotation: 15, mode: 'engrave', height: 1, depth: 0.7, x: 0.2, y: 0.8, maskId: 'm1' })
+      expect(t).toMatchObject({ enabled: true, content: 'Анна', size: 10, align: 'left', rotation: 15, mode: 'engrave', depth: 0.7, x: 0.2, y: 0.8 })
+      expect(t.font).toEqual({ id: 'lobster', bold: true, italic: false, name: 'x' })
+      expect('maskId' in t).toBe(false)
+    })
+    it.each([
+      ['мусор вместо объекта', 7], ['массив', [1, 2]], ['null', null],
+    ])('%s → умолчания', (_n, v) => { expect(textOf(v)).toEqual(defaultText) })
+    it('числа и перечисления приводятся: строки → умолчания, неизвестные align и mode → center и emboss', () => {
+      const t = textOf({ size: 'x', rotation: NaN, align: 'justify', mode: 'zzz', font: 'bad', x: Infinity, enabled: 'yes' })
+      expect(t).toMatchObject({ size: 8, rotation: 0, align: 'center', mode: 'emboss', x: 0.5, enabled: false })
+      expect(t.font).toEqual(defaultText.font)
+    })
+    it('слишком длинный текст обрезается', () => {
+      expect((textOf({ content: 'x'.repeat(5000) }).content as string).length).toBe(400)
+    })
+    it('шрифт: пустой идентификатор → Roboto, флаги только настоящие true', () => {
+      expect(textOf({ font: { id: '', bold: 'true', italic: 1 } }).font).toEqual({ id: 'roboto', bold: false, italic: false })
     })
   })
 })

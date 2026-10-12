@@ -1,13 +1,16 @@
 import type { ModeId, ModeParams, ModelResult } from './model'
 import type { IndexedMesh } from './stl-import'
 import type { GrayImage } from './raster/threshold'
+import type { TextRaster } from './text'
 
 export interface WorkerRequest { id: number; mode: ModeId; params: ModeParams[ModeId] }
 /** Регистрация импортированной сетки в воркере: дальше вырезы ссылаются на неё по id. */
 export interface WorkerMeshMessage { kind: 'mesh'; meshId: string; mesh: IndexedMesh }
 /** Регистрация изображения Keychain в воркере (яркость и прозрачность по строкам). */
 export interface WorkerImageMessage { kind: 'image'; imageId: string; image: GrayImage }
-export type WorkerMessage = WorkerRequest | WorkerMeshMessage | WorkerImageMessage
+/** Регистрация растра надписи Keychain в воркере (альфа-маска): параметры ссылаются на неё по maskId. */
+export interface WorkerTextMessage { kind: 'text'; textId: string; raster: TextRaster }
+export type WorkerMessage = WorkerRequest | WorkerMeshMessage | WorkerImageMessage | WorkerTextMessage
 export type WorkerResponse = { id: number; result: ModelResult } | { id: number; error: string }
 
 /** Минимальный интерфейс воркера: нужен, чтобы подменять его в тестах. */
@@ -62,6 +65,12 @@ export class ModelClient {
   registerImage(imageId: string, image: GrayImage) {
     const copy: GrayImage = { width: image.width, height: image.height, gray: image.gray.slice(), alpha: image.alpha ? image.alpha.slice() : null }
     this.worker.postMessage({ kind: 'image', imageId, image: copy }, [copy.gray.buffer, ...(copy.alpha ? [copy.alpha.buffer] : [])])
+  }
+
+  /** То же для растра надписи: копию передаём воркеру с передачей владения буфером. */
+  registerText(textId: string, raster: TextRaster) {
+    const copy: TextRaster = { ...raster, mask: raster.mask.slice() }
+    this.worker.postMessage({ kind: 'text', textId, raster: copy }, [copy.mask.buffer])
   }
 
   dispose() { this.worker.terminate?.(); this.pending.clear() }
