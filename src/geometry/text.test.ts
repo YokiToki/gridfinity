@@ -29,7 +29,7 @@ describe('textSampler', () => {
     const s = textSampler(raster(), T({ rotation: 90 }), 100, 100)
     expect(s(0, -1)).toBeCloseTo(1, 6)
     expect(s(0, 1)).toBeCloseTo(0, 6)
-    expect(s(-1, 0)).toBeCloseTo(0, 6)
+    expect(s(-1.5, 0)).toBeCloseTo(0, 6) // коробка повёрнута: 2 мм по X, 4 мм по Y
   })
   it('поворот 180°: левая половина становится правой', () => {
     const s = textSampler(raster(), T({ rotation: 180 }), 100, 100)
