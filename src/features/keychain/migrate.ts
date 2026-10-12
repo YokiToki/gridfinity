@@ -1,4 +1,4 @@
-import { defaultKeychain } from '../../geometry/keychain'
+import { DEFAULT_AREA_LEVEL, defaultKeychain, type AreaSetting } from '../../geometry/keychain'
 import { PATTERN_KINDS } from '../../geometry/patterns/fields'
 import { PROFILE_KINDS } from '../../geometry/patterns/profile'
 
@@ -9,9 +9,19 @@ export interface KeychainState { imageName: string; [k: string]: unknown }
 
 /** Донаполняет сохранённое: вложенные объекты сливаются с умолчаниями (старые записи без источника, деталей и узора получают значения по умолчанию), список открытых дырок, порог и перечисления приводятся к допустимому виду. */
 export function migrateKeychain(raw: Record<string, unknown>): Record<string, unknown> {
-  const sil = { ...defaultKeychain.silhouette, ...obj(raw.silhouette) }
-  if (!Array.isArray(sil.keepOpen)) sil.keepOpen = []
-  else sil.keepOpen = (sil.keepOpen as unknown[]).filter((n): n is number => Number.isInteger(n))
+  const sil: Record<string, unknown> = { ...defaultKeychain.silhouette, ...obj(raw.silhouette) }
+  // области: keepOpen из прошлой версии → открытые области; настройки приводятся к допустимому виду
+  const areas: Record<number, AreaSetting> = {}
+  const stored = obj(sil.areas)
+  for (const [key, v] of Object.entries(stored)) {
+    const id = Number(key), o = obj(v)
+    if (!Number.isInteger(id) || id < 1) continue
+    const mode = o.mode === 'open' || o.mode === 'level' ? o.mode : 'follow'
+    areas[id] = { mode, level: typeof o.level === 'number' && Number.isFinite(o.level) ? o.level : DEFAULT_AREA_LEVEL }
+  }
+  if (Array.isArray(sil.keepOpen)) for (const n of sil.keepOpen as unknown[]) if (Number.isInteger(n) && (n as number) >= 1 && !areas[n as number]) areas[n as number] = { mode: 'open', level: DEFAULT_AREA_LEVEL }
+  delete sil.keepOpen
+  sil.areas = areas
   if (sil.threshold !== 'auto' && !(typeof sil.threshold === 'number' && Number.isFinite(sil.threshold))) sil.threshold = 'auto'
   const relief = { ...defaultKeychain.relief, ...obj(raw.relief) }
   if (!PROFILE_KINDS.includes(relief.profile)) relief.profile = defaultKeychain.relief.profile

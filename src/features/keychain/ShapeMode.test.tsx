@@ -117,7 +117,7 @@ describe('Форма: редактор положения рисует конт�
   const info = (): KeychainInfo => {
     const m = shapeMask(defaultShape)
     const img = { width: m.width, height: m.height, gray: m.mask, alpha: null }
-    const preview = maskPreview(img, { mask: m.mask, threshold: 0, holes: [], holeLabels: new Int32Array(m.mask.length), photoLike: false })
+    const preview = maskPreview(img, { mask: m.mask, threshold: 0, areas: [], areaId: new Int32Array(m.mask.length), goneAreas: [], photoLike: false })
     return { threshold: 0, photoLike: false, preview, size: [54, 30], mountInfo: { mount: { x: 0, y: 5 }, pins: [], candidates: [], rejected: [], issues: [] } }
   }
   it('контур — скруглённый прямоугольник: в пределах габарита, углы срезаны', () => {

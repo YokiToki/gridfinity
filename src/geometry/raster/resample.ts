@@ -58,3 +58,14 @@ export function resampleGray(gray: Uint8Array, w: number, x0: number, y0: number
   }
   return out
 }
+
+/** Номера областей в сетке nw × nh: берётся пиксель в центре каждой ячейки участка [x0, x1) × [y0, y1) (номера усреднять нельзя). */
+export function resampleIds(ids: Int32Array, w: number, x0: number, y0: number, x1: number, y1: number, nw: number, nh: number): Int32Array {
+  const out = new Int32Array(nw * nh)
+  const sw = x1 - x0, sh = y1 - y0
+  for (let j = 0; j < nh; j++) {
+    const y = Math.min(Math.floor(y0 + ((j + 0.5) * sh) / nh), Math.floor(y1) - 1)
+    for (let i = 0; i < nw; i++) out[j * nw + i] = ids[y * w + Math.min(Math.floor(x0 + ((i + 0.5) * sw) / nw), Math.floor(x1) - 1)]
+  }
+  return out
+}

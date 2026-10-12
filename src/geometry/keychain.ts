@@ -2,10 +2,10 @@ import type { CrossSection, Manifold, ManifoldToplevel } from 'manifold-3d'
 import { getWasm } from './wasm'
 import { roundedRectCS } from './bin'
 import { dropCollinear, maskLoops, type Pt } from './art/trace'
-import { fillHoles, findHoles, removeSpecks, type Hole } from './raster/components'
+import { findHoles, removeSpecks, type Hole } from './raster/components'
 import { edt } from './raster/edt'
 import { close, dilate, erode } from './raster/morphology'
-import { maskBounds, resampleGray, resampleMask } from './raster/resample'
+import { maskBounds, resampleGray, resampleIds, resampleMask } from './raster/resample'
 import { midtoneShare, otsu, toMask, type GrayImage } from './raster/threshold'
 import { profileValue, type ProfileParams } from './patterns/profile'
 import { coverage, type PatternParams } from './patterns/fields'
@@ -19,16 +19,21 @@ import { cylinderAlong, cylinderZ, lugJoin, lugSolid, pinLength, pinRadiusLoose,
 
 // ---------- параметры ----------
 
+/** Режим области: следует рельефу (залита), открыта (вырезана насквозь) или ровный уровень заданной высоты. */
+export type AreaMode = 'follow' | 'open' | 'level'
+export interface AreaSetting { mode: AreaMode; /** Высота плоской вершины над подложкой, мм (режим level). */ level: number }
+export const DEFAULT_AREA_LEVEL = 0.6
+
 export interface SilhouetteParams {
   /** Порог яркости 0…255 или 'auto' (Оцу). */
   threshold: number | 'auto'
   invert: boolean
   /** Радиус смыкания щелей, пиксели картинки. */
   close: number
-  /** Заливать дырки (кроме перечисленных в keepOpen). */
+  /** Заливать замкнутые области фона (кроме открытых в `areas`); выключено — все области открыты. */
   fillHoles: boolean
-  /** id дырок, которые остаются открытыми. */
-  keepOpen: number[]
+  /** Настройки областей по их стабильным номерам; нет записи — область следует рельефу. */
+  areas: Record<number, AreaSetting>
   /** Пятна материала меньше этого числа пикселей удаляются. */
   speck: number
   /** Расширение (>0) или сужение (<0) силуэта, пиксели картинки. */
@@ -174,7 +179,7 @@ export const defaultSplit: SplitParams = { enabled: false, pins: 3, pinRadius: 0
 export const defaultKeychain: KeychainParams = {
   origin: { kind: 'image' },
   imageId: '',
-  silhouette: { threshold: 'auto', invert: false, close: 3, fillHoles: true, keepOpen: [], speck: 200, grow: 2 },
+  silhouette: { threshold: 'auto', invert: false, close: 3, fillHoles: true, areas: {}, speck: 200, grow: 2 },
   size: { mode: 'longest', longest: 70, width: 70, height: 70 },
   source: defaultSource,
   relief: { hmax: 2, edgeWidth: 6, pow: 0.65, heightFloor: 0.06, profile: 'bevel', steps: 3, smooth: 0 },
@@ -224,6 +229,7 @@ export function validateKeychain(p: KeychainParams): { ok: boolean; errors: Keyc
   if (!Number.isFinite(r.heightFloor) || r.heightFloor < 0) bad('relief.heightFloor', 'keychain.error.negative')
   else if (r.heightFloor >= r.hmax) bad('relief.heightFloor', 'keychain.error.heightFloor')
   if (r.profile === 'terrace' && !(Number.isInteger(r.steps) && r.steps >= 2)) bad('relief.steps', 'keychain.error.steps')
+  if (!shape) for (const [id, a] of Object.entries(p.silhouette.areas ?? {})) if (a.mode === 'level' && !(Number.isFinite(a.level) && a.level >= 0)) bad(`silhouette.areas.${id}`, 'keychain.error.areaLevel')
   const so = p.source
   if (so.kind === 'brightness' && !shape) {
     if (!pos(so.contrast)) bad('source.contrast', 'keychain.error.contrast')
@@ -284,48 +290,61 @@ export interface SilhouetteResult {
   /** Итоговая маска материала в разрешении картинки. */
   mask: Uint8Array
   threshold: number
-  /** Дырки смыкнутой маски (до заливки): id стабильны, пока набор дырок тот же. */
-  holes: (Hole & { open: boolean })[]
-  /** Метка дырки каждого пикселя смыкнутой маски (0 — не дырка). */
-  holeLabels: Int32Array
+  /** Области (замкнутый фон смыкнутой маски до заливки): номера стабильны, пока набор областей тот же; mode — действующий режим. */
+  areas: (Hole & { mode: AreaMode; level: number; open: boolean })[]
+  /** Номер области каждого пикселя смыкнутой маски (0 — не область). */
+  areaId: Int32Array
+  /** Номера областей с сохранёнными настройками, которых больше нет (набор областей изменился). */
+  goneAreas: number[]
   /** Доля полутонов: у фотографий велика. */
   photoLike: boolean
 }
 
 const PHOTO_SHARE = 0.4
 
-/** Картинка → чистый силуэт: порог → смыкание → заливка дырок → удаление пятен → расширение (как 01_silhouette.py). */
+/** Картинка → чистый силуэт: порог → смыкание → заливка областей → удаление пятен → расширение (как 01_silhouette.py). */
 export function buildSilhouette(img: GrayImage, s: SilhouetteParams): SilhouetteResult {
   const { width: w, height: h } = img
   const threshold = s.threshold === 'auto' ? otsu(img.gray) : s.threshold
   const ink = toMask(img, threshold, s.invert)
   const closed = close(ink, w, h, s.close)
   const { holes, labels } = findHoles(closed, w, h)
-  const filled = s.fillHoles ? fillHoles(closed, w, h, s.keepOpen).mask : closed
+  const settings = s.areas ?? {}
+  const areas = holes.map((x) => {
+    const set = settings[x.id]
+    const mode: AreaMode = s.fillHoles ? (set?.mode ?? 'follow') : 'open'
+    return { ...x, mode, level: set && Number.isFinite(set.level) ? set.level : DEFAULT_AREA_LEVEL, open: mode === 'open' }
+  })
+  // номер области по метке компоненты фона; заливаются все, кроме открытых
+  const idOfLabel = new Int32Array(Math.max(0, ...holes.map((x) => x.label)) + 1)
+  const fill = new Uint8Array(idOfLabel.length)
+  for (const x of areas) { idOfLabel[x.label] = x.id; if (!x.open) fill[x.label] = 1 }
+  const areaId = new Int32Array(labels.length)
+  const filled = new Uint8Array(closed)
+  for (let i = 0; i < labels.length; i++) {
+    const l = labels[i]
+    if (l && l < idOfLabel.length && idOfLabel[l]) { areaId[i] = idOfLabel[l]; if (fill[l]) filled[i] = 1 }
+  }
   const clean = removeSpecks(filled, w, h, s.speck)
   const mask = s.grow > 0 ? dilate(clean, w, h, s.grow) : s.grow < 0 ? erode(clean, w, h, -s.grow) : clean
-  const holeSet = new Set(holes.map((x) => x.label))
-  const holeLabels = new Int32Array(labels.length)
-  for (let i = 0; i < labels.length; i++) if (labels[i] && holeSet.has(labels[i])) holeLabels[i] = labels[i]
-  return {
-    mask, threshold,
-    holes: holes.map((x) => ({ ...x, open: s.fillHoles ? s.keepOpen.includes(x.id) : true })),
-    holeLabels,
-    photoLike: midtoneShare(img.gray) > PHOTO_SHARE,
-  }
+  const known = new Set(areas.map((x) => x.id))
+  const goneAreas = Object.keys(settings).map(Number).filter((id) => !known.has(id) && settings[id].mode !== 'follow').sort((a, b) => a - b)
+  return { mask, threshold, areas, areaId, goneAreas, photoLike: midtoneShare(img.gray) > PHOTO_SHARE }
 }
 
 // ---------- предпросмотр маски ----------
 
-/** Значения предпросмотра: 0 фон, 1 материал, 2 открытая дырка, 3 залитая дырка. */
+/** Значения предпросмотра: 0 фон, 1 материал, 2 открытая область, 3 залитая область, 4 область с заданным уровнем. */
 export interface MaskPreview {
   width: number
   height: number
   data: Uint8Array
+  /** Номер области каждого пикселя предпросмотра (0 — не область): для выбора щелчком. */
+  labels: Uint16Array
   /** Габарит силуэта в пикселях предпросмотра: [x0, y0, x1, y1] (нужен редактору положения для перевода в мм). */
   box: [number, number, number, number]
-  /** Дырки с центрами в пикселях предпросмотра. */
-  holes: { id: number; size: number; cx: number; cy: number; open: boolean }[]
+  /** Области с центрами в пикселях предпросмотра. */
+  areas: { id: number; size: number; cx: number; cy: number; open: boolean; mode: AreaMode; level: number }[]
 }
 
 export const PREVIEW_MAX = 256
@@ -338,17 +357,21 @@ export function maskPreview(img: GrayImage, sil: SilhouetteResult): MaskPreview 
   const cw = x1 - x0 + 1, ch = y1 - y0 + 1
   const k = Math.min(1, PREVIEW_MAX / Math.max(cw, ch))
   const pw = Math.max(1, Math.round(cw * k)), ph = Math.max(1, Math.round(ch * k))
-  const data = new Uint8Array(pw * ph)
-  const openIds = new Set(sil.holes.filter((x) => x.open).map((x) => x.label))
-  const holeLabels = new Set(sil.holes.map((x) => x.label))
+  const data = new Uint8Array(pw * ph), labels = new Uint16Array(pw * ph)
+  const byId = new Map(sil.areas.map((x) => [x.id, x]))
   for (let j = 0; j < ph; j++) for (let i = 0; i < pw; i++) {
     const sx = x0 + Math.min(cw - 1, Math.floor((i + 0.5) / k)), sy = y0 + Math.min(ch - 1, Math.floor((j + 0.5) / k))
     const p = sy * img.width + sx
-    const hole = sil.holeLabels[p]
-    const inHole = hole !== 0 && holeLabels.has(hole)
-    data[j * pw + i] = sil.mask[p] ? (inHole ? 3 : 1) : inHole && openIds.has(hole) ? 2 : 0
+    const id = sil.areaId[p]
+    const area = id ? byId.get(id) : undefined
+    labels[j * pw + i] = id > 65535 ? 0 : id
+    data[j * pw + i] = sil.mask[p] ? (area ? (area.mode === 'level' ? 4 : 3) : 1) : area?.open ? 2 : 0
   }
-  return { width: pw, height: ph, data, box: [(b[0] - x0) * k, (b[1] - y0) * k, (b[2] + 1 - x0) * k, (b[3] + 1 - y0) * k], holes: sil.holes.map((x) => ({ id: x.id, size: x.size, cx: (x.cx - x0) * k, cy: (x.cy - y0) * k, open: x.open })) }
+  return {
+    width: pw, height: ph, data, labels,
+    box: [(b[0] - x0) * k, (b[1] - y0) * k, (b[2] + 1 - x0) * k, (b[3] + 1 - y0) * k],
+    areas: sil.areas.map((x) => ({ id: x.id, size: x.size, cx: (x.cx - x0) * k, cy: (x.cy - y0) * k, open: x.open, mode: x.mode, level: x.level })),
+  }
 }
 
 // ---------- рельеф ----------
@@ -484,6 +507,8 @@ export interface GridInput {
   edgeShift?: number
   /** Бортик строится отдельно точным кольцом, в сетке его нет. */
   exactRim?: boolean
+  /** Области с заданным уровнем: номера пикселей силуэта (разрешение картинки) и уровень каждой, мм над подложкой. */
+  levels?: { ids: Int32Array; level: Map<number, number> }
 }
 
 const blocksOf = (m: Uint8Array, nx: number, ny: number) => {
@@ -510,6 +535,17 @@ export function buildGrid(inp: GridInput): Grid {
   for (let j = 0; j < sy; j++) for (let i = 0; i < sx; i++) m[(j + ay) * nx + i + ax] = small[j * sx + i]
   const silBlocks = blocksOf(m, nx, ny)
 
+  // узлы областей с заданным уровнем: высота уровня (−1 — обычный узел); сглаживание их не трогает и не усредняет
+  const levelAt = new Float32Array(nx * ny).fill(-1)
+  const fixed = new Uint8Array(nx * ny)
+  if (inp.levels && inp.levels.level.size) {
+    const ids = resampleIds(inp.levels.ids, img.width, bounds[0], bounds[1], bounds[2] + 1, bounds[3] + 1, sx, sy)
+    for (let j = 0; j < sy; j++) for (let i = 0; i < sx; i++) {
+      const lv = inp.levels.level.get(ids[j * sx + i])
+      if (lv !== undefined && small[j * sx + i]) { const k = (j + ay) * nx + i + ax; levelAt[k] = lv; fixed[k] = 1 }
+    }
+  }
+
   // габарит по настоящим блокам: шаг подгоняется, чтобы сетка занимала ровно заданный размер
   const bw = nx - 1
   let bi0 = nx, bi1 = -1, bj0 = ny, bj1 = -1
@@ -529,9 +565,9 @@ export function buildGrid(inp: GridInput): Grid {
     const g = resampleGray(img.gray, img.width, bounds[0], bounds[1], bounds[2] + 1, bounds[3] + 1, sx, sy)
     for (let j = 0; j < sy; j++) for (let i = 0; i < sx; i++) gray[(j + ay) * nx + i + ax] = g[j * sx + i]
     // сглаживание яркости: сначала медиана (одиночные пятна), потом гаусс; усредняются только узлы силуэта, контур не меняется
-    if (p.source.despeckle) gray = median3(gray, nx, ny, m)
+    if (p.source.despeckle) gray = median3(gray, nx, ny, m, fixed)
     const sg = sigmaCells(p.source.smooth ?? 0, cell)
-    if (sg > 0) gray = gaussianBlur(gray, nx, ny, sg, m)
+    if (sg > 0) gray = gaussianBlur(gray, nx, ny, sg, m, fixed)
   }
   const dOut = plateInGrid && plate?.shape === 'silhouette' ? edt(inv(m), nx, ny) : null
   const bevel: ReliefParams = { ...r, profile: 'bevel' }
@@ -544,13 +580,15 @@ export function buildGrid(inp: GridInput): Grid {
     const dmm = Math.max(d[k] * cell - shift, 0)
     raw[k] = gray ? floor + brightnessValue(gray[k], p.source) * (r.hmax - floor) : reliefHeight(dmm, r)
   }
-  if (sSurface > 0) raw = gaussianBlur(raw, nx, ny, sSurface, m)
+  if (sSurface > 0) raw = gaussianBlur(raw, nx, ny, sSurface, m, fixed)
   const top = new Float32Array(nx * ny)
   const meshMask = plateInGrid ? new Uint8Array(m) : m
 
   for (let k = 0; k < top.length; k++) {
     const i = k % nx, j = (k - i) / nx
-    if (m[k]) {
+    if (m[k] && levelAt[k] >= 0) {
+      top[k] = base + Math.max(levelAt[k], floor) // ровная вершина области: без профиля, деталей, узора и сглаживания
+    } else if (m[k]) {
       const dmm = Math.max(d[k] * cell - shift, 0)
       const pv = profileValue(dmm / r.edgeWidth, r)
       // источник высоты: расстояние до кромки или яркость (с защитой кромки профилем скоса)
@@ -655,6 +693,8 @@ export interface KeychainInfo {
   threshold: number
   photoLike: boolean
   preview: MaskPreview | null
+  /** Номера областей с настройками, которых в силуэте больше нет. */
+  goneAreas?: number[]
   /** Размер силуэта, мм. */
   size?: [number, number]
   /** Шаг сетки рельефа, мм, признак, что он увеличен из-за бюджета, и самый мелкий шаг в пределах бюджета. */
@@ -756,7 +796,8 @@ function layoutSheet(w: ManifoldToplevel, top: Manifold, bottom: Manifold, pins:
 export function buildKeychainParts(w: ManifoldToplevel, p: KeychainParams, registry: ImageRegistry): { parts: KeychainPart[]; info: KeychainInfo } {
   const shape = p.origin.kind === 'shape' ? p.origin.shape : null
   let img: GrayImage, mask: Uint8Array, b: [number, number, number, number], wMm: number, hMm: number
-  let base: { threshold: number; photoLike: boolean; preview: MaskPreview | null }
+  let base: { threshold: number; photoLike: boolean; preview: MaskPreview | null; goneAreas?: number[] }
+  let levels: GridInput['levels']
   if (shape) {
     // фигура: аналитическая маска ровно по габариту фигуры, без порога, дырок и яркости
     const sm = shapeMask(shape)
@@ -764,14 +805,16 @@ export function buildKeychainParts(w: ManifoldToplevel, p: KeychainParams, regis
     mask = sm.mask
     b = [0, 0, sm.width - 1, sm.height - 1]
     wMm = sm.wMm; hMm = sm.hMm
-    const sil: SilhouetteResult = { mask, threshold: 0, holes: [], holeLabels: new Int32Array(mask.length), photoLike: false }
+    const sil: SilhouetteResult = { mask, threshold: 0, areas: [], areaId: new Int32Array(mask.length), goneAreas: [], photoLike: false }
     base = { threshold: 0, photoLike: false, preview: maskPreview(img, sil) }
   } else {
     const found = registry.get(p.imageId)
     if (!found) return { parts: [], info: { error: 'keychain.error.noImage', threshold: 0, photoLike: false, preview: null } }
     img = found
     const sil = buildSilhouette(img, p.silhouette)
-    base = { threshold: sil.threshold, photoLike: sil.photoLike, preview: maskPreview(img, sil) }
+    base = { threshold: sil.threshold, photoLike: sil.photoLike, preview: maskPreview(img, sil), ...(sil.goneAreas.length ? { goneAreas: sil.goneAreas } : {}) }
+    const lv = new Map(sil.areas.filter((x) => x.mode === 'level').map((x) => [x.id, x.level]))
+    if (lv.size) levels = { ids: sil.areaId, level: lv }
     mask = sil.mask
     const bb = maskBounds(sil.mask, img.width, img.height)
     if (!bb) return { parts: [], info: { ...base, error: 'keychain.error.emptyMask' } }
@@ -796,7 +839,7 @@ export function buildKeychainParts(w: ManifoldToplevel, p: KeychainParams, regis
   const fillSil = count / ((rel.bounds[2] - rel.bounds[0] + 1) * (rel.bounds[3] - rel.bounds[1] + 1))
   const fill = plateInGrid ? plate.spec!.area / (wMm * hMm) : fillSil
   const { cell, reduced, min } = effectiveCell(rel.wMm, rel.hMm, fill, p.quality)
-  const gridInput = { img: rel.img, mask: rel.mask, bounds: rel.bounds, wMm: rel.wMm, hMm: rel.hMm, cell, p, plate: plate.spec, plateInGrid, edgeShift: rel.shift, exactRim: rel.shift > 0 }
+  const gridInput = { img: rel.img, mask: rel.mask, bounds: rel.bounds, wMm: rel.wMm, hMm: rel.hMm, cell, p, plate: plate.spec, plateInGrid, edgeShift: rel.shift, exactRim: rel.shift > 0, levels }
   const grid = buildGrid(gridInput)
   const mesh = reliefMesh(grid, rel.wMm, rel.hMm)
   const raw = new w.Mesh({ numProp: 3, vertProperties: mesh.vertProperties, triVerts: mesh.triVerts })

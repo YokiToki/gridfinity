@@ -94,26 +94,26 @@ describe('рельеф из сетки (2.2)', () => {
     expect(effectiveCell(70, 70, 0.8, { cell: 0.5, maxTriangles: 400_000 }).reduced).toBe(false)
     expect(effectiveCell(70, 70, 0.8, { cell: 0.01, maxTriangles: 100_000 })).toMatchObject({ reduced: true })
   })
-  it('дырка остаётся открытой: сквозное отверстие в сетке и материал вокруг цел', async () => {
+  it('область остаётся открытой: сквозное отверстие в сетке и материал вокруг цел', async () => {
     const holey = shape(200, 200, 80, 80, [[100, 100, 20]])
-    const base = P({ silhouette: { ...defaultKeychain.silhouette, close: 0, speck: 0, grow: 0, fillHoles: true, keepOpen: [] } })
+    const base = P({ silhouette: { ...defaultKeychain.silhouette, close: 0, speck: 0, grow: 0, fillHoles: true, areas: {} } })
     const filled = await solid(base, holey)
-    const open = await solid({ ...base, silhouette: { ...base.silhouette, keepOpen: [1] } }, holey)
+    const open = await solid({ ...base, silhouette: { ...base.silhouette, areas: { 1: { mode: 'open' as const, level: 0.6 } } } }, holey)
     expect(open.solid!.volume()).toBeLessThan(filled.solid!.volume() * 0.95)
     expect(open.solid!.genus()).toBe(1) // одно сквозное отверстие
     expect(filled.solid!.genus()).toBe(0)
   })
-  it('силуэт и предпросмотр: id дырок стабильны при изменении расширения, предпросмотр помечает залитые и открытые', () => {
+  it('силуэт и предпросмотр: id областей стабильны при изменении расширения, предпросмотр помечает залитые и открытые', () => {
     const holey = shape(200, 200, 80, 80, [[70, 100, 12], [130, 100, 12]])
-    const s1 = buildSilhouette(holey, { ...defaultKeychain.silhouette, close: 0, speck: 0, grow: 0, keepOpen: [2] })
-    const s2 = buildSilhouette(holey, { ...defaultKeychain.silhouette, close: 0, speck: 0, grow: 3, keepOpen: [2] })
-    expect(s1.holes.map((x) => [x.id, x.size, x.open])).toEqual(s2.holes.map((x) => [x.id, x.size, x.open]))
-    expect(s1.holes.map((x) => x.open)).toEqual([false, true])
+    const s1 = buildSilhouette(holey, { ...defaultKeychain.silhouette, close: 0, speck: 0, grow: 0, areas: { 2: { mode: 'open', level: 0.6 } } })
+    const s2 = buildSilhouette(holey, { ...defaultKeychain.silhouette, close: 0, speck: 0, grow: 3, areas: { 2: { mode: 'open', level: 0.6 } } })
+    expect(s1.areas.map((x) => [x.id, x.size, x.open])).toEqual(s2.areas.map((x) => [x.id, x.size, x.open]))
+    expect(s1.areas.map((x) => x.open)).toEqual([false, true])
     const pv = maskPreview(holey, s1)!
     expect(Math.max(pv.width, pv.height)).toBeLessThanOrEqual(256)
     const vals = new Set(pv.data)
     expect(vals.has(1) && vals.has(2) && vals.has(3)).toBe(true)
-    expect(pv.holes[0].cx).toBeLessThan(pv.holes[1].cx)
+    expect(pv.areas[0].cx).toBeLessThan(pv.areas[1].cx)
   })
   it('автопорог: тёмный объект на светлом даёт непустой силуэт; полностью белая картинка — ошибка «пустая маска»', async () => {
     const white: GrayImage = { width: 50, height: 50, gray: new Uint8Array(2500).fill(255), alpha: null }

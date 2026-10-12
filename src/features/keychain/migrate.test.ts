@@ -50,4 +50,27 @@ describe('migrateKeychain', () => {
     expect(m.source).toMatchObject({ smooth: 0.8, despeckle: true })
     expect((m.relief as { smooth: number }).smooth).toBe(1.2)
   })
+
+  describe('области (из keepOpen)', () => {
+    const areasOf = (sil: Record<string, unknown>) => (migrateKeychain({ silhouette: sil }).silhouette as { areas: Record<number, unknown>; keepOpen?: unknown }).areas
+    it.each([
+      ['нет ни того, ни другого', {}, {}],
+      ['keepOpen [3] → открытая область 3', { keepOpen: [3] }, { 3: { mode: 'open', level: 0.6 } }],
+      ['keepOpen [1, 4]', { keepOpen: [1, 4] }, { 1: { mode: 'open', level: 0.6 }, 4: { mode: 'open', level: 0.6 } }],
+      ['мусор в keepOpen отбрасывается', { keepOpen: [2, 'x', -1, 1.5, null] }, { 2: { mode: 'open', level: 0.6 } }],
+      ['новые areas сохраняются', { areas: { 2: { mode: 'level', level: 1.2 } } }, { 2: { mode: 'level', level: 1.2 } }],
+      ['areas важнее keepOpen для того же номера', { keepOpen: [2], areas: { 2: { mode: 'level', level: 0.9 } } }, { 2: { mode: 'level', level: 0.9 } }],
+      ['неизвестный режим и уровень приводятся', { areas: { 5: { mode: 'zzz', level: 'x' } } }, { 5: { mode: 'follow', level: 0.6 } }],
+      ['плохие ключи отбрасываются', { areas: { a: { mode: 'open' }, 0: { mode: 'open' } } }, {}],
+    ])('%s', (_n, sil, expected) => {
+      expect(areasOf(sil)).toEqual(expected)
+    })
+    it('keepOpen из записи удаляется', () => {
+      expect((migrateKeychain({ silhouette: { keepOpen: [1] } }).silhouette as { keepOpen?: unknown }).keepOpen).toBeUndefined()
+    })
+    it('мусор вместо areas не ломает загрузку', () => {
+      expect(areasOf({ areas: 7 })).toEqual({})
+      expect(areasOf({ areas: [1, 2] })).toEqual({})
+    })
+  })
 })

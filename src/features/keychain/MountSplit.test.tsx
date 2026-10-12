@@ -14,7 +14,7 @@ type S = KeychainParams & { imageName: string }
 let latest: S
 
 const data = new Uint8Array(400).fill(1)
-const preview = { width: 20, height: 20, data, box: [0, 0, 20, 20] as [number, number, number, number], holes: [] }
+const preview = { width: 20, height: 20, data, box: [0, 0, 20, 20] as [number, number, number, number], areas: [], labels: new Uint16Array(0) }
 const info = (mi: Partial<NonNullable<KeychainInfo['mountInfo']>> = {}): KeychainInfo => ({
   threshold: 140, photoLike: false, preview, size: [70, 45], cell: 0.25, reduced: false, minCell: 0.1, triangles: 1000,
   mountInfo: { mount: { x: 0, y: 10 }, pins: [], candidates: [{ x: -10, y: 5, margin: 1, height: 3, rim: 5 }], rejected: [], issues: [], ...mi },

@@ -2,9 +2,9 @@
 
 ## 1. Geometry
 
-- [ ] 1.1 `SilhouetteParams.areas` and migration from `keepOpen` (`migrateKeychain`); `buildSilhouette` fills `follow`/`level` areas, keeps `open`, returns the filled-area label plane. Tests: open area stays background, ids stable under unrelated settings, migration table, vanished-id warning data.
-- [ ] 1.2 Heightfield: label plane resampled to the grid; `level` areas get a flat top (≥ heightFloor) and skip detail lines and patterns. Tests: two areas with different levels have exactly those tops, hard step at the border, pattern and spine absent inside, regression volumes equal to change 11 when no area is levelled, valid solid.
-- [ ] 1.3 `validateKeychain`: level numeric ≥ 0; `keychain.warning.areaGone`. Table test.
+- [x] 1.1 `SilhouetteParams.areas` and migration from `keepOpen` (`migrateKeychain`); `buildSilhouette` fills `follow`/`level` areas, keeps `open`, returns the filled-area label plane. Tests: open area stays background, ids stable under unrelated settings, migration table, vanished-id warning data.
+- [x] 1.2 Heightfield: label plane resampled to the grid; `level` areas get a flat top (≥ heightFloor) and skip detail lines and patterns. Tests: two areas with different levels have exactly those tops, hard step at the border, pattern and spine absent inside, regression volumes equal to change 11 when no area is levelled, valid solid.
+- [x] 1.3 `validateKeychain`: level numeric ≥ 0; `keychain.warning.areaGone`. Table test.
 
 ## 2. UI
 

@@ -10,7 +10,7 @@ import { PlacementEditor, type PlacementPatch } from './PlacementEditor'
 
 const data = new Uint8Array(400)
 for (let y = 4; y < 16; y++) for (let x = 4; x < 16; x++) data[y * 20 + x] = 1
-const preview = { width: 20, height: 20, data, box: [4, 4, 16, 16] as [number, number, number, number], holes: [] }
+const preview = { width: 20, height: 20, data, box: [4, 4, 16, 16] as [number, number, number, number], areas: [], labels: new Uint16Array(0) }
 const info = (over: Partial<NonNullable<KeychainInfo['mountInfo']>> = {}): KeychainInfo => ({
   threshold: 100, photoLike: false, preview, size: [70, 40], cell: 0.25,
   mountInfo: { mount: { x: 0, y: 10 }, pins: [], candidates: [{ x: -10, y: 5, margin: 1, height: 3, rim: 5 }], rejected: [{ x: 30, y: 0, reason: 'rim', actual: 0.2, required: 1.2 }], issues: [], ...over },
