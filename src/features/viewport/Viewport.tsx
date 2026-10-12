@@ -18,6 +18,7 @@ interface Api {
 const GIZMO_SIZE = 120
 /** Отступ гизмо от низа: над нижней строкой измерений (h-9 = 36 px) плюс зазор. */
 const GIZMO_BOTTOM = 44
+const GIZMO_AXIS_R = 0.05 // радиус оси гизмо в его единицах (±1.5 на 120 px)
 const TOOL_COLOR = 0x35c9e8 // вырезающий инструмент: бирюзовый, отличается от модели
 const AXES = [
   { label: 'X', dir: [1, 0, 0], color: 0xe5484d },
@@ -148,10 +149,13 @@ export function Viewport({ model, plate, gap = 0, showTools = true, onFitReady }
     const hits: THREE.Sprite[] = []
     for (const a of AXES) {
       const dir = new THREE.Vector3(...a.dir)
-      const line = new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), dir.clone().multiplyScalar(0.95)]),
-        new THREE.LineBasicMaterial({ color: a.color, depthTest: false }),
+      // линия WebGL всегда 1 px, поэтому ось — тонкий цилиндр (≈ 4 px при размере гизмо 120 px)
+      const line = new THREE.Mesh(
+        new THREE.CylinderGeometry(GIZMO_AXIS_R, GIZMO_AXIS_R, 0.95, 12),
+        new THREE.MeshBasicMaterial({ color: a.color, depthTest: false }),
       )
+      line.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir)
+      line.position.copy(dir).multiplyScalar(0.475)
       gScene.add(line)
       const pos = labelSprite(a.label, a.color, true); pos.position.copy(dir); pos.userData.dir = dir.clone(); gScene.add(pos); hits.push(pos)
       const neg = labelSprite('', a.color, false); neg.position.copy(dir).negate(); neg.scale.setScalar(0.4); neg.userData.dir = dir.clone().negate(); gScene.add(neg); hits.push(neg)
