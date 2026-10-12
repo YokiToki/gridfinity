@@ -507,6 +507,9 @@
     },
     "preview": {
       "title": "Silhouette mask",
+      "enlarge": "Enlarge mask",
+      "close": "Close",
+      "large": "Enlarged silhouette mask",
       "label": "Mask of the silhouette with numbered holes",
       "empty": "The mask is empty"
     },

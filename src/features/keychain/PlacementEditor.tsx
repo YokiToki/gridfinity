@@ -36,13 +36,18 @@ export function PlacementEditor({ params: p, info, onPlace, onPick, rejectedShow
   if (!size || !info.preview) return null
 
   const m = Math.max(0.25 * Math.max(W, H), p.mount.outer / 2 + 6)
-  const vb = { x: -W / 2 - m, y: -H / 2 - m, w: W + 2 * m, h: H + 2 * m } // y в мм со знаком «вверх»: переворачиваем при рисовании
-  const sy = (y: number) => -y
   const step = niceStep(Math.max(W, H))
+  // Подписи линеек лежат в полосе внутри viewBox (слева и снизу), а не на самом краю: размер шрифта от шага сетки, но не мельче 2.6 мм.
+  const fs = Math.max(step / 3, 2.6)
+  const bandL = fs * 3.4, bandB = fs * 1.7, pad = fs * 0.4
+  const inner = { x: -W / 2 - m, y: -H / 2 - m, w: W + 2 * m, h: H + 2 * m } // область чертежа; y в мм со знаком «вверх»: переворачиваем при рисовании
+  const vb = { x: inner.x - bandL, y: inner.y - pad, w: inner.w + bandL + pad, h: inner.h + bandB + pad }
+  const sy = (y: number) => -y
   const ticksX: number[] = [], ticksY: number[] = []
   for (let v = Math.ceil((-m) / step) * step; v <= W + m; v += step) ticksX.push(+v.toFixed(6))
   for (let v = Math.ceil((-m) / step) * step; v <= H + m; v += step) ticksY.push(+v.toFixed(6))
   const fmt = (v: number) => formatLength(v, unit)
+  const GRID_W = 0.15, AXIS_W = 0.5
 
   // положения в мм от центра: из ответа воркера, с учётом перетаскивания
   const at = (tg: Target): { x: number; y: number } | null => {
@@ -87,11 +92,12 @@ export function PlacementEditor({ params: p, info, onPlace, onPick, rejectedShow
     <div className="flex flex-col gap-2" data-testid="placement-editor">
       <svg ref={svg} role="group" aria-label={t('keychain.editor.label')} viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`} onPointerMove={move} onPointerUp={up} onPointerCancel={up}
         className="block h-auto w-full touch-none rounded-control border border-border bg-bg">
-        {/* сетка и линейки: от левого нижнего угла габарита, в мм (значения подписей — в единице отображения) */}
-        {ticksX.map((v) => <line key={`gx${v}`} x1={v - W / 2} x2={v - W / 2} y1={vb.y} y2={vb.y + vb.h} stroke={stroke} strokeWidth={v === 0 ? 0.25 : 0.1} opacity={0.6} />)}
-        {ticksY.map((v) => <line key={`gy${v}`} y1={sy(v - H / 2)} y2={sy(v - H / 2)} x1={vb.x} x2={vb.x + vb.w} stroke={stroke} strokeWidth={v === 0 ? 0.25 : 0.1} opacity={0.6} />)}
-        {ticksX.map((v) => <text key={`tx${v}`} x={v - W / 2} y={vb.y + vb.h - 1} fontSize={step / 4} textAnchor="middle" fill="var(--color-text-subtle)">{fmt(v)}</text>)}
-        {ticksY.map((v) => <text key={`ty${v}`} x={vb.x + 1} y={sy(v - H / 2) - 0.6} fontSize={step / 4} fill="var(--color-text-subtle)">{fmt(v)}</text>)}
+        {/* сетка и линейки: от левого нижнего угла габарита, в мм (значения подписей — в единице отображения); оси через 0 жирнее сетки */}
+        {ticksX.map((v) => <line key={`gx${v}`} data-kind={v === 0 ? 'axis' : 'grid'} x1={v - W / 2} x2={v - W / 2} y1={inner.y} y2={inner.y + inner.h} stroke={stroke} strokeWidth={v === 0 ? AXIS_W : GRID_W} opacity={v === 0 ? 1 : 0.7} />)}
+        {ticksY.map((v) => <line key={`gy${v}`} data-kind={v === 0 ? 'axis' : 'grid'} y1={sy(v - H / 2)} y2={sy(v - H / 2)} x1={inner.x} x2={inner.x + inner.w} stroke={stroke} strokeWidth={v === 0 ? AXIS_W : GRID_W} opacity={v === 0 ? 1 : 0.7} />)}
+        <path d={`M${-W / 2 - fs * 0.5},${H / 2}h${fs}m${-fs * 0.5},${-fs * 0.5}v${fs}`} stroke="var(--color-text)" strokeWidth={0.6} fill="none" data-testid="origin-cross" />
+        {ticksX.map((v) => <text key={`tx${v}`} data-ruler="x" x={v - W / 2} y={inner.y + inner.h + fs * 1.15} fontSize={fs} textAnchor="middle" fill="var(--color-text)">{fmt(v)}</text>)}
+        {ticksY.map((v) => <text key={`ty${v}`} data-ruler="y" x={inner.x - fs * 0.3} y={sy(v - H / 2) + fs * 0.35} fontSize={fs} textAnchor="end" fill="var(--color-text)">{fmt(v)}</text>)}
         <rect x={-W / 2} y={-H / 2} width={W} height={H} fill="none" stroke={stroke} strokeWidth={0.2} strokeDasharray="1.5 1.5" />
         {contour.map((l, i) => <polygon key={i} points={l.map(([x, y]) => `${x},${sy(y)}`).join(' ')} fill="var(--color-accent-muted)" stroke="var(--color-accent)" strokeWidth={0.3} fillRule="evenodd" opacity={0.85} />)}
 

@@ -5,6 +5,7 @@ import { IconChevronDown, IconFocusCentered, IconShape } from '@tabler/icons-rea
 import { Viewport, type BuildPlate } from '../features/viewport/Viewport'
 import { usePersistedState } from './usePersistedState'
 import { ExportOptionsSection } from '../features/export/ExportOptionsSection'
+import { useElementHeight } from './useElementHeight'
 import { MeasurementsBar } from '../features/viewport/MeasurementsBar'
 
 /** Раскладка режима: панель параметров, закреплённый блок экспорта и 3D-вид. На узком экране панель — нижняя шторка. */
@@ -26,6 +27,7 @@ export function Workspace({ panel, footer, model, plate, gap, busy, exportOption
   const hasTools = (model?.tools?.length ?? 0) > 0
   const fitRef = useRef<() => void>(() => {})
   const [drawerTop, setDrawerTop] = useState(300) // отступ верха шторки на мобильном, px
+  const [footerRef, footerH] = useElementHeight<HTMLDivElement>()
   const drag = useRef<{ y: number; top: number; moved: boolean } | null>(null)
 
   const onDown = (e: PointerEvent) => {
@@ -60,8 +62,8 @@ export function Workspace({ panel, footer, model, plate, gap, busy, exportOption
           <button type="button" aria-label={t('shell.collapseDrawer')} onClick={() => setDrawerTop(window.innerHeight - 140)}
             className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-control border-0 bg-transparent text-text-muted"><IconChevronDown size={18} stroke={1.75} /></button>
         </div>
-        <div className="min-h-0 flex-1 overflow-auto">{panel}{exportOptions && <ExportOptionsSection />}</div>
-        {footer && <div className="flex-none border-t border-border bg-surface-1 px-4 py-3 shadow-sticky">{footer}</div>}
+        <div className="min-h-0 flex-1 overflow-auto" style={{ paddingBottom: footerH }} data-testid="panel-scroller">{panel}{exportOptions && <ExportOptionsSection />}</div>
+        {footer && <div ref={footerRef} className="flex-none border-t border-border bg-surface-1 px-4 py-3 shadow-sticky">{footer}</div>}
       </aside>
       <section aria-label={t('viewport.label')} className="relative min-w-0 flex-1 overflow-hidden bg-[radial-gradient(ellipse_at_50%_40%,#1a2029_0%,#0b0d10_75%)]">
         <Viewport model={model} plate={plate ?? null} gap={gap ?? 0} showTools={view.tools} onFitReady={(f) => (fitRef.current = f)} />

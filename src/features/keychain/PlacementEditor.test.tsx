@@ -55,16 +55,47 @@ describe('PlacementEditor (3.1)', () => {
     const onPlace = vi.fn<(p: PlacementPatch) => void>()
     wrap(<PlacementEditor params={P()} info={info()} onPlace={onPlace} onPick={() => {}} rejectedShown={false} />)
     const h = screen.getByTestId('mount-handle')
-    // viewBox: ширина 70 + 2m, m = max(0,25·70, 4,5 + 6) = 17,5 → 105 × 75 мм на 800 × 500: центр (400, 250) = (0, 0) мм
-    fireEvent.pointerDown(h, { clientX: 400, clientY: 250, pointerId: 1 })
+    // клиентские координаты считаем по фактическому viewBox (y в мм вверх, на экране вниз)
     const svg = h.closest('svg')!
-    fireEvent.pointerMove(svg, { clientX: 400 + 105 / 7 * 0 + 76.19, clientY: 250 - 66.67, pointerId: 1 }) // +10 мм по X, +10 мм вверх
+    const [vx, vy, vw, vh] = svg.getAttribute('viewBox')!.split(' ').map(Number)
+    const client = (x: number, y: number) => ({ clientX: ((x - vx) / vw) * 800, clientY: ((-y - vy) / vh) * 500 })
+    fireEvent.pointerDown(h, { ...client(0, 0), pointerId: 1 })
+    fireEvent.pointerMove(svg, { ...client(10, 10), pointerId: 1 }) // +10 мм по X, +10 мм вверх
     expect(onPlace).not.toHaveBeenCalled() // пока тянем — модель не пересобирается
     fireEvent.pointerUp(svg, { pointerId: 1 })
     expect(onPlace).toHaveBeenCalledTimes(1)
     const m = onPlace.mock.calls[0][0].mount!
-    expect(m.x).toBeCloseTo((10 + 35) / 70, 1)
-    expect(m.y).toBeCloseTo((10 + 20) / 40, 1)
+    expect(m.x).toBeCloseTo((10 + 35) / 70, 2)
+    expect(m.y).toBeCloseTo((10 + 20) / 40, 2)
+  })
+  it('линейки лежат внутри viewBox с отступом от краёв, подписи крупные', () => {
+    const { container } = wrap(<PlacementEditor params={P()} info={info()} onPlace={() => {}} onPick={() => {}} rejectedShown={false} />)
+    const svg = container.querySelector('svg')!
+    const [vx, vy, vw, vh] = svg.getAttribute('viewBox')!.split(' ').map(Number)
+    const xs = [...container.querySelectorAll('text[data-ruler="x"]')], ys = [...container.querySelectorAll('text[data-ruler="y"]')]
+    expect(xs.length).toBeGreaterThan(2)
+    expect(ys.length).toBeGreaterThan(2)
+    const fs = Number(xs[0].getAttribute('fontSize') ?? xs[0].getAttribute('font-size'))
+    expect(fs).toBeGreaterThanOrEqual(2.6)
+    for (const t of xs) { // базовая линия подписи выше нижнего края на запас, сама подпись не вылезает
+      const y = Number(t.getAttribute('y'))
+      expect(y).toBeLessThan(vy + vh - fs * 0.2)
+      expect(y - fs).toBeGreaterThan(vy)
+    }
+    for (const t of ys) { // правый край подписи левее области чертежа и правее края viewBox
+      const x = Number(t.getAttribute('x'))
+      expect(x).toBeGreaterThan(vx + fs)
+      expect(x).toBeLessThan(vx + vw)
+    }
+  })
+  it('оси толще сетки, подписи основным цветом текста', () => {
+    const { container } = wrap(<PlacementEditor params={P()} info={info()} onPlace={() => {}} onPick={() => {}} rejectedShown={false} />)
+    const w = (k: string) => [...container.querySelectorAll(`line[data-kind="${k}"]`)].map((l) => Number(l.getAttribute('stroke-width')))
+    expect(w('axis').length).toBe(2)
+    expect(w('grid').length).toBeGreaterThan(4)
+    expect(Math.min(...w('axis'))).toBeGreaterThan(Math.max(...w('grid')) * 2)
+    expect(Number(container.querySelector('[data-testid="origin-cross"]')!.getAttribute('stroke-width'))).toBeGreaterThanOrEqual(Math.max(...w('axis')))
+    for (const t of container.querySelectorAll('text[data-ruler]')) expect(t.getAttribute('fill')).toBe('var(--color-text)')
   })
   it('привязка к контуру переносит точку на ближайший край силуэта', async () => {
     const onPlace = vi.fn<(p: PlacementPatch) => void>()

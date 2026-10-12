@@ -1,39 +1,98 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { IconChevronDown, IconChevronUp } from '@tabler/icons-react'
+import { IconArrowsMaximize, IconChevronDown, IconChevronUp, IconX } from '@tabler/icons-react'
 import type { MaskPreview as Preview } from '../../geometry/keychain'
 
 const css = (name: string, fallback: string) => (typeof document === 'undefined' ? fallback : getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback)
 
-/** Предпросмотр маски силуэта с номерами дырок: фон, материал, залитая дырка, открытая дырка. Закрепляется в углу вьюпорта, сворачивается. */
+/** Рисует маску в canvas; scale > 1 — крупный вид: пиксели маски укрупняются, номера областей растут вместе с ним. */
+function drawMask(c: HTMLCanvasElement, preview: Preview, scale: number) {
+  const ctx = c.getContext('2d')
+  if (!ctx) return // jsdom без canvas
+  const colors = [css('--color-bg', '#0e1013'), css('--color-accent', '#7c9cff'), css('--color-warn-border', '#8a6d2b'), css('--color-accent-muted', '#25356b')]
+  const img = new ImageData(preview.width, preview.height)
+  const rgb = colors.map((hex) => { const n = parseInt(hex.replace('#', '').padEnd(6, '0').slice(0, 6), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255] })
+  for (let i = 0; i < preview.data.length; i++) { const col = rgb[preview.data[i]] ?? rgb[0]; img.data.set([col[0], col[1], col[2], 255], i * 4) }
+  if (scale === 1) ctx.putImageData(img, 0, 0)
+  else {
+    const tmp = document.createElement('canvas')
+    tmp.width = preview.width; tmp.height = preview.height
+    tmp.getContext('2d')?.putImageData(img, 0, 0)
+    ctx.imageSmoothingEnabled = false
+    ctx.drawImage(tmp, 0, 0, c.width, c.height)
+  }
+  ctx.font = `bold ${Math.round(11 * Math.max(1, scale * 0.8))}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+  const off = 0.7 * Math.max(1, scale * 0.6)
+  for (const h of preview.holes) {
+    const x = h.cx * scale, y = h.cy * scale
+    ctx.fillStyle = '#000'; ctx.fillText(String(h.id), x + off, y + off)
+    ctx.fillStyle = h.open ? '#fff' : '#cfd6e6'; ctx.fillText(String(h.id), x, y)
+  }
+}
+
+/** Большой вид маски: ~70 % окна, закрывается кнопкой, Esc и щелчком снаружи. Тот же preview, поэтому обновляется вживую. */
+function LargeMask({ preview, onClose }: { preview: Preview; onClose: () => void }) {
+  const { t } = useTranslation()
+  const ref = useRef<HTMLCanvasElement>(null)
+  const closeRef = useRef<HTMLButtonElement>(null)
+  const scale = Math.max(1, Math.floor(1024 / Math.max(preview.width, preview.height, 1)))
+
+  useEffect(() => { closeRef.current?.focus() }, [])
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); onClose() } }
+    document.addEventListener('keydown', onKey, true)
+    return () => document.removeEventListener('keydown', onKey, true)
+  }, [onClose])
+  useEffect(() => { if (ref.current) drawMask(ref.current, preview, scale) }, [preview, scale])
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" data-testid="mask-large-backdrop"
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div role="dialog" aria-modal="true" aria-label={t('keychain.preview.large')}
+        style={{ width: `min(var(--mask-w, 70vw), calc(var(--mask-h, 70vh) * ${preview.width / Math.max(preview.height, 1)}))` }}
+        className="relative flex flex-col gap-2 rounded-card border border-border bg-surface-1 p-3 shadow-float [--mask-h:70vh] [--mask-w:70vw] max-md:[--mask-h:80vh] max-md:[--mask-w:92vw]">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm font-medium text-text">{t('keychain.preview.title')}</span>
+          <button ref={closeRef} type="button" aria-label={t('keychain.preview.close')} onClick={onClose}
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-control border-0 bg-transparent text-text-muted hover:bg-surface-3 hover:text-text">
+            <IconX size={16} stroke={1.75} />
+          </button>
+        </div>
+        <canvas ref={ref} width={preview.width * scale} height={preview.height * scale} role="img" aria-label={t('keychain.preview.label')}
+          className="block h-auto w-full rounded-xs [image-rendering:pixelated]" />
+      </div>
+    </div>
+  )
+}
+
+/** Предпросмотр маски силуэта с номерами дырок: фон, материал, залитая дырка, открытая дырка. Закрепляется в углу вьюпорта, сворачивается, увеличивается. */
 export function MaskPreview({ preview }: { preview: Preview | null }) {
   const { t } = useTranslation()
   const ref = useRef<HTMLCanvasElement>(null)
+  const enlargeRef = useRef<HTMLButtonElement>(null)
   const [open, setOpen] = useState(true)
+  const [large, setLarge] = useState(false)
 
   useEffect(() => {
-    const c = ref.current
-    if (!c || !preview || !open) return
-    const ctx = c.getContext('2d')
-    if (!ctx) return // jsdom без canvas
-    const colors = [css('--color-bg', '#0e1013'), css('--color-accent', '#7c9cff'), css('--color-warn-border', '#8a6d2b'), css('--color-accent-muted', '#25356b')]
-    const img = ctx.createImageData(preview.width, preview.height)
-    const rgb = colors.map((hex) => { const n = parseInt(hex.replace('#', '').padEnd(6, '0').slice(0, 6), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255] })
-    for (let i = 0; i < preview.data.length; i++) { const col = rgb[preview.data[i]] ?? rgb[0]; img.data.set([col[0], col[1], col[2], 255], i * 4) }
-    ctx.putImageData(img, 0, 0)
-    ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-    for (const h of preview.holes) {
-      ctx.fillStyle = '#000'; ctx.fillText(String(h.id), h.cx + 0.7, h.cy + 0.7)
-      ctx.fillStyle = h.open ? '#fff' : '#cfd6e6'; ctx.fillText(String(h.id), h.cx, h.cy)
-    }
+    if (ref.current && preview && open) drawMask(ref.current, preview, 1)
   }, [preview, open])
+
+  const closeLarge = () => { setLarge(false); setTimeout(() => enlargeRef.current?.focus(), 0) }
 
   return (
     <div className="absolute top-4 left-4 z-[1] w-44 rounded-card border border-border bg-surface-1/90 shadow-float md:w-52" data-testid="mask-preview">
-      <button type="button" aria-expanded={open} onClick={() => setOpen(!open)}
-        className="flex h-8 w-full cursor-pointer items-center justify-between gap-1 rounded-t-card border-0 bg-transparent px-2.5 text-xs font-medium text-text-muted hover:text-text">
-        <span>{t('keychain.preview.title')}</span>{open ? <IconChevronUp size={14} stroke={1.75} /> : <IconChevronDown size={14} stroke={1.75} />}
-      </button>
+      <div className="flex items-center">
+        <button type="button" aria-expanded={open} onClick={() => setOpen(!open)}
+          className="flex h-8 min-w-0 flex-1 cursor-pointer items-center justify-between gap-1 rounded-tl-card border-0 bg-transparent px-2.5 text-xs font-medium text-text-muted hover:text-text">
+          <span>{t('keychain.preview.title')}</span>{open ? <IconChevronUp size={14} stroke={1.75} /> : <IconChevronDown size={14} stroke={1.75} />}
+        </button>
+        {preview && (
+          <button ref={enlargeRef} type="button" aria-label={t('keychain.preview.enlarge')} title={t('keychain.preview.enlarge')} onClick={() => setLarge(true)}
+            className="flex h-8 w-8 flex-none cursor-pointer items-center justify-center rounded-tr-card border-0 bg-transparent text-text-muted hover:text-text">
+            <IconArrowsMaximize size={14} stroke={1.75} />
+          </button>
+        )}
+      </div>
       {open && (
         <div className="px-2 pb-2">
           {preview
@@ -41,6 +100,7 @@ export function MaskPreview({ preview }: { preview: Preview | null }) {
             : <span className="text-xs text-text-subtle">{t('keychain.preview.empty')}</span>}
         </div>
       )}
+      {large && preview && <LargeMask preview={preview} onClose={closeLarge} />}
     </div>
   )
 }

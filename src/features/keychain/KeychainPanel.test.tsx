@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useState } from 'react'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { I18nextProvider } from 'react-i18next'
 import i18n from '../../i18n'
@@ -147,6 +147,58 @@ describe('MaskPreview', () => {
     unmount()
     wrap(null)
     expect(screen.getByText('The mask is empty')).toBeInTheDocument()
+  })
+})
+
+describe('MaskPreview: большой вид', () => {
+  beforeEach(async () => { await i18n.changeLanguage('en') })
+  const ui = (p: typeof preview) => <I18nextProvider i18n={i18n}><MaskPreview preview={p} /></I18nextProvider>
+  const enlarge = () => screen.getByRole('button', { name: 'Enlarge mask' })
+  const openLarge = async () => { await userEvent.click(enlarge()); return screen.getByRole('dialog', { name: 'Enlarged silhouette mask' }) }
+
+  it('кнопка открывает диалог, фокус на кнопке закрытия', async () => {
+    render(ui(preview))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    const dlg = await openLarge()
+    expect(dlg).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Close' })).toHaveFocus()
+  })
+  it('закрывается кнопкой, Esc и щелчком снаружи; фокус возвращается на «Увеличить»', async () => {
+    render(ui(preview))
+    await openLarge()
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    await waitFor(() => expect(enlarge()).toHaveFocus())
+
+    await openLarge()
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).toBeNull()
+    await waitFor(() => expect(enlarge()).toHaveFocus())
+
+    await openLarge()
+    await userEvent.click(screen.getByTestId('mask-large-backdrop'))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    await waitFor(() => expect(enlarge()).toHaveFocus())
+  })
+  it('щелчок внутри диалога его не закрывает', async () => {
+    render(ui(preview))
+    const dlg = await openLarge()
+    await userEvent.click(dlg)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+  })
+  it('обновляется вживую, пока открыт', async () => {
+    const { rerender } = render(ui(preview))
+    const dlg = await openLarge()
+    const big = () => dlg.querySelector('canvas') as HTMLCanvasElement
+    expect(big().height).toBe(1024) // 4×4, масштаб 256
+    rerender(ui({ ...preview, width: 8, height: 4, data: new Uint8Array(32).fill(1) }))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(big().width).toBe(1024) // 8×4, масштаб 128
+    expect(big().height).toBe(512)
+  })
+  it('без маски кнопки «Увеличить» нет', () => {
+    render(ui(null as never))
+    expect(screen.queryByRole('button', { name: 'Enlarge mask' })).toBeNull()
   })
 })
 

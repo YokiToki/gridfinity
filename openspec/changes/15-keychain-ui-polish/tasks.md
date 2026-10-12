@@ -8,15 +8,15 @@
 
 ## 2. Enlarged mask preview
 
-- [ ] 2.1 `MaskPreview`: Enlarge button, large overlay (`role="dialog"`, focus management, Esc and outside click), redraw at large size with scaled labels, live updates. Component tests: open, close by each route, focus return, update while open. No artboard.
-- [ ] 2.2 en/ru strings (parity test); check the large view on a 390 px screen.
+- [x] 2.1 `MaskPreview`: Enlarge button, large overlay (`role="dialog"`, focus management, Esc and outside click), redraw at large size with scaled labels, live updates. Component tests: open, close by each route, focus return, update while open. No artboard.
+- [x] 2.2 en/ru strings (parity test); check the large view on a 390 px screen.
 
 ## 3. Editor axes
 
-- [ ] 3.1 `PlacementEditor`: rulers inside a margin band, larger labels, heavier grid and axes, strong label colour; panel scroller bottom padding equal to the sticky footer height. Component tests for the SVG structure (label y inside the viewBox with margin, stroke widths ordering) and a layout test with a mocked footer height. No artboard.
-- [ ] 3.2 Browser check in en and ru: scroll the panel to the end with the editor open; rulers fully visible and readable.
+- [x] 3.1 `PlacementEditor`: rulers inside a margin band, larger labels, heavier grid and axes, strong label colour; panel scroller bottom padding equal to the sticky footer height. Component tests for the SVG structure (label y inside the viewBox with margin, stroke widths ordering) and a layout test with a mocked footer height. No artboard.
+- [x] 3.2 Browser check in en and ru: scroll the panel to the end with the editor open; rulers fully visible and readable.
 
 ## 4. Verification
 
-- [ ] 4.1 `npm test` and `npm run build` are green; no console errors.
-- [ ] 4.2 In the browser: steppers in Baseplate, Box, Cutout and Keychain panels (including the Export options section), hold-to-repeat, inches, enlarged mask with a many-area image (`v_form.jpeg`), editor axes with the channel mount.
+- [x] 4.1 `npm test` and `npm run build` are green; no console errors.
+- [x] 4.2 In the browser: steppers in Baseplate, Box, Cutout and Keychain panels (including the Export options section), hold-to-repeat, inches, enlarged mask with a many-area image (`v_form.jpeg`), editor axes with the channel mount.
