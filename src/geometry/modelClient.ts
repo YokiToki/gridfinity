@@ -1,10 +1,13 @@
 import type { ModeId, ModeParams, ModelResult } from './model'
 import type { IndexedMesh } from './stl-import'
+import type { GrayImage } from './raster/threshold'
 
 export interface WorkerRequest { id: number; mode: ModeId; params: ModeParams[ModeId] }
 /** Регистрация импортированной сетки в воркере: дальше вырезы ссылаются на неё по id. */
 export interface WorkerMeshMessage { kind: 'mesh'; meshId: string; mesh: IndexedMesh }
-export type WorkerMessage = WorkerRequest | WorkerMeshMessage
+/** Регистрация изображения Keychain в воркере (яркость и прозрачность по строкам). */
+export interface WorkerImageMessage { kind: 'image'; imageId: string; image: GrayImage }
+export type WorkerMessage = WorkerRequest | WorkerMeshMessage | WorkerImageMessage
 export type WorkerResponse = { id: number; result: ModelResult } | { id: number; error: string }
 
 /** Минимальный интерфейс воркера: нужен, чтобы подменять его в тестах. */
@@ -53,6 +56,12 @@ export class ModelClient {
   registerMesh(meshId: string, mesh: IndexedMesh) {
     const copy: IndexedMesh = { vertProperties: mesh.vertProperties.slice(), triVerts: mesh.triVerts.slice() }
     this.worker.postMessage({ kind: 'mesh', meshId, mesh: copy }, [copy.vertProperties.buffer, copy.triVerts.buffer])
+  }
+
+  /** То же для изображения Keychain: копию передаём воркеру с передачей владения буферами. */
+  registerImage(imageId: string, image: GrayImage) {
+    const copy: GrayImage = { width: image.width, height: image.height, gray: image.gray.slice(), alpha: image.alpha ? image.alpha.slice() : null }
+    this.worker.postMessage({ kind: 'image', imageId, image: copy }, [copy.gray.buffer, ...(copy.alpha ? [copy.alpha.buffer] : [])])
   }
 
   dispose() { this.worker.terminate?.(); this.pending.clear() }

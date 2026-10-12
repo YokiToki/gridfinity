@@ -9,11 +9,11 @@
 
 ## 2. Relief geometry
 
-- [ ] 2.1 Height profile and `KeychainParams` with `validateKeychain` (i18n keys `keychain.error.*`: empty mask, `heightFloor ≥ hmax`, plate too small). Test: table of valid/invalid combinations.
-- [ ] 2.2 Grid heightfield → watertight `Manifold` with triangle budget and effective cell size. Tests (`expectValidSolid`): disc silhouette volume vs analytic estimate within 5 %, bbox height = hmax + base, bottom at z = 0, budget respected.
-- [ ] 2.3 Scaling by longest side / box. Tests: 70 mm and 40 mm bbox, heights unchanged, aspect ratio preserved.
-- [ ] 2.4 Base plate shapes (follow silhouette offset, rect, rounded rect, circle, none). Tests: bbox of each shape, single solid, too-small plate is rejected, volume regression for the reference settings (`hmax 2`, `base 2`).
-- [ ] 2.5 Add `keychain` to `ModeParams`/`generate()` and the worker message type (mask + params in, `MeshData` out, transferables). Test: `generate('keychain', …)` in Node and the stale-request behaviour of `modelClient`.
+- [x] 2.1 Height profile and `KeychainParams` with `validateKeychain` (i18n keys `keychain.error.*`: empty mask, `heightFloor ≥ hmax`, plate too small). Test: table of valid/invalid combinations.
+- [x] 2.2 Grid heightfield → watertight `Manifold` with triangle budget and effective cell size. Tests (`expectValidSolid`): disc silhouette volume vs analytic estimate within 5 %, bbox height = hmax + base, bottom at z = 0, budget respected.
+- [x] 2.3 Scaling by longest side / box. Tests: 70 mm and 40 mm bbox, heights unchanged, aspect ratio preserved.
+- [x] 2.4 Base plate shapes (follow silhouette offset, rect, rounded rect, circle, none). Tests: bbox of each shape, single solid, too-small plate is rejected, volume regression for the reference settings (`hmax 2`, `base 2`).
+- [x] 2.5 Add `keychain` to `ModeParams`/`generate()` and the worker message type (mask + params in, `MeshData` out, transferables). Test: `generate('keychain', …)` in Node and the stale-request behaviour of `modelClient`.
 
 ## 3. Image in the browser
 

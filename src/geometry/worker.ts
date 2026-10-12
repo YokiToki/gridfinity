@@ -1,12 +1,16 @@
 /// <reference lib="webworker" />
 import wasmUrl from 'manifold-3d/manifold.wasm?url'
-import { generate, registerMesh } from './model'
+import { generate, registerImage, registerMesh } from './model'
 import { transferablesOf } from './mesh'
 import type { WorkerMessage, WorkerResponse } from './modelClient'
 
 // Воркер владеет экземпляром WASM; Manifold-объекты наружу не выходят, только сетка.
 self.addEventListener('message', async (e: MessageEvent<WorkerMessage>) => {
-  if ('kind' in e.data) { registerMesh(e.data.meshId, e.data.mesh); return }
+  if ('kind' in e.data) {
+    if (e.data.kind === 'mesh') registerMesh(e.data.meshId, e.data.mesh)
+    else registerImage(e.data.imageId, e.data.image)
+    return
+  }
   const { id, mode, params } = e.data
   try {
     const result = await generate(mode, params, wasmUrl)

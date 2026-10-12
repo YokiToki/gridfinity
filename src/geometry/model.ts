@@ -1,23 +1,28 @@
 import { buildBaseplateParts, type BaseplateGeometry } from './baseplate'
 import { buildBox, type BoxParams } from './box'
+import { buildKeychain, type ImageRegistry, type KeychainInfo, type KeychainParams } from './keychain'
+import type { GrayImage } from './raster/threshold'
 import { buildCutout, buildCutoutTools, type CutoutParams, type MeshRegistry } from './cutout'
 import type { IndexedMesh } from './stl-import'
 import { getWasm } from './wasm'
 import { meshOf, type MeshData } from './mesh'
 
 /** Параметры по режимам. Новые режимы (box, cutout) добавляются сюда. */
-export interface ModeParams { baseplate: BaseplateGeometry; box: BoxParams; cutout: CutoutParams }
+export interface ModeParams { baseplate: BaseplateGeometry; box: BoxParams; cutout: CutoutParams; keychain: KeychainParams }
 
 /** Импортированные сетки этого потока (воркера): вырезы ссылаются на них по id. */
 export const meshRegistry: MeshRegistry = new Map()
 export const registerMesh = (id: string, mesh: IndexedMesh) => { meshRegistry.set(id, mesh) }
+/** Изображения Keychain в этом потоке (воркере): параметры ссылаются на них по id. */
+export const imageRegistry: ImageRegistry = new Map()
+export const registerImage = (id: string, image: GrayImage) => { imageRegistry.set(id, image) }
 export type ModeId = keyof ModeParams
 
 /** Одна часть модели: сетка и описание для превью. Без разделения часть одна (A1). */
 export interface PartMesh { label: string; col: number; row: number; oversize: boolean; mesh: MeshData }
 /** Вырезающий инструмент: только для превью, не часть модели (габариты, объём и экспорт его не учитывают). */
 export interface ToolMesh { id: string; name: string; mesh: MeshData }
-export interface ModelResult { parts: PartMesh[]; tools?: ToolMesh[] }
+export interface ModelResult { parts: PartMesh[]; tools?: ToolMesh[]; /** Только у keychain: сведения о силуэте и размерах, ошибка построения. */ keychain?: KeychainInfo }
 
 /** Габариты всей модели в собранных координатах. */
 export function modelBounds(r: ModelResult): { min: [number, number, number]; max: [number, number, number] } {
@@ -46,6 +51,11 @@ export async function generate<M extends ModeId>(mode: M, params: ModeParams[M],
       try {
         return { parts: [{ label: 'A1', col: 0, row: 0, oversize: false, mesh: meshOf(m) }], tools: tools.map((t) => ({ id: t.id, name: t.name, mesh: t.mesh })) }
       } finally { m.delete() }
+    }
+    case 'keychain': {
+      const { solid, info } = await buildKeychain(params as KeychainParams, imageRegistry, wasmUrl)
+      if (!solid) return { parts: [], keychain: info }
+      try { return { parts: [{ label: 'A1', col: 0, row: 0, oversize: false, mesh: meshOf(solid) }], keychain: info } } finally { solid.delete() }
     }
     default:
       throw new Error(`Unknown mode: ${String(mode)}`)

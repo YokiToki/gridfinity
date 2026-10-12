@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ModelClient, type WorkerLike, type WorkerMessage, type WorkerRequest, type WorkerResponse } from './modelClient'
+import { defaultKeychain } from './keychain'
 import { result, sharpParams as defaultParams, units } from './testing'
 
 
@@ -57,5 +58,21 @@ describe('ModelClient', () => {
     void c.generate('baseplate', defaultParams)
     expect(w.sent.map((m) => m.id)).toEqual([1, 2])
     expect(w.sent[0].mode).toBe('baseplate')
+  })
+  it('keychain: изображение отправляется воркеру копией, запросы идут по порядку, последний побеждает', async () => {
+    const w = new FakeWorker()
+    const c = new ModelClient(w)
+    const img = { width: 2, height: 1, gray: Uint8Array.from([0, 255]), alpha: Uint8Array.from([255, 255]) }
+    c.registerImage('i1', img)
+    expect(img.gray.length).toBe(2) // исходный буфер у вызывающего цел
+    const m = w.meshes[0] as Extract<WorkerMessage, { kind: 'image' }>
+    expect(m).toMatchObject({ kind: 'image', imageId: 'i1' })
+    expect(Array.from(m.image.gray)).toEqual([0, 255])
+    const a = c.generate('keychain', { ...defaultKeychain, imageId: 'i1' })
+    const b = c.generate('keychain', { ...defaultKeychain, imageId: 'i1', size: { ...defaultKeychain.size, longest: 40 } })
+    w.reply({ id: 2, result: result(2) })
+    w.reply({ id: 1, result: result(1) })
+    expect(await a).toBeNull()
+    expect((await b)?.parts[0].mesh.volume).toBe(2)
   })
 })
