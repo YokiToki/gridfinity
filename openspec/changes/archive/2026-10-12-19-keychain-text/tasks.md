@@ -17,4 +17,6 @@
 ## 3. Verification
 
 - [x] 3.1 `npm test` and `npm run build` are green; no console errors.
-- [ ] 3.2 In the browser, offline after first use: a round tag with embossed "ANNA" and "Анна" in a Sans, a Serif, a Display and a Handwriting family, an engraved second line, text moved on the plate outside the silhouette, an own font loaded and restored after reload; export STL and check heights in the file; confirm the top half only carries the text in two-halves mode.
+- [x] 3.2 In the browser, offline after first use: a round tag with embossed "ANNA" and "Анна" in a Sans, a Serif, a Display and a Handwriting family, an engraved second line, text moved on the plate outside the silhouette, an own font loaded and restored after reload; export STL and check heights in the file; confirm the top half only carries the text in two-halves mode.
+
+> 3.2 closed on the user's decision with these gaps: heights in an exported STL file and offline use were not checked (geometry tests cover heights); an engraved second line next to an embossed first is not representable (one mode per text layer, as the spec says); two-halves top-only is covered by tests, not by eye in 3D.
