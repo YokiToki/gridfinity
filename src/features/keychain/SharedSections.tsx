@@ -8,6 +8,7 @@ import { QualitySection } from './QualitySection'
 import { MountSection } from './MountSection'
 import { SplitSection } from './SplitSection'
 import { BaseSection } from './BaseSection'
+import { TextSection } from './TextSection'
 import type { PlacementPatch } from './PlacementEditor'
 import { mmToRelPos } from './place'
 
@@ -46,6 +47,8 @@ export function SharedSections<S extends SharedParams>({ params: p, info, onChan
       {imageOnly && <ProfileSection relief={p.relief} source={p.source} error={err} onRelief={patch('relief')} onSource={patch('source')} cell={info?.cell ?? null} minCell={info?.minCell ?? null} onRaise={(c) => patch('quality')({ cell: c })} />}
       {imageOnly && <DetailSection value={p.detail} error={err} onChange={patch('detail')} />}
       <PatternSection value={p.pattern} quality={p.quality} cell={info?.cell ?? null} minCell={info?.minCell ?? null} error={err} onChange={patch('pattern')} onRaise={(c) => patch('quality')({ cell: c })} />
+      <TextSection value={p.text} error={err} splitOn={p.split.enabled} cell={info?.cell ?? null} minCell={info?.minCell ?? null} clipped={!!info?.text?.clipped}
+        onChange={patch('text')} onRaise={(c) => patch('quality')({ cell: c })} />
       <BaseSection value={p.base} error={err} plateError={plateError} onChange={patch('base')} />
       <MountSection params={p} info={info} error={err} onMount={patch('mount')} onPlace={place} />
       <SplitSection params={p} info={info} error={err} onSplit={patch('split')} />

@@ -10,7 +10,7 @@
 
 ## 2. UI
 
-- [ ] 2.1 `TextSection`: enable, content (textarea), font select (grouped list of bundled families, generic, user), load-font button with error banner, size/spacing/alignment/rotation, emboss/engrave with height/depth (`LengthField` with steppers). Component tests. No artboard: build from `ui/` components.
+- [x] 2.1 `TextSection`: enable, content (textarea), font select (grouped list of bundled families, generic, user), load-font button with error banner, size/spacing/alignment/rotation, emboss/engrave with height/depth (`LengthField` with steppers). Component tests. No artboard: build from `ui/` components.
 - [ ] 2.2 `PlacementEditor` text target: draw the text box and baseline to scale, drag, numeric X/Y; component tests.
 - [ ] 2.3 en/ru strings (parity), IndexedDB storage of the user font, restore on reload; check labels at 380 px and in Russian.
 

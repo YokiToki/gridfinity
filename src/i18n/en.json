@@ -613,7 +613,8 @@
       "clearance": "The clearance must be smaller than the pin radius",
       "sides": "Sides must be a whole number from 3 to 12",
       "smooth": "The smoothing radius must be between 0 and 3 mm",
-      "areaLevel": "The level of an area must be 0 or more"
+      "areaLevel": "The level of an area must be 0 or more",
+      "textLength": "The text has too many rows or characters (up to 12 rows, 400 characters)"
     },
     "profile": {
       "source": "Height source",
@@ -717,7 +718,8 @@
         "rim": "Too close to the edge",
         "thin": "Too thin under the footprint",
         "spacing": "Too close to a chosen spot"
-      }
+      },
+      "text": "Text"
     },
     "split": {
       "title": "Two halves",
@@ -794,6 +796,55 @@
     "smoothing": {
       "noEffect": "The smoothing radius is below the grid step ({{cell}} {{u}}): it has no effect at this resolution.",
       "raise": "Raise resolution (step {{cell}} {{u}})"
+    },
+    "text": {
+      "title": "Text",
+      "off": "Off",
+      "enabled": "Add text",
+      "content": "Text",
+      "placeholder": "Type the text; a new line starts a new row",
+      "font": "Font",
+      "groups": {
+        "sans": "Sans-serif",
+        "serif": "Serif",
+        "display": "Display",
+        "handwriting": "Handwriting",
+        "mono": "Monospace",
+        "system": "System",
+        "own": "My font"
+      },
+      "bold": "Bold",
+      "italic": "Italic",
+      "loadFont": "Load font file…",
+      "fontErrors": {
+        "format": "This file is not a font (TTF, OTF or WOFF).",
+        "decode": "The font could not be read.",
+        "size": "The font file is too large (up to 8 MB)."
+      },
+      "fontLost": "The loaded font is no longer in this browser, so a substitute is used. Load it again.",
+      "fontNote": "Fonts come with the app; your own font stays in this browser.",
+      "size": "Letter height (capitals)",
+      "letterSpacing": "Letter spacing",
+      "lineSpacing": "Line spacing",
+      "align": "Alignment",
+      "aligns": {
+        "left": "Left",
+        "center": "Centre",
+        "right": "Right"
+      },
+      "rotation": "Rotation, °",
+      "mode": "Mode",
+      "modes": {
+        "emboss": "Emboss",
+        "engrave": "Engrave"
+      },
+      "height": "Raise by",
+      "depth": "Cut depth",
+      "halves": "With two halves the text is only on the top half.",
+      "tooFine": "The letter strokes (about {{stroke}} {{u}}) are thinner than four grid cells (step {{cell}} {{u}}), so the edges will look stepped.",
+      "raise": "Raise resolution (step {{cell}} {{u}})",
+      "clipped": "Part of the text is outside the material and is not generated: move it onto the base plate.",
+      "summary": "{{text}}"
     }
   }
 }

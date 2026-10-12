@@ -1,4 +1,4 @@
-import { useEffect, type DragEventHandler, type ReactNode } from 'react'
+import { useEffect, useMemo, type DragEventHandler, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { recordSession } from '../../app/lastSession'
 import { Workspace } from '../../app/Workspace'
@@ -7,6 +7,7 @@ import type { GrayImage } from '../../geometry/raster/threshold'
 import { ExportPanel } from '../export/ExportPanel'
 import { formatLength, useUnit } from '../../ui/units'
 import { useKeychainModel } from './useKeychainModel'
+import { TextRasterContext, useTextRaster } from './useTextRaster'
 
 /**
  * Общая раскладка обоих режимов Keychain: модель (воркер), 3D-вид, панель, блок экспорта и запись последнего сеанса.
@@ -21,13 +22,17 @@ export function KeychainWorkspace({ mode, params, image, panel, overlay, onDrop 
   onDrop?: DragEventHandler
 }) {
   const { t } = useTranslation()
-  const { model, info, busy, pending } = useKeychainModel(params, image)
+  // надпись растрируется здесь (шрифты и canvas только в главном потоке), воркеру уходит готовая маска; в параметры модели идёт её ключ
+  const textState = useTextRaster(params.text)
+  const modelParams = useMemo(() => ({ ...params, text: { ...params.text, maskId: textState.maskId } }), [params, textState.maskId])
+  const { model, info, busy, pending } = useKeychainModel(modelParams, image)
   const size = info?.size
 
   useEffect(() => { if (size) recordSession(mode, `${size[0].toFixed(0)} × ${size[1].toFixed(0)} ${t('units.mm')}`, 'keychain') }, [mode, size, t])
 
   const name = size ? `keychain_${Math.round(size[0])}x${Math.round(size[1])}` : 'keychain'
   return (
+    <TextRasterContext.Provider value={textState}>
     <div className="flex min-h-0 flex-1" onDragOver={onDrop ? (e) => e.preventDefault() : undefined} onDrop={onDrop}>
       <Workspace
         model={model} busy={busy}
@@ -36,6 +41,7 @@ export function KeychainWorkspace({ mode, params, image, panel, overlay, onDrop 
         footer={<><ExportPanel model={model} busy={pending} name={name} /><SheetSize sheet={info?.mountInfo?.sheet} /></>}
       />
     </div>
+    </TextRasterContext.Provider>
   )
 }
 
