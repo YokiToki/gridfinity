@@ -1,0 +1,48 @@
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { getModelClient, useModel } from '../../app/useModel'
+import { validateKeychain, type KeychainInfo, type KeychainParams } from '../../geometry/keychain'
+import type { ModelClient } from '../../geometry/modelClient'
+import type { ModelResult } from '../../geometry/model'
+import type { GrayImage } from '../../geometry/raster/threshold'
+
+type KeychainClient = Pick<ModelClient, 'generate' | 'registerImage'>
+
+/**
+ * Модель Keychain: изображение один раз передаётся воркеру, параметры ссылаются на него по id. Как useModel
+ * (debounce, busy, pending), но пустая маска и ошибки построения не стирают прежнюю сетку: она остаётся в `model`,
+ * а причина лежит в `info.error`.
+ */
+export function useKeychainModel(params: KeychainParams, image: GrayImage | null, opts: { client?: KeychainClient; debounce?: number } = {}) {
+  const client = opts.client
+  const registered = useRef<GrayImage | null>(null)
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    if (!image) { registered.current = null; setReady(false); return }
+    if (registered.current === image) return
+    registered.current = image
+    ;(client ?? getModelClient()).registerImage(params.imageId, image)
+    setReady(true)
+  }, [image, params.imageId, client])
+
+  const valid = validateKeychain(params).ok
+  const key = JSON.stringify(params)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const stable = useMemo(() => params, [key])
+  const { model, busy, pending, error } = useModel('keychain', stable, { enabled: valid && ready, client, debounce: opts.debounce })
+
+  const [good, setGood] = useState<ModelResult | null>(null)
+  useEffect(() => { if (model && model.parts.length > 0) setGood(model) }, [model])
+  const info: KeychainInfo | null = model?.keychain ?? null
+  return {
+    /** Последняя удачная сетка (для вьюпорта и экспорта). */
+    model: good,
+    /** Сведения о последнем ответе: силуэт, размеры, ошибка (пустая маска, подложка меньше силуэта). */
+    info,
+    busy,
+    /** Сетка устарела или последний ответ — ошибка: экспортировать нельзя. */
+    pending: pending || !!info?.error || !valid,
+    error,
+    valid,
+  }
+}

@@ -17,9 +17,9 @@
 
 ## 3. Image in the browser
 
-- [ ] 3.1 Decode helpers (`createImageBitmap`, SVG via `<img>`), 4096 px cap, grayscale + alpha extraction. Component/unit tests with a tiny generated PNG and a bad file.
-- [ ] 3.2 IndexedDB image store with in-memory fallback and a warning flag. Test: round trip and fallback.
-- [ ] 3.3 `useKeychainModel` glue: params + stored image → worker → `MeshData`, `pending`/`busy` like `useModel`, empty-mask handling that keeps the last mesh. Test with a mocked client.
+- [x] 3.1 Decode helpers (`createImageBitmap`, SVG via `<img>`), 4096 px cap, grayscale + alpha extraction. Component/unit tests with a tiny generated PNG and a bad file.
+- [x] 3.2 IndexedDB image store with in-memory fallback and a warning flag. Test: round trip and fallback.
+- [x] 3.3 `useKeychainModel` glue: params + stored image → worker → `MeshData`, `pending`/`busy` like `useModel`, empty-mask handling that keeps the last mesh. Test with a mocked client.
 
 ## 4. UI
 
