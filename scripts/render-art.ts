@@ -25,6 +25,8 @@ import type { TriMesh } from '../src/geometry/art/raster'
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const OUT = resolve(root, 'src/app/art')
 const SAMPLE = resolve(root, 'tmp/cutout.stl')
+/** Высота рисунка коробки Gridfinity (box.svg) в единицах viewBox: по ней выравнивается карточка Keychain на главной. */
+const BOX_ART_HEIGHT = 149
 
 const meshOf = (r: ModelResult): TriMesh => {
   const m = r.parts[0].mesh
@@ -102,10 +104,18 @@ async function keychainModels(): Promise<Record<string, TriMesh>> {
 }
 
 
-/** Рендерит группу с общим для неё масштабом и пишет SVG. */
-function writeGroup(all: Record<string, TriMesh>) {
+/**
+ * Рендерит группу с общим для неё масштабом и пишет SVG. `heightOf` (имя детали → высота рисунка в единицах viewBox) выравнивает
+ * высоту: масштаб группы подбирается так, чтобы эта деталь стояла в карточке той же высоты, что коробка Gridfinity, но не шире поля.
+ */
+function writeGroup(all: Record<string, TriMesh>, heightOf?: { name: string; height: number }) {
   const o = defaultArtOptions
-  const scale = Math.min(...Object.values(all).map((m) => { const s = projectedSize(m, ISO); return Math.min((o.width - 2 * o.pad) / s.w, (o.height - 2 * o.pad) / s.h) }))
+  let scale = Math.min(...Object.values(all).map((m) => { const s = projectedSize(m, ISO); return Math.min((o.width - 2 * o.pad) / s.w, (o.height - 2 * o.pad) / s.h) }))
+  if (heightOf) {
+    const want = heightOf.height / projectedSize(all[heightOf.name], ISO).h
+    const widest = Math.max(...Object.values(all).map((m) => projectedSize(m, ISO).w))
+    scale = Math.min(want, (o.width - 2) / widest) // не вплотную к краю: запас в 1 единицу с каждой стороны
+  }
   mkdirSync(OUT, { recursive: true })
   for (const [name, mesh] of Object.entries(all)) {
     const svg = renderSvg(mesh, ISO, o, scale)
@@ -115,7 +125,8 @@ function writeGroup(all: Record<string, TriMesh>) {
 }
 
 // брелки не требуют файлов; Gridfinity — только при наличии образца выреза
-writeGroup(await keychainModels())
+// высота рисунка брелка равна высоте коробки Gridfinity (≈ 149 единиц viewBox 250 × 165), чтобы карточки на главной стояли вровень
+writeGroup(await keychainModels(), { name: 'keychainImage', height: BOX_ART_HEIGHT })
 if (!existsSync(SAMPLE)) {
   console.error(`Группа Gridfinity пропущена: нужен образец выреза ${SAMPLE} (STL, любая закрытая деталь). Картинки брелков записаны.`)
   process.exit(1)
