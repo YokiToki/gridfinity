@@ -16,6 +16,7 @@ import { fitChecks, type FitIssue } from './keychainFit'
 import { inflateShape, shapeMask, type ShapeParams } from './shapes'
 import { defaultText, MAX_TEXT_CHARS, MAX_TEXT_LINES, textBoxMm, textSampler, type TextParams, type TextRaster, type TextRegistry } from './text'
 import { shapeCrossSection } from './shapeOutline'
+import { textPolygons } from './textOutline'
 import { cylinderAlong, cylinderZ, lugJoin, lugSolid, pinLength, pinRadiusLoose, pinSolid } from './keychainMounts'
 
 // ---------- параметры ----------
@@ -827,6 +828,39 @@ function layoutSheet(w: ManifoldToplevel, top: Manifold, bottom: Manifold, pins:
 }
 
 /** Сборка частей: одна деталь A1 (односторонний рельеф) или лист из двух половин и штифтов. */
+/** Разброс высоты рельефа под буквами (мм), до которого надпись строится точным путём. */
+const TEXT_FLAT_TOL = 0.15
+
+/**
+ * Надпись точными телами. Рельеф: буквы выдавливаются от чуть ниже поверхности до её уровня + height. Гравировка: вырез от уровня
+ * поверхности − depth (но не ниже минимальной высоты кромки) вверх. Часть букв над силуэтом и часть на подложке считаются
+ * отдельно (у них разные уровни); буквы вне материала отбрасываются пересечением с контурами.
+ */
+function applyExactText(w: ManifoldToplevel, relief: Manifold, p: KeychainParams, text: CrossSection, sil: CrossSection, plate: CrossSection | null, rel: { min: number; max: number }): Manifold {
+  const t = p.text, base = p.base.thickness, floor = p.relief.heightFloor
+  const onRelief = text.intersect(sil)
+  const onPlate = plate ? text.intersect(plate).subtract(sil) : null
+  const prism = (cs: CrossSection, z0: number, z1: number) => w.Manifold.extrude(cs, Math.max(z1 - z0, 0.001)).translate([0, 0, z0])
+  const parts: { cs: CrossSection; z0: number; z1: number }[] = []
+  const mean = (rel.min + rel.max) / 2
+  if (t.mode === 'emboss') {
+    if (!onRelief.isEmpty()) parts.push({ cs: onRelief, z0: Math.max(0, rel.min - 0.05), z1: mean + t.height })
+    if (onPlate && !onPlate.isEmpty()) parts.push({ cs: onPlate, z0: Math.max(0, base - 0.3), z1: base + t.height })
+    let out = relief
+    for (const q of parts) { const body = prism(q.cs, q.z0, q.z1); const merged = out.add(body); body.delete(); if (out !== relief) out.delete(); out = merged }
+    if (out !== relief) relief.delete()
+    return out
+  }
+  // гравировка: нижняя граница выреза не ниже минимальной высоты кромки (рельеф) или пола (подложка)
+  const lo = p.relief.profile === 'engraved' ? floor : base + floor
+  if (!onRelief.isEmpty()) parts.push({ cs: onRelief, z0: Math.max(mean - t.depth, lo), z1: rel.max + 1 })
+  if (onPlate && !onPlate.isEmpty()) parts.push({ cs: onPlate, z0: Math.max(base - t.depth, floor), z1: base + 1 })
+  let out = relief
+  for (const q of parts) { const body = prism(q.cs, q.z0, q.z1); const cut = out.subtract(body); body.delete(); if (out !== relief) out.delete(); out = cut }
+  if (out !== relief) relief.delete()
+  return out
+}
+
 interface CoreResult { parts: KeychainPart[]; info: KeychainInfo; /** Две половины: верхняя собрана, нижняя и лист строятся в обёртке (там решается, нести ли надпись). */ halves?: { top: Manifold; pinCount: number } }
 
 /** Лежит ли точка (x, y) мм в материале силуэта (маска картинки или фигуры). */
@@ -903,25 +937,53 @@ function buildKeychainCore(w: ManifoldToplevel, p: KeychainParams, registry: Ima
     }
     region = textRegion(traster, p.text, wMm, hMm, sil, onPlate)
   }
-  const textInput = traster ? { cov: textSampler(traster, p.text, wMm, hMm), mode: p.text.mode, height: p.text.height, depth: p.text.depth } : undefined
-  // подложка в сетке нужна узору на ней и надписи, которая выходит за силуэт на подложку
-  const plateInGrid = !!plate.spec && ((p.pattern.kind !== 'none' && p.pattern.scope === 'base') || region.outside)
-  // Фигура без подложки в сетке строится с запасом m и обрезается по точному контуру: скругления не зависят от шага сетки.
-  // Запас — полторы ячейки с поправкой на рост площади: так любая точка фигуры целиком лежит в блоках сетки.
-  let rel = { img, mask, bounds: b, wMm, hMm, shift: 0 }
-  if (shape && !plateInGrid) {
-    const m = 1.75 * effectiveCell(wMm, hMm, 1, p.quality).cell
-    const big = shapeMask(inflateShape(shape, m))
-    rel = { img: { width: big.width, height: big.height, gray: big.mask, alpha: null }, mask: big.mask, bounds: [0, 0, big.width - 1, big.height - 1], wMm: big.wMm, hMm: big.hMm, shift: m }
+  // Надпись строится двумя путями. Точный (по умолчанию): буквы — гладкие многоугольники, выдавленные до уровня поверхности под ними;
+  // он возможен, когда рельеф под буквами ровный (плато, подложка). Запасной: рельеф неровный (скос, купол, яркость) — высота букв
+  // берётся из узлов сетки, края получаются ступенчатыми.
+  const patternBase = !!plate.spec && p.pattern.kind !== 'none' && p.pattern.scope === 'base'
+  let gridText: GridInput['text'] | undefined
+  let plateInGrid = patternBase
+  const build = () => {
+    // Фигура без подложки в сетке строится с запасом m и обрезается по точному контуру: скругления не зависят от шага сетки.
+    // Запас — полторы ячейки с поправкой на рост площади: так любая точка фигуры целиком лежит в блоках сетки.
+    let rel = { img, mask, bounds: b, wMm, hMm, shift: 0 }
+    if (shape && !plateInGrid) {
+      const m = 1.75 * effectiveCell(wMm, hMm, 1, p.quality).cell
+      const big = shapeMask(inflateShape(shape, m))
+      rel = { img: { width: big.width, height: big.height, gray: big.mask, alpha: null }, mask: big.mask, bounds: [0, 0, big.width - 1, big.height - 1], wMm: big.wMm, hMm: big.hMm, shift: m }
+    }
+    let count = 0
+    for (let i = 0; i < rel.mask.length; i++) count += rel.mask[i]
+    const fillSil = count / ((rel.bounds[2] - rel.bounds[0] + 1) * (rel.bounds[3] - rel.bounds[1] + 1))
+    const fill = plateInGrid ? plate.spec!.area / (wMm * hMm) : fillSil
+    const { cell, reduced, min } = effectiveCell(rel.wMm, rel.hMm, fill, p.quality)
+    const gridInput = { img: rel.img, mask: rel.mask, bounds: rel.bounds, wMm: rel.wMm, hMm: rel.hMm, cell, p, plate: plate.spec, plateInGrid, edgeShift: rel.shift, exactRim: rel.shift > 0, levels, text: gridText }
+    const grid = buildGrid(gridInput)
+    return { rel, cell, reduced, min, gridInput, grid, mesh: reliefMesh(grid, rel.wMm, rel.hMm) }
   }
-  let count = 0
-  for (let i = 0; i < rel.mask.length; i++) count += rel.mask[i]
-  const fillSil = count / ((rel.bounds[2] - rel.bounds[0] + 1) * (rel.bounds[3] - rel.bounds[1] + 1))
-  const fill = plateInGrid ? plate.spec!.area / (wMm * hMm) : fillSil
-  const { cell, reduced, min } = effectiveCell(rel.wMm, rel.hMm, fill, p.quality)
-  const gridInput = { img: rel.img, mask: rel.mask, bounds: rel.bounds, wMm: rel.wMm, hMm: rel.hMm, cell, p, plate: plate.spec, plateInGrid, edgeShift: rel.shift, exactRim: rel.shift > 0, levels, text: textInput }
-  const grid = buildGrid(gridInput)
-  const mesh = reliefMesh(grid, rel.wMm, rel.hMm)
+  let built = build()
+  const polys = traster ? textPolygons(traster, p.text, wMm, hMm) : []
+  let exactText: { min: number; max: number } | null = null
+  if (traster) {
+    // высота рельефа под буквами: узлы силуэта, покрытые надписью; ровная (разброс ≤ допуска) — точный путь
+    const cov = textSampler(traster, p.text, wMm, hMm)
+    const g = built.grid
+    let lo = Infinity, hi = -Infinity
+    for (let j = 0; j < g.ny; j++) for (let i = 0; i < g.nx; i++) {
+      const k = j * g.nx + i
+      if (!g.solid[k]) continue
+      const x = (i - g.i0) * g.dx - built.rel.wMm / 2, y = built.rel.hMm / 2 - (j - g.j0) * g.dy
+      if (cov(x, y) < 0.5 || !silhouetteAt(mask, img.width, b, wMm, hMm, x, y)) continue
+      lo = Math.min(lo, g.top[k]); hi = Math.max(hi, g.top[k])
+    }
+    if (hi - lo <= TEXT_FLAT_TOL || lo === Infinity) exactText = { min: lo === Infinity ? 0 : lo, max: hi === -Infinity ? 0 : hi }
+    else {
+      gridText = { cov, mode: p.text.mode, height: p.text.height, depth: p.text.depth }
+      plateInGrid = patternBase || (!!plate.spec && region.outside)
+      built = build()
+    }
+  }
+  const { rel, cell, reduced, min, gridInput, grid, mesh } = built
   const raw = new w.Mesh({ numProp: 3, vertProperties: mesh.vertProperties, triVerts: mesh.triVerts })
   raw.merge()
   let relief = new w.Manifold(raw)
@@ -955,12 +1017,17 @@ function buildKeychainCore(w: ManifoldToplevel, p: KeychainParams, registry: Ima
       relief = merged
     }
   }
+  if (exactText && polys.length) {
+    const sil = exact ?? w.CrossSection.ofPolygons(silhouetteOutline(grid, rel.wMm, rel.hMm), 'EvenOdd')
+    const plateFull = plate.spec ? plateCrossSection(w, plate.spec, grid, rel.wMm, rel.hMm, false, exact ?? undefined) : null
+    relief = applyExactText(w, relief, p, w.CrossSection.ofPolygons(polys, 'EvenOdd'), sil, plateFull, exactText)
+  }
   if (!needsField && !p.split.enabled) return { parts: [{ label: 'A1', col: 0, row: 0, solid: relief }], info }
 
   // поле для крепления: подложка должна быть в сетке, иначе места на подложке вне сетки не видны
   // у фигуры поле строится по точной маске без запаса (расстояния до края настоящие)
   const fgrid = shape && needsField
-    ? buildGrid({ img, mask, bounds: b, wMm, hMm, cell, p, plate: plate.spec, plateInGrid: true, text: textInput })
+    ? buildGrid({ img, mask, bounds: b, wMm, hMm, cell, p, plate: plate.spec, plateInGrid: true, text: gridText })
     : !needsField || plateInGrid || !plate.spec ? grid : buildGrid({ ...gridInput, plateInGrid: true })
   const field = needsField ? anchorField(fgrid, wMm, hMm, cell) : null
   const res = field ? resolveMounts(p, field, wMm, hMm) : { info: { mount: null, pins: [], candidates: [], rejected: [], issues: [] } as MountInfo, pins: [] as { x: number; y: number }[], mount: null as MountInfo['mount'] }

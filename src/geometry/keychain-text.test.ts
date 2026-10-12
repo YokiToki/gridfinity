@@ -168,3 +168,63 @@ describe('сборка: подложка, обрезка, две половин�
     expect(r.info.mountInfo?.mount).not.toBeNull()
   })
 })
+
+describe('качество букв: точные контуры', () => {
+  // растр 8 × 8 мм с кругом радиуса 2.5 мм (мягкий край 1.5 px): «буква О» без отверстия
+  const R = 2.5, W = 96
+  const ball: TextRaster = (() => {
+    const mask = new Uint8Array(W * W)
+    for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) mask[y * W + x] = Math.round(255 * Math.min(1, Math.max(0, (R * 12 - Math.hypot(x + 0.5 - W / 2, y + 0.5 - W / 2)) / 1.5 + 0.5)))
+    return { mask, width: W, height: W, pxPerMm: 12 }
+  })()
+  const tx = new Map([['ball', ball], ['blk', block]])
+  const coarse = (over: Partial<KeychainParams> = {}): KeychainParams => P({ maskId: 'ball' }, { quality: { cell: 0.5, maxTriangles: 400_000 }, ...over })
+
+  it('круглая буква на сетке 0.5 мм: контур на окружности радиуса 2.5 с точностью 0.03 мм (не ступени сетки)', async () => {
+    const r = await buildKeychain(coarse(), reg, undefined, tx)
+    const plateau = 2 + 2
+    const cs = r.solid!.slice(plateau + 0.3) // выше плато, ниже вершины букв (плато + 0.6)
+    const pts = cs.toPolygons().flat()
+    expect(pts.length).toBeGreaterThan(40)
+    for (const [x, y] of pts) expect(Math.abs(Math.hypot(x, y) - R)).toBeLessThan(0.03)
+    expect(cs.area() / (Math.PI * R * R)).toBeGreaterThan(0.99)
+    expect(cs.area() / (Math.PI * R * R)).toBeLessThan(1.01)
+  })
+  it('высота букв ровно height над плато, объём = площадь × высота', async () => {
+    const a = await buildKeychain(coarse({ text: { ...defaultText } }), reg, undefined, tx)
+    const b = await buildKeychain(coarse(), reg, undefined, tx)
+    expect((b.solid!.volume() - a.solid!.volume()) / (Math.PI * R * R * 0.6)).toBeGreaterThan(0.98)
+    expect((b.solid!.volume() - a.solid!.volume()) / (Math.PI * R * R * 0.6)).toBeLessThan(1.02)
+    expect(b.solid!.boundingBox().max[2]).toBeCloseTo(2 + 2 + 0.6, 6)
+    expectValidSolid(b.solid!)
+  })
+  it('гравировка: вырез с тем же точным контуром, дно на depth ниже плато', async () => {
+    const a = await buildKeychain(coarse({ text: { ...defaultText } }), reg, undefined, tx)
+    const b = await buildKeychain(P({ maskId: 'ball', mode: 'engrave', depth: 0.5 }, { quality: { cell: 0.5, maxTriangles: 400_000 } }), reg, undefined, tx)
+    const hole = b.solid!.slice(2 + 2 - 0.25)
+    const full = a.solid!.slice(2 + 2 - 0.25)
+    expect((full.area() - hole.area()) / (Math.PI * R * R)).toBeGreaterThan(0.99)
+    expect((full.area() - hole.area()) / (Math.PI * R * R)).toBeLessThan(1.01)
+    expect((a.solid!.volume() - b.solid!.volume()) / (Math.PI * R * R * 0.5)).toBeGreaterThan(0.98)
+    expectValidSolid(b.solid!)
+  })
+  it('неровный рельеф (скос): запасной путь по сетке, тело валидно, высота букв больше поверхности', async () => {
+    const slope = { relief: { ...defaultKeychain.relief, profile: 'bevel' as const, hmax: 2, edgeWidth: 40, heightFloor: 0.06 } }
+    const a = await buildKeychain(coarse({ ...slope, text: { ...defaultText } }), reg, undefined, tx)
+    const b = await buildKeychain(coarse(slope), reg, undefined, tx)
+    expectValidSolid(b.solid!)
+    expect(b.solid!.volume()).toBeGreaterThan(a.solid!.volume() + 5)
+  })
+  it('на подложке рядом с силуэтом: подложка остаётся гладкой (не переходит в сетку), буквы точные', async () => {
+    const y = 0.5 + 36 / 60
+    const plateRound = { base: { ...defaultKeychain.base, thickness: 2, shape: 'rounded' as const, auto: false, width: 90, height: 90, radius: 12 } }
+    const r = await buildKeychain(coarse({ ...plateRound, text: { ...T({ maskId: 'ball', x: 0.5, y }) } }), reg, undefined, tx)
+    // подложка — аналитический скруглённый прямоугольник 90 × 90, радиус 12, а не ступени сетки: площадь среза совпадает
+    const exactArea = 90 * 90 - (4 - Math.PI) * 12 * 12
+    expect(Math.abs(r.solid!.slice(1.0).area() / exactArea - 1)).toBeLessThan(0.01)
+    const letters = r.solid!.slice(2.3).toPolygons().flat().filter(([, y2]) => y2 > 32)
+    expect(letters.length).toBeGreaterThan(20)
+    for (const [x, y2] of letters) expect(Math.abs(Math.hypot(x, y2 - 36) - R)).toBeLessThan(0.05)
+    expectValidSolid(r.solid!)
+  })
+})
