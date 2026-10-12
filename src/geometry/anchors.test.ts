@@ -148,6 +148,6 @@ describe('проверки посадки (1.3)', () => {
     expect(edge[0]).toMatchObject({ feature: 'pin1', kind: 'pinTooBig' })
     const low = field(121, 1, (x, y) => (Math.hypot(x, y) <= 40 ? 1.5 : 0))
     expect(fitChecks({ ...base, mount: none, field: low, pins: [{ x: 0, y: 0 }], pinDepth: 1 })[0]).toMatchObject({ feature: 'pin1', kind: 'pinTooBig' }) // 1,5 < 1 + 1,2
-    expect(fitChecks({ ...base, mount: none, pinDepth: 0.6, pins: [{ x: 0, y: 0 }, { x: 10, y: 0 }] })).toEqual([]) // 0,6 + 1,2 ≤ 2
+    expect(fitChecks({ ...base, mount: none, pinDepth: 0.6, pins: [{ x: 0, y: 0 }, { x: 10, y: 0 }] }).filter((i) => i.kind !== 'coarse')).toEqual([]) // 0,6 + 1,2 ≤ 2; шаг 1 мм грубоват для штифта 0,9 — это отдельное предупреждение
   })
 })
