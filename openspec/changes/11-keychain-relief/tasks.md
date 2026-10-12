@@ -2,10 +2,10 @@
 
 ## 1. Raster toolkit
 
-- [ ] 1.1 `geometry/raster/` grayscale/alpha → mask: `otsu`, `threshold` (+invert). Tests: bimodal synthetic image gives the expected split; alpha mask wins when alpha is present.
-- [ ] 1.2 Morphology (`close`, `dilate`, `erode`, speck removal). Tests on small masks: a 1 px gap closes, a speck of N px is removed, a thin tip survives a small dilate.
-- [ ] 1.3 Connected components and holes with stable ids; `keepOpen` handling. Tests: ring has one hole, id stability when a non-hole setting changes, kept-open hole stays background.
-- [ ] 1.4 Exact Euclidean distance transform. Test: matches a brute-force implementation on random small masks.
+- [x] 1.1 `geometry/raster/` grayscale/alpha → mask: `otsu`, `threshold` (+invert). Tests: bimodal synthetic image gives the expected split; alpha mask wins when alpha is present.
+- [x] 1.2 Morphology (`close`, `dilate`, `erode`, speck removal). Tests on small masks: a 1 px gap closes, a speck of N px is removed, a thin tip survives a small dilate.
+- [x] 1.3 Connected components and holes with stable ids; `keepOpen` handling. Tests: ring has one hole, id stability when a non-hole setting changes, kept-open hole stays background.
+- [x] 1.4 Exact Euclidean distance transform. Test: matches a brute-force implementation on random small masks.
 
 ## 2. Relief geometry
 
