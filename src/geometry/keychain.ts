@@ -460,6 +460,8 @@ export interface GridInput {
   plateInGrid: boolean
   /** Фигура растеризована с запасом на столько мм (потом обрезается по точному контуру): расстояния до кромки считаются от настоящего края. */
   edgeShift?: number
+  /** Бортик строится отдельно точным кольцом, в сетке его нет. */
+  exactRim?: boolean
 }
 
 const blocksOf = (m: Uint8Array, nx: number, ny: number) => {
@@ -499,7 +501,7 @@ export function buildGrid(inp: GridInput): Grid {
   const inv = (a: Uint8Array) => { const o = new Uint8Array(a.length); for (let i = 0; i < a.length; i++) o[i] = a[i] ? 0 : 1; return o }
   const spine = p.detail.spineAmp > 0 ? edt(inv(skeleton(m, nx, ny)), nx, ny) : null
   const shape = p.origin.kind === 'shape' ? p.origin.shape : null
-  const rim = shape?.rim.enabled && shape.rim.height > 0 ? shape.rim : null
+  const rim = shape?.rim.enabled && shape.rim.height > 0 && !inp.exactRim ? shape.rim : null
   const gray = p.source.kind === 'brightness' && !shape ? new Float32Array(nx * ny) : null
   if (gray) {
     const g = resampleGray(img.gray, img.width, bounds[0], bounds[1], bounds[2] + 1, bounds[3] + 1, sx, sy)
@@ -758,7 +760,7 @@ export function buildKeychainParts(w: ManifoldToplevel, p: KeychainParams, regis
   const fillSil = count / ((rel.bounds[2] - rel.bounds[0] + 1) * (rel.bounds[3] - rel.bounds[1] + 1))
   const fill = plateInGrid ? plate.spec!.area / (wMm * hMm) : fillSil
   const { cell, reduced, min } = effectiveCell(rel.wMm, rel.hMm, fill, p.quality)
-  const gridInput = { img: rel.img, mask: rel.mask, bounds: rel.bounds, wMm: rel.wMm, hMm: rel.hMm, cell, p, plate: plate.spec, plateInGrid, edgeShift: rel.shift }
+  const gridInput = { img: rel.img, mask: rel.mask, bounds: rel.bounds, wMm: rel.wMm, hMm: rel.hMm, cell, p, plate: plate.spec, plateInGrid, edgeShift: rel.shift, exactRim: rel.shift > 0 }
   const grid = buildGrid(gridInput)
   const mesh = reliefMesh(grid, rel.wMm, rel.hMm)
   const raw = new w.Mesh({ numProp: 3, vertProperties: mesh.vertProperties, triVerts: mesh.triVerts })
@@ -774,6 +776,16 @@ export function buildKeychainParts(w: ManifoldToplevel, p: KeychainParams, regis
     prism.delete(); relief.delete()
     relief = clipped
     if (relief.status() !== 'NoError' || relief.isEmpty()) return { parts: [], info: { ...info, error: 'keychain.error.mesh' } }
+    // бортик — точное кольцо между контуром и его сжатием: внутренний радиус тоже настоящая дуга, а не ступеньки сетки
+    if (shape!.rim.enabled && shape!.rim.height > 0) {
+      const inner = exact.offset(-shape!.rim.width, 'Round', 2, 256)
+      const ring = inner.isEmpty() ? exact : exact.subtract(inner)
+      const top = (p.relief.profile === 'engraved' ? p.base.thickness : p.base.thickness + p.relief.hmax) + shape!.rim.height
+      const wall = w.Manifold.extrude(ring, top)
+      const merged = relief.add(wall)
+      wall.delete(); relief.delete()
+      relief = merged
+    }
   }
   if (plate.spec && !plateInGrid) {
     const cs = plateCrossSection(w, plate.spec, grid, rel.wMm, rel.hMm, p.relief.profile === 'engraved', exact ?? undefined)

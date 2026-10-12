@@ -234,4 +234,16 @@ describe('гладкие радиусы (контур не зависит от �
     expect(Math.abs(b.w - 54)).toBeLessThan(0.005)
     expect(Math.abs(b.h - 30)).toBeLessThan(0.005)
   })
+  it('бортик: и наружный, и внутренний край — точные дуги (внутренний радиус 4 − 1.2 = 2.8 мм)', async () => {
+    const p = P({ kind: 'rect', width: 54, height: 30, radius: 4, rim: { enabled: true, width: 1.2, height: 0.8 } }, coarse)
+    const m = (await solid(p)).solid!
+    const pts = outline(m as never, p.base.thickness + p.relief.hmax + 0.4)
+    expect(pts.length).toBeGreaterThan(200)
+    for (const [x, y] of pts) {
+      const d = rrSdf(x, y, 54, 30, 4)
+      expect(Math.min(Math.abs(d), Math.abs(d + 1.2))).toBeLessThan(0.02) // на наружной кромке или ровно на 1.2 мм внутрь
+    }
+    // внутренний край действительно есть: часть точек лежит на глубине 1.2 мм
+    expect(pts.filter(([x, y]) => Math.abs(rrSdf(x, y, 54, 30, 4) + 1.2) < 0.02).length).toBeGreaterThan(50)
+  })
 })
