@@ -29,7 +29,8 @@ export function useKeychainModel(params: KeychainParams, image: GrayImage | null
   const key = JSON.stringify(params)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const stable = useMemo(() => params, [key])
-  const { model, busy, pending, error } = useModel('keychain', stable, { enabled: valid && ready, client, debounce: opts.debounce })
+  const shaped = params.origin.kind === 'shape' // фигуре изображение не нужно
+  const { model, busy, pending, error } = useModel('keychain', stable, { enabled: valid && (ready || shaped), client, debounce: opts.debounce })
 
   const [good, setGood] = useState<ModelResult | null>(null)
   useEffect(() => { if (model && model.parts.length > 0) setGood(model) }, [model])

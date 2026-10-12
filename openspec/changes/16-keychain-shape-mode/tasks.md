@@ -8,8 +8,8 @@
 ## 2. Shapes and geometry
 
 - [x] 2.1 `geometry/shapes.ts`: analytic inside tests and the 2048 px mask for rectangle, circle, ellipse, capsule, polygon (rounding, rotation); effective radius helper. Tests: areas against analytic values, symmetry, radius clamp, polygon width and vertex count.
-- [ ] 2.2 `KeychainParams.origin` and the shape path in `buildKeychainParts` (bypasses thresholding, areas and brightness; exact size fit; editor preview still produced); `validateKeychain` for shape sizes. Tests: bounding boxes (54 × 30, 40 mm circle) within 0.05 mm, valid solids, mount and two halves on a shape, Image mode regression volumes unchanged.
-- [ ] 2.3 Rim in `buildGrid` (`ShapeParams.rim`, before patterns, engraved ring). Tests: rim height and width on a rectangle, off = identical volume, pattern never below the floor, valid solid.
+- [x] 2.2 `KeychainParams.origin` and the shape path in `buildKeychainParts` (bypasses thresholding, areas and brightness; exact size fit; editor preview still produced); `validateKeychain` for shape sizes. Tests: bounding boxes (54 × 30, 40 mm circle) within 0.05 mm, valid solids, mount and two halves on a shape, Image mode regression volumes unchanged.
+- [x] 2.3 Rim in `buildGrid` (`ShapeParams.rim`, before patterns, engraved ring). Tests: rim height and width on a rectangle, off = identical volume, pattern never below the floor, valid solid.
 
 ## 3. UI
 

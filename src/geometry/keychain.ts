@@ -12,6 +12,7 @@ import { coverage, type PatternParams } from './patterns/fields'
 import { skeleton } from './raster/thin'
 import { anchorField, exitRay, findAnchors, nearestExit, relToMm, type Anchor, type AnchorField, type Rejected } from './anchors'
 import { fitChecks, type FitIssue } from './keychainFit'
+import { shapeMask, type ShapeParams } from './shapes'
 import { cylinderAlong, cylinderZ, lugJoin, lugSolid, pinLength, pinRadiusLoose, pinSolid } from './keychainMounts'
 
 // ---------- параметры ----------
@@ -132,7 +133,12 @@ export interface SplitParams {
 /** Готовые диаметры отверстия под кольцо по толщине проволоки. */
 export const RING_PRESETS = [{ id: 'thin', diameter: 3 }, { id: 'standard', diameter: 4 }, { id: 'heavy', diameter: 5 }] as const
 
+/** Откуда берётся контур: изображение (маска по порогу) или готовая фигура (аналитическая маска). */
+export type Origin = { kind: 'image' } | { kind: 'shape'; shape: ShapeParams }
+
 export interface KeychainParams {
+  /** Режим: у фигуры нет порога, дырок и яркости, а размер задаёт сама фигура (`size` и `silhouette` игнорируются). */
+  origin: Origin
   /** Изображение лежит вне параметров (в IndexedDB и в воркере), параметры ссылаются на него по id. */
   imageId: string
   silhouette: SilhouetteParams
@@ -155,6 +161,7 @@ export const defaultMount: MountParams = { style: 'none', x: 0.5, y: 0.92, diame
 export const defaultSplit: SplitParams = { enabled: false, pins: 3, pinRadius: 0.9, clearance: 0.1, pinDepth: 1, pinPositions: null, gap: 10 }
 
 export const defaultKeychain: KeychainParams = {
+  origin: { kind: 'image' },
   imageId: '',
   silhouette: { threshold: 'auto', invert: false, close: 3, fillHoles: true, keepOpen: [], speck: 200, grow: 2 },
   size: { mode: 'longest', longest: 70, width: 70, height: 70 },
@@ -179,9 +186,26 @@ export function validateKeychain(p: KeychainParams): { ok: boolean; errors: Keyc
   const pos = (v: number) => Number.isFinite(v) && v > 0
   const nonneg = (v: number) => Number.isFinite(v) && v >= 0
   const sz = p.size
-  if (sz.mode === 'longest' && !pos(sz.longest)) bad('size.longest', 'keychain.error.size')
-  if ((sz.mode === 'width' || sz.mode === 'box') && !pos(sz.width)) bad('size.width', 'keychain.error.size')
-  if ((sz.mode === 'height' || sz.mode === 'box') && !pos(sz.height)) bad('size.height', 'keychain.error.size')
+  const shape = p.origin.kind === 'shape' ? p.origin.shape : null
+  if (shape) {
+    // размер задаёт фигура; поля изображения (размер, яркость) не проверяются
+    const hasH = shape.kind === 'rect' || shape.kind === 'ellipse' || shape.kind === 'capsule'
+    if (!pos(shape.width)) bad('shape.width', 'keychain.error.size')
+    if (hasH && !pos(shape.height)) bad('shape.height', 'keychain.error.size')
+    if ((shape.kind === 'rect' || shape.kind === 'polygon') && !nonneg(shape.radius)) bad('shape.radius', 'keychain.error.negative')
+    if (shape.kind === 'polygon') {
+      if (!(Number.isInteger(shape.sides) && shape.sides >= 3 && shape.sides <= 12)) bad('shape.sides', 'keychain.error.sides')
+      if (!Number.isFinite(shape.rotation)) bad('shape.rotation', 'keychain.error.size')
+    }
+    if (shape.rim.enabled) {
+      if (!pos(shape.rim.width)) bad('shape.rim.width', 'keychain.error.size')
+      if (!nonneg(shape.rim.height)) bad('shape.rim.height', 'keychain.error.negative')
+    }
+  } else {
+    if (sz.mode === 'longest' && !pos(sz.longest)) bad('size.longest', 'keychain.error.size')
+    if ((sz.mode === 'width' || sz.mode === 'box') && !pos(sz.width)) bad('size.width', 'keychain.error.size')
+    if ((sz.mode === 'height' || sz.mode === 'box') && !pos(sz.height)) bad('size.height', 'keychain.error.size')
+  }
   const r = p.relief
   if (!pos(r.hmax)) bad('relief.hmax', 'keychain.error.hmax')
   if (!pos(r.edgeWidth)) bad('relief.edgeWidth', 'keychain.error.edgeWidth')
@@ -190,7 +214,7 @@ export function validateKeychain(p: KeychainParams): { ok: boolean; errors: Keyc
   else if (r.heightFloor >= r.hmax) bad('relief.heightFloor', 'keychain.error.heightFloor')
   if (r.profile === 'terrace' && !(Number.isInteger(r.steps) && r.steps >= 2)) bad('relief.steps', 'keychain.error.steps')
   const so = p.source
-  if (so.kind === 'brightness') {
+  if (so.kind === 'brightness' && !shape) {
     if (!pos(so.contrast)) bad('source.contrast', 'keychain.error.contrast')
     if (!pos(so.gamma)) bad('source.gamma', 'keychain.error.gamma')
   }
@@ -470,7 +494,9 @@ export function buildGrid(inp: GridInput): Grid {
   const d = edt(m, nx, ny)
   const inv = (a: Uint8Array) => { const o = new Uint8Array(a.length); for (let i = 0; i < a.length; i++) o[i] = a[i] ? 0 : 1; return o }
   const spine = p.detail.spineAmp > 0 ? edt(inv(skeleton(m, nx, ny)), nx, ny) : null
-  const gray = p.source.kind === 'brightness' ? new Float32Array(nx * ny) : null
+  const shape = p.origin.kind === 'shape' ? p.origin.shape : null
+  const rim = shape?.rim.enabled && shape.rim.height > 0 ? shape.rim : null
+  const gray = p.source.kind === 'brightness' && !shape ? new Float32Array(nx * ny) : null
   if (gray) {
     const g = resampleGray(img.gray, img.width, bounds[0], bounds[1], bounds[2] + 1, bounds[3] + 1, sx, sy)
     for (let j = 0; j < sy; j++) for (let i = 0; i < sx; i++) gray[(j + ay) * nx + i + ax] = g[j * sx + i]
@@ -491,6 +517,8 @@ export function buildGrid(inp: GridInput): Grid {
       if (spine) h += p.detail.spineAmp * pv * Math.exp(-((spine[k] * cell) ** 2) / (2 * p.detail.spineWidth ** 2))
       if (p.detail.grooveDepth > 0 && Math.abs(dmm - p.detail.grooveOffset) <= p.detail.grooveWidth / 2) h = Math.max(h - p.detail.grooveDepth, floor)
       let t = engraved ? Math.max(base - (h - floor), floor) : base + h
+      // бортик: приподнимает кромку фигуры (расстояние от первого слоя узлов, который лежит на самом краю) до узора
+      if (rim && (d[k] - 1) * cell < rim.width - 1e-9) t += rim.height
       if (patOn && (pat.scope === 'relief' || (pat.scope === 'plateau' && dmm >= r.edgeWidth)) && coverage(pat, X(i), Y(j))) {
         const lo = engraved ? floor : base + floor
         t = Math.max(t - pat.depth, Math.min(t, lo))
@@ -683,24 +711,41 @@ function layoutSheet(w: ManifoldToplevel, top: Manifold, bottom: Manifold, pins:
 
 /** Сборка частей: одна деталь A1 (односторонний рельеф) или лист из двух половин и штифтов. */
 export function buildKeychainParts(w: ManifoldToplevel, p: KeychainParams, registry: ImageRegistry): { parts: KeychainPart[]; info: KeychainInfo } {
-  const img = registry.get(p.imageId)
-  if (!img) return { parts: [], info: { error: 'keychain.error.noImage', threshold: 0, photoLike: false, preview: null } }
-  const sil = buildSilhouette(img, p.silhouette)
-  const preview = maskPreview(img, sil)
-  const base = { threshold: sil.threshold, photoLike: sil.photoLike, preview }
-  const b = maskBounds(sil.mask, img.width, img.height)
-  if (!b) return { parts: [], info: { ...base, error: 'keychain.error.emptyMask' } }
-  const { w: wMm, h: hMm } = sizeMm(p.size, b[2] - b[0] + 1, b[3] - b[1] + 1)
+  const shape = p.origin.kind === 'shape' ? p.origin.shape : null
+  let img: GrayImage, mask: Uint8Array, b: [number, number, number, number], wMm: number, hMm: number
+  let base: { threshold: number; photoLike: boolean; preview: MaskPreview | null }
+  if (shape) {
+    // фигура: аналитическая маска ровно по габариту фигуры, без порога, дырок и яркости
+    const sm = shapeMask(shape)
+    img = { width: sm.width, height: sm.height, gray: sm.mask, alpha: null }
+    mask = sm.mask
+    b = [0, 0, sm.width - 1, sm.height - 1]
+    wMm = sm.wMm; hMm = sm.hMm
+    const sil: SilhouetteResult = { mask, threshold: 0, holes: [], holeLabels: new Int32Array(mask.length), photoLike: false }
+    base = { threshold: 0, photoLike: false, preview: maskPreview(img, sil) }
+  } else {
+    const found = registry.get(p.imageId)
+    if (!found) return { parts: [], info: { error: 'keychain.error.noImage', threshold: 0, photoLike: false, preview: null } }
+    img = found
+    const sil = buildSilhouette(img, p.silhouette)
+    base = { threshold: sil.threshold, photoLike: sil.photoLike, preview: maskPreview(img, sil) }
+    mask = sil.mask
+    const bb = maskBounds(sil.mask, img.width, img.height)
+    if (!bb) return { parts: [], info: { ...base, error: 'keychain.error.emptyMask' } }
+    b = bb
+    const sz = sizeMm(p.size, b[2] - b[0] + 1, b[3] - b[1] + 1)
+    wMm = sz.w; hMm = sz.h
+  }
   const plate = plateSpec(p.base, wMm, hMm)
   if (plate.error) return { parts: [], info: { ...base, error: plate.error, size: [wMm, hMm] } }
   const needsField = p.mount.style !== 'none' || (p.split.enabled && p.split.pins > 0)
   const plateInGrid = !!plate.spec && p.pattern.kind !== 'none' && p.pattern.scope === 'base'
   let count = 0
-  for (let i = 0; i < sil.mask.length; i++) count += sil.mask[i]
+  for (let i = 0; i < mask.length; i++) count += mask[i]
   const fillSil = count / ((b[2] - b[0] + 1) * (b[3] - b[1] + 1))
   const fill = plateInGrid ? plate.spec!.area / (wMm * hMm) : fillSil
   const { cell, reduced, min } = effectiveCell(wMm, hMm, fill, p.quality)
-  const gridInput = { img, mask: sil.mask, bounds: b, wMm, hMm, cell, p, plate: plate.spec, plateInGrid }
+  const gridInput = { img, mask, bounds: b, wMm, hMm, cell, p, plate: plate.spec, plateInGrid }
   const grid = buildGrid(gridInput)
   const mesh = reliefMesh(grid, wMm, hMm)
   const raw = new w.Mesh({ numProp: 3, vertProperties: mesh.vertProperties, triVerts: mesh.triVerts })

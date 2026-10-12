@@ -28,6 +28,7 @@ export function migrateKeychain(raw: Record<string, unknown>): Record<string, un
     ? (split.pinPositions as { x: number; y: number }[]) : null
   return {
     ...raw,
+    origin: { kind: 'image' }, // режим «Изображение»: фигура живёт в своём состоянии (keychain.shape)
     imageId: typeof raw.imageId === 'string' ? raw.imageId : '',
     imageName: typeof raw.imageName === 'string' ? raw.imageName : '',
     silhouette: sil,
