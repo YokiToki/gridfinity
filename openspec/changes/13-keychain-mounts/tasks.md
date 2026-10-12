@@ -2,9 +2,9 @@
 
 ## 1. Anchors and checks
 
-- [ ] 1.1 `geometry/anchors.ts`: footprint min-filter, ranked candidates with rejection reasons, relative coordinate helpers. Tests on synthetic masks: disc gives centre-ring candidates, a thin tip is rejected with the right reason, results are stable when scaled.
-- [ ] 1.2 Exterior vs interior-cavity classification (reuse background labelling from 11) and the channel breach check. Tests: exit in open air passes, exit in a closed cavity fails, narrow notch with coarse grid warns.
-- [ ] 1.3 Fit-check module returning `{feature, kind, actual, required}`; tests for thin wall, outside plate, pin too big.
+- [x] 1.1 `geometry/anchors.ts`: footprint min-filter, ranked candidates with rejection reasons, relative coordinate helpers. Tests on synthetic masks: disc gives centre-ring candidates, a thin tip is rejected with the right reason, results are stable when scaled.
+- [x] 1.2 Exterior vs interior-cavity classification (reuse background labelling from 11) and the channel breach check. Tests: exit in open air passes, exit in a closed cavity fails, narrow notch with coarse grid warns.
+- [x] 1.3 Fit-check module returning `{feature, kind, actual, required}`; tests for thin wall, outside plate, pin too big.
 
 ## 2. Mount geometry
 

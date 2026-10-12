@@ -348,6 +348,8 @@ export interface Grid {
   top: Float32Array
   /** Блоки только силуэта (для контура подложки по силуэту). */
   silBlocks: Uint8Array
+  /** Узлы с материалом: силуэт и, если подложка в сетке, подложка. */
+  solid: Uint8Array
 }
 
 export interface GridInput {
@@ -431,7 +433,7 @@ export function buildGrid(inp: GridInput): Grid {
       top[k] = t
     }
   }
-  return { nx, ny, dx, dy, i0: bi0, j0: bj0, blocks: plateInGrid ? blocksOf(meshMask, nx, ny) : silBlocks, top, silBlocks }
+  return { nx, ny, dx, dy, i0: bi0, j0: bj0, blocks: plateInGrid ? blocksOf(meshMask, nx, ny) : silBlocks, top, silBlocks, solid: meshMask }
 }
 
 /** Узел (i, j) в мм: центр габарита фигуры в нуле, +Y вверх. */
