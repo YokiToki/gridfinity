@@ -9,6 +9,7 @@ import { MountSection } from './MountSection'
 import { SplitSection } from './SplitSection'
 import { BaseSection } from './BaseSection'
 import { TextSection } from './TextSection'
+import { PlacementEditor } from './PlacementEditor'
 import type { PlacementPatch } from './PlacementEditor'
 import { mmToRelPos } from './place'
 
@@ -32,6 +33,7 @@ export function SharedSections<S extends SharedParams>({ params: p, info, onChan
   const patch = <K extends keyof SharedParams>(k: K) => (v: Partial<SharedParams[K]>) => onChange((o) => ({ ...o, [k]: { ...o[k], ...v } }))
   const place = (pt: PlacementPatch) => onChange((o) => {
     if (pt.mount) return { ...o, mount: { ...o.mount, x: pt.mount.x, y: pt.mount.y } }
+    if (pt.text) return { ...o, text: { ...o.text, x: pt.text.x, y: pt.text.y } }
     if (pt.exit) return { ...o, mount: { ...o.mount, exitX: pt.exit.x, exitY: pt.exit.y } }
     if (pt.pin) {
       // первое ручное перемещение фиксирует автоматические положения всех штифтов, дальше правится выбранный
@@ -48,7 +50,8 @@ export function SharedSections<S extends SharedParams>({ params: p, info, onChan
       {imageOnly && <DetailSection value={p.detail} error={err} onChange={patch('detail')} />}
       <PatternSection value={p.pattern} quality={p.quality} cell={info?.cell ?? null} minCell={info?.minCell ?? null} error={err} onChange={patch('pattern')} onRaise={(c) => patch('quality')({ cell: c })} />
       <TextSection value={p.text} error={err} splitOn={p.split.enabled} cell={info?.cell ?? null} minCell={info?.minCell ?? null} clipped={!!info?.text?.clipped}
-        onChange={patch('text')} onRaise={(c) => patch('quality')({ cell: c })} />
+        onChange={patch('text')} onRaise={(c) => patch('quality')({ cell: c })}
+        editor={p.text.enabled && info?.size && info.preview && info.text ? <PlacementEditor params={p} info={info} onPlace={place} onPick={() => {}} rejectedShown={false} only="text" /> : null} />
       <BaseSection value={p.base} error={err} plateError={plateError} onChange={patch('base')} />
       <MountSection params={p} info={info} error={err} onMount={patch('mount')} onPlace={place} />
       <SplitSection params={p} info={info} error={err} onSplit={patch('split')} />

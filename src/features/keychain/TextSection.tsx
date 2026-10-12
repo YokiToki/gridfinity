@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from 'react'
+import { useId, useRef, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { defaultText, MAX_TEXT_CHARS, type TextAlign, type TextMode, type TextParams } from '../../geometry/text'
 import { textResolution } from '../../geometry/keychain'
@@ -22,7 +22,7 @@ const MODES: TextMode[] = ['emboss', 'engrave']
  * Надпись: включение, текст в несколько строк, шрифт (по группам, системные, свой файл), начертание, размер (высота заглавных),
  * интервалы, выравнивание, поворот, рельеф или гравировка. Положение задаётся в редакторе. Макета нет: собрана из компонентов ui/.
  */
-export function TextSection({ value: t, error, splitOn, cell = null, minCell = null, clipped = false, onChange, onRaise }: {
+export function TextSection({ value: t, error, splitOn, cell = null, minCell = null, clipped = false, editor = null, onChange, onRaise }: {
   value: TextParams
   error: (field: string) => string | undefined
   /** Включён режим двух половин: надпись только на верхней. */
@@ -31,6 +31,8 @@ export function TextSection({ value: t, error, splitOn, cell = null, minCell = n
   minCell?: number | null
   /** Часть надписи вне материала (ответ воркера). */
   clipped?: boolean
+  /** Редактор положения надписи (вид сверху); его даёт SharedSections, когда есть силуэт и растр. */
+  editor?: ReactNode
   onChange: (p: Partial<TextParams>) => void
   onRaise?: (cell: number) => void
 }) {
@@ -115,6 +117,7 @@ export function TextSection({ value: t, error, splitOn, cell = null, minCell = n
           {t.mode === 'emboss'
             ? <LengthField label={tr('keychain.text.height')} value={t.height} min={0.1} max={10} step={0.1} error={error('text.height')} onChange={(v) => onChange({ height: v })} />
             : <LengthField label={tr('keychain.text.depth')} value={t.depth} min={0.1} max={10} step={0.1} error={error('text.depth')} onChange={(v) => onChange({ depth: v })} />}
+          {editor}
           {splitOn && <span className="text-xs text-text-subtle">{tr('keychain.text.halves')}</span>}
           {clipped && <Banner kind="warn">{tr('keychain.text.clipped')}</Banner>}
           {res?.tooFine && (

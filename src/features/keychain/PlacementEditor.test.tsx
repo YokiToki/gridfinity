@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event'
 import { I18nextProvider } from 'react-i18next'
 import i18n from '../../i18n'
 import { UnitContext } from '../../ui/units'
+import { defaultText } from '../../geometry/text'
 import { defaultKeychain, defaultMount, defaultSplit, type KeychainInfo, type KeychainParams } from '../../geometry/keychain'
 import { PlacementEditor, type PlacementPatch } from './PlacementEditor'
 
@@ -128,5 +129,77 @@ describe('PlacementEditor (3.1)', () => {
     // выбор цели переключателем: подпись и поля относятся к штифту
     await userEvent.click(screen.getByRole('radio', { name: 'Channel exit' }))
     expect((screen.getByLabelText('Y from the bottom edge') as HTMLInputElement).value).toBe('40')
+  })
+})
+
+describe('PlacementEditor: цель «Надпись»', () => {
+  beforeEach(async () => { await i18n.changeLanguage('en'); vi.restoreAllMocks() })
+  const withText = (over: Partial<typeof defaultText> = {}) => P({ text: { ...defaultText, enabled: true, content: 'ANNA', size: 8, x: 0.5, y: 0.5, ...over } })
+  const infoT = (): KeychainInfo => ({ ...info(), text: { w: 24, h: 9, clipped: false } })
+  const place = vi.fn<(p: PlacementPatch) => void>()
+
+  it('коробка надписи рисуется в масштабе (24 × 9 мм) с базовой линией на каждую строку', () => {
+    const { container } = wrap(<PlacementEditor params={withText({ content: 'AB\nCD' })} info={infoT()} onPlace={place} onPick={() => {}} rejectedShown={false} />)
+    const g = screen.getByTestId('text-handle')
+    const rect = g.querySelector('rect')!
+    expect(Number(rect.getAttribute('width'))).toBe(24)
+    expect(Number(rect.getAttribute('height'))).toBe(9)
+    expect(screen.getAllByTestId('text-baseline')).toHaveLength(2)
+    const [b1, b2] = screen.getAllByTestId('text-baseline').map((l) => Number(l.getAttribute('y1')))
+    expect(b2 - b1).toBeCloseTo((8 / 0.72) * 1.2, 6) // шаг строк как в растре
+    expect(container.querySelectorAll('text')).toBeTruthy()
+  })
+  it('положение — доли габарита: центр надписи (0.75, 0.25) → (+17.5, −10) мм от центра габарита 70 × 40; поворот 30° против часовой', () => {
+    wrap(<PlacementEditor params={withText({ x: 0.75, y: 0.25, rotation: 30 })} info={infoT()} onPlace={place} onPick={() => {}} rejectedShown={false} />)
+    const tr = screen.getByTestId('text-handle').getAttribute('transform')!
+    expect(tr).toBe('translate(17.5 10) rotate(-30)') // y в SVG вниз
+  })
+  it('кнопка цели «Text», поля X и Y относятся к надписи и показывают мм от левого нижнего угла', async () => {
+    wrap(<PlacementEditor params={withText({ x: 0.5, y: 0.5 })} info={infoT()} onPlace={place} onPick={() => {}} rejectedShown={false} />)
+    await userEvent.click(screen.getByRole('radio', { name: 'Text' }))
+    expect((screen.getByLabelText('X from the left edge') as HTMLInputElement).value).toBe('35')
+    expect((screen.getByLabelText('Y from the bottom edge') as HTMLInputElement).value).toBe('20')
+    const x = screen.getByLabelText('X from the left edge')
+    await userEvent.clear(x); await userEvent.type(x, '10'); await userEvent.tab()
+    expect(place).toHaveBeenLastCalledWith({ text: { x: 10 / 70, y: 0.5 } })
+  })
+  it('перетаскивание надписи: по отпусканию onPlace({ text }) с новыми долями (Y вверх)', () => {
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(() => ({ left: 0, top: 0, right: 800, bottom: 500, width: 800, height: 500, x: 0, y: 0, toJSON: () => ({}) }))
+    place.mockClear()
+    wrap(<PlacementEditor params={withText()} info={infoT()} onPlace={place} onPick={() => {}} rejectedShown={false} />)
+    const h = screen.getByTestId('text-handle'), svg = h.closest('svg')!
+    const [vx, vy, vw, vh] = svg.getAttribute('viewBox')!.split(' ').map(Number)
+    const client = (x: number, y: number) => ({ clientX: ((x - vx) / vw) * 800, clientY: ((-y - vy) / vh) * 500 })
+    fireEvent.pointerDown(h, { ...client(0, 0), pointerId: 1 })
+    fireEvent.pointerMove(svg, { ...client(14, -8), pointerId: 1 })
+    expect(place).not.toHaveBeenCalled()
+    fireEvent.pointerUp(svg, { pointerId: 1 })
+    const t = place.mock.calls[0][0].text!
+    expect(t.x).toBeCloseTo((14 + 35) / 70, 2)
+    expect(t.y).toBeCloseTo((-8 + 20) / 40, 2)
+  })
+  it('надпись выключена или растра нет: ни цели, ни коробки', () => {
+    const { unmount } = wrap(<PlacementEditor params={withText({ enabled: false })} info={infoT()} onPlace={place} onPick={() => {}} rejectedShown={false} />)
+    expect(screen.queryByTestId('text-handle')).toBeNull()
+    expect(screen.queryByRole('radio', { name: 'Text' })).toBeNull()
+    unmount()
+    wrap(<PlacementEditor params={withText()} info={info()} onPlace={place} onPick={() => {}} rejectedShown={false} />)
+    expect(screen.queryByTestId('text-handle')).toBeNull()
+  })
+  it('режим «только надпись»: нет целей крепления и штифтов, нет «Привязать», крепление не двигается', () => {
+    place.mockClear()
+    wrap(<PlacementEditor params={withText()} info={infoT()} onPlace={place} onPick={() => {}} rejectedShown only="text" />)
+    expect(screen.getAllByRole('radio').map((r) => r.getAttribute('aria-label') ?? r.textContent)).toEqual(['Text'])
+    expect(screen.queryByRole('button', { name: 'Snap to outline' })).toBeNull()
+    expect(screen.queryAllByTestId('candidate')).toHaveLength(0)
+    expect(screen.getByRole('radio', { name: 'Text' })).toHaveAttribute('aria-checked', 'true')
+    fireEvent.pointerDown(screen.getByTestId('mount-handle'), { clientX: 10, clientY: 10, pointerId: 1 })
+    fireEvent.pointerUp(screen.getByTestId('mount-handle').closest('svg')!, { pointerId: 1 })
+    expect(place).not.toHaveBeenCalled()
+  })
+  it('«Привязать к контуру» отключена для надписи', async () => {
+    wrap(<PlacementEditor params={withText()} info={infoT()} onPlace={place} onPick={() => {}} rejectedShown={false} />)
+    await userEvent.click(screen.getByRole('radio', { name: 'Text' }))
+    expect(screen.getByRole('button', { name: 'Snap to outline' })).toBeDisabled()
   })
 })

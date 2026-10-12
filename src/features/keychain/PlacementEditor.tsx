@@ -3,32 +3,35 @@ import { useTranslation } from 'react-i18next'
 import { IconMagnet, IconTarget } from '@tabler/icons-react'
 import type { KeychainInfo, KeychainParams } from '../../geometry/keychain'
 import { Button } from '../../ui/Button'
+import { cssFamily } from './fonts'
 import { LengthField } from '../../ui/LengthField'
 import { formatLength, useUnit } from '../../ui/units'
 import { nearestOnContour, niceStep, previewContour } from './contour'
 
-export type Target = 'mount' | 'exit' | `pin${number}`
+export type Target = 'mount' | 'exit' | 'text' | `pin${number}`
 
 /** Что редактор может менять: положения в долях габарита силуэта (0 слева/снизу, Y вверх). */
-export interface PlacementPatch { mount?: { x: number; y: number }; exit?: { x: number; y: number }; pin?: { index: number; x: number; y: number } }
+export interface PlacementPatch { mount?: { x: number; y: number }; exit?: { x: number; y: number }; pin?: { index: number; x: number; y: number }; text?: { x: number; y: number } }
 
 /**
  * Редактор положения (вид сверху): контур силуэта, сетка в мм с линейками, крепление и штифты в масштабе. Перетаскивание точек,
  * ввод точных X и Y, привязка к контуру. Координаты редактора — мм от левого нижнего угла габарита; хранятся в долях габарита.
  * Макета нет: собран из компонентов ui/ и токенов темы.
  */
-export function PlacementEditor({ params: p, info, onPlace, onPick, rejectedShown }: {
+export function PlacementEditor({ params: p, info, onPlace, onPick, rejectedShown, only }: {
   params: KeychainParams
   info: KeychainInfo
   onPlace: (patch: PlacementPatch) => void
   /** Выбрать подсказанное место. */
   onPick: (pos: { x: number; y: number; exit?: { x: number; y: number } }) => void
   rejectedShown: boolean
+  /** `text`: редактор только для надписи (в разделе «Надпись»): крепление и штифты видны, но не двигаются. */
+  only?: 'text'
 }) {
   const { t } = useTranslation()
   const { unit } = useUnit()
   const svg = useRef<SVGSVGElement>(null)
-  const [target, setTarget] = useState<Target>('mount')
+  const [target, setTarget] = useState<Target>(only === 'text' ? 'text' : 'mount')
   const [drag, setDrag] = useState<{ target: Target; x: number; y: number } | null>(null)
   const size = info.size, mi = info.mountInfo
   const W = size?.[0] ?? 1, H = size?.[1] ?? 1
@@ -52,6 +55,7 @@ export function PlacementEditor({ params: p, info, onPlace, onPick, rejectedShow
   // положения в мм от центра: из ответа воркера, с учётом перетаскивания
   const at = (tg: Target): { x: number; y: number } | null => {
     if (drag && drag.target === tg) return { x: drag.x, y: drag.y }
+    if (tg === 'text') return p.text.enabled ? { x: (p.text.x - 0.5) * W, y: (p.text.y - 0.5) * H } : null
     if (tg === 'mount') return mi?.mount ?? null
     if (tg === 'exit') return mi?.mount?.exit ?? null
     const i = Number(tg.slice(3))
@@ -60,7 +64,8 @@ export function PlacementEditor({ params: p, info, onPlace, onPick, rejectedShow
   const toRel = (x: number, y: number) => ({ x: (x + W / 2) / W, y: (y + H / 2) / H })
   const commit = (tg: Target, x: number, y: number) => {
     const r = toRel(x, y)
-    if (tg === 'mount') onPlace({ mount: r })
+    if (tg === 'text') onPlace({ text: r })
+    else if (tg === 'mount') onPlace({ mount: r })
     else if (tg === 'exit') onPlace({ exit: r })
     else onPlace({ pin: { index: Number(tg.slice(3)), ...r } })
   }
@@ -72,6 +77,7 @@ export function PlacementEditor({ params: p, info, onPlace, onPick, rejectedShow
     return { x: vb.x + ((e.clientX - r.left) / r.width) * vb.w, y: -(vb.y + ((e.clientY - r.top) / r.height) * vb.h) }
   }
   const down = (tg: Target) => (e: RPointerEvent) => {
+    if (only === 'text' && tg !== 'text') return
     setTarget(tg)
     ;(e.currentTarget as Element).setPointerCapture?.(e.pointerId)
     const q = pointer(e); const cur = at(tg)
@@ -83,9 +89,11 @@ export function PlacementEditor({ params: p, info, onPlace, onPick, rejectedShow
   const cur = at(target)
   const edX = cur ? cur.x + W / 2 : 0, edY = cur ? cur.y + H / 2 : 0
   const setEd = (ex: number, ey: number) => commit(target, ex - W / 2, ey - H / 2)
-  const snap = () => { if (!cur) return; const n = nearestOnContour(contour, cur.x, cur.y); if (n) commit(target, n.x, n.y) }
+  const snap = () => { if (!cur || target === 'text') return; const n = nearestOnContour(contour, cur.x, cur.y); if (n) commit(target, n.x, n.y) }
   const mo = p.mount
-  const mountPt = at('mount'), exitPt = at('exit')
+  const mountPt = at('mount'), exitPt = at('exit'), textPt = at('text')
+  const tx = p.text, tbox = info.text
+  const tLines = tx.content.split('\n').slice(0, 12), tStep = (tx.size / 0.72) * 1.2 * tx.lineSpacing // шаг строк в мм: как в растре
   const stroke = 'var(--color-border-strong)'
 
   return (
@@ -101,11 +109,11 @@ export function PlacementEditor({ params: p, info, onPlace, onPick, rejectedShow
         <rect x={-W / 2} y={-H / 2} width={W} height={H} fill="none" stroke={stroke} strokeWidth={0.2} strokeDasharray="1.5 1.5" />
         {contour.map((l, i) => <polygon key={i} points={l.map(([x, y]) => `${x},${sy(y)}`).join(' ')} fill="var(--color-accent-muted)" stroke="var(--color-accent)" strokeWidth={0.3} fillRule="evenodd" opacity={0.85} />)}
 
-        {rejectedShown && mi?.rejected.map((q, i) => (
+        {!only && rejectedShown && mi?.rejected.map((q, i) => (
           <g key={`rj${i}`} data-testid="rejected"><title>{t(`keychain.editor.reasons.${q.reason}`)}</title>
             <path d={`M${q.x - 0.6},${sy(q.y) - 0.6}l1.2,1.2m0,-1.2l-1.2,1.2`} stroke="var(--color-error-text)" strokeWidth={0.25} opacity={0.7} /></g>
         ))}
-        {mi?.candidates.map((q, i) => (
+        {!only && mi?.candidates.map((q, i) => (
           <g key={`cd${i}`} data-testid="candidate" onClick={() => onPick({ x: q.x, y: q.y, exit: q.exit })} className="cursor-pointer">
             <title>{t('keychain.editor.candidate', { n: i + 1 })}</title>
             <circle cx={q.x} cy={sy(q.y)} r={Math.max(1, mo.diameter / 2)} fill="none" stroke="var(--color-success-text)" strokeWidth={0.4} strokeDasharray="1 0.8" />
@@ -135,12 +143,30 @@ export function PlacementEditor({ params: p, info, onPlace, onPick, rejectedShow
             </g>
           )
         })}
+        {tx.enabled && tbox && textPt && (
+          <g data-testid="text-handle" transform={`translate(${textPt.x} ${sy(textPt.y)}) rotate(${-tx.rotation})`} onPointerDown={down('text')} className="cursor-grab">
+            <rect x={-tbox.w / 2} y={-tbox.h / 2} width={tbox.w} height={tbox.h} fill="var(--color-accent-muted)" fillOpacity={0.35}
+              stroke={target === 'text' ? 'var(--color-accent)' : 'var(--color-text-subtle)'} strokeWidth={0.3} strokeDasharray="1 0.8" />
+            {tLines.map((line, i) => {
+              const y = -((tLines.length - 1) * tStep) / 2 + tx.size / 2 + i * tStep
+              return (
+                <g key={i}>
+                  <line data-testid="text-baseline" x1={-tbox.w / 2} x2={tbox.w / 2} y1={y} y2={y} stroke="var(--color-accent)" strokeWidth={0.12} opacity={0.8} />
+                  <text x={tx.align === 'left' ? -tbox.w / 2 + 0.2 : tx.align === 'right' ? tbox.w / 2 - 0.2 : 0} y={y} fontSize={tx.size / 0.72} fill="var(--color-text)" opacity={0.85}
+                    textAnchor={tx.align === 'left' ? 'start' : tx.align === 'right' ? 'end' : 'middle'} fontFamily={cssFamily(tx.font)} fontWeight={tx.font.bold ? 700 : 400} fontStyle={tx.font.italic ? 'italic' : 'normal'}
+                    letterSpacing={tx.letterSpacing} pointerEvents="none">{line}</text>
+                </g>
+              )
+            })}
+          </g>
+        )}
       </svg>
 
       <div className="flex flex-wrap items-center gap-1.5 text-xs text-text-muted" role="radiogroup" aria-label={t('keychain.editor.target')}>
-        {mo.style !== 'none' && <TargetBtn on={target === 'mount'} onClick={() => setTarget('mount')} label={t(mo.style === 'channel' ? 'keychain.editor.channelEnd' : 'keychain.editor.mount')} />}
-        {mo.style === 'channel' && <TargetBtn on={target === 'exit'} onClick={() => setTarget('exit')} label={t('keychain.editor.exit')} />}
-        {(mi?.pins ?? []).map((_, i) => <TargetBtn key={i} on={target === `pin${i}`} onClick={() => setTarget(`pin${i}`)} label={t('keychain.editor.pin', { n: i + 1 })} />)}
+        {tx.enabled && tbox && <TargetBtn on={target === 'text'} onClick={() => setTarget('text')} label={t('keychain.editor.text')} />}
+        {!only && mo.style !== 'none' && <TargetBtn on={target === 'mount'} onClick={() => setTarget('mount')} label={t(mo.style === 'channel' ? 'keychain.editor.channelEnd' : 'keychain.editor.mount')} />}
+        {!only && mo.style === 'channel' && <TargetBtn on={target === 'exit'} onClick={() => setTarget('exit')} label={t('keychain.editor.exit')} />}
+        {!only && (mi?.pins ?? []).map((_, i) => <TargetBtn key={i} on={target === `pin${i}`} onClick={() => setTarget(`pin${i}`)} label={t('keychain.editor.pin', { n: i + 1 })} />)}
       </div>
       {cur && (
         <div className="grid grid-cols-2 gap-2">
@@ -148,7 +174,7 @@ export function PlacementEditor({ params: p, info, onPlace, onPick, rejectedShow
           <LengthField label={t('keychain.editor.y')} value={edY} min={-m} max={H + m} step={0.5} onChange={(v) => setEd(edX, v)} />
         </div>
       )}
-      <Button onClick={snap} disabled={!cur}><IconMagnet size={16} stroke={1.75} />{t('keychain.editor.snap')}</Button>
+      {!only && <Button onClick={snap} disabled={!cur || target === 'text'}><IconMagnet size={16} stroke={1.75} />{t('keychain.editor.snap')}</Button>}
       <span className="inline-flex items-center gap-1.5 text-xs text-text-subtle"><IconTarget size={14} stroke={1.75} />{t('keychain.editor.hint')}</span>
     </div>
   )
