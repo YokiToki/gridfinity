@@ -23,13 +23,13 @@
 
 ## 4. UI
 
-- [ ] 4.1 `KeychainMode` replaces the placeholder; `ImageSection` (picker, drop zone, replace, errors). Component test: drop of a valid and an invalid file. No artboard: build from `ui/` components.
-- [ ] 4.2 `SilhouetteSection` + `MaskPreview` (threshold, invert, close, fill, specks, grow, hole ids with keep-open toggles). Component tests: slider updates params, hole toggle updates `keepOpen`.
-- [ ] 4.3 `SizeSection` (`LengthField` for sizes), `ReliefSection`, `BaseSection` with shape picker and plate size/margin/radius. Component tests incl. inch display and validation message.
-- [ ] 4.4 Export block (STL, size, volume), persistence under `keychain.relief` with `usePersistedState` and a migrate stub. en/ru strings for every new key (parity test).
-- [ ] 4.5 Compare with the component library in the browser, en and ru, desktop and 390 px; fix clipped labels.
+- [x] 4.1 `KeychainMode` replaces the placeholder; `ImageSection` (picker, drop zone, replace, errors). Component test: drop of a valid and an invalid file. No artboard: build from `ui/` components.
+- [x] 4.2 `SilhouetteSection` + `MaskPreview` (threshold, invert, close, fill, specks, grow, hole ids with keep-open toggles). Component tests: slider updates params, hole toggle updates `keepOpen`.
+- [x] 4.3 `SizeSection` (`LengthField` for sizes), `ReliefSection`, `BaseSection` with shape picker and plate size/margin/radius. Component tests incl. inch display and validation message.
+- [x] 4.4 Export block (STL, size, volume), persistence under `keychain.relief` with `usePersistedState` and a migrate stub. en/ru strings for every new key (parity test).
+- [x] 4.5 Compare with the component library in the browser, en and ru, desktop and 390 px; fix clipped labels.
 
 ## 5. Verification
 
-- [ ] 5.1 `npm test` and `npm run build` are green; the dev server starts with no console errors.
-- [ ] 5.2 In the browser: import the `v_form.jpeg` and `o_form.jpeg` references from `~/sandbox/openscad-agent/work/`, use the reference parameters (70 mm, hmax 2, edge 6, pow 0.65, base 2), check the bounding box and compare the volume with `keychain_v_form_010.stl` within a documented tolerance; export STL and open it in a slicer.
+- [x] 5.1 `npm test` and `npm run build` are green; the dev server starts with no console errors.
+- [x] 5.2 In the browser: import the `v_form.jpeg` and `o_form.jpeg` references from `~/sandbox/openscad-agent/work/`, use the reference parameters (70 mm, hmax 2, edge 6, pow 0.65, base 2), check the bounding box and compare the volume with `keychain_v_form_010.stl` within a documented tolerance; export STL and open it in a slicer.

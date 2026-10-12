@@ -24,6 +24,17 @@ Here geometry is `manifold-3d` in a worker, UI is React; geometry code stays Rea
 - **UI:** `features/keychain/{KeychainMode,KeychainPanel,ImageSection,SilhouetteSection,ReliefSection,SizeSection,BaseSection,MaskPreview}`; build with `ui/` components and tokens. No artboard exists: mask preview is an `<canvas>` overlay panel in the viewport corner (collapsible) with hole ids drawn on it. Mobile: panel in the existing bottom drawer.
 - **Export:** reuse the Baseplate `ExportBlock` pattern (STL, size and volume chip).
 
+## Implementation notes
+
+- **Plate = union of two solids:** the relief grid mesh (top = base + h over the silhouette) and an extruded `CrossSection` outline of thickness `base`; inside the silhouette the result equals the reference (`h + base_layer`). The silhouette outline for "follow silhouette" is traced from the solid blocks (`maskLoops` from the art pipeline), so it coincides with the relief walls.
+- **Exact size:** the grid step is fitted to the real extent of solid blocks (thin tips at the bounding box edge can fall out of the grid), so the bounding box is the requested size, not one cell short as in the reference script (69.91 mm for 70).
+- **Size modes:** `longest | width | height` keep the aspect ratio; `box` sets width and height exactly (the mask is resampled anisotropically), which is the "unlocked" case.
+- **Not done:** the optional light smoothing of the top surface (stair-stepped walls are limited by the grid step instead); spine and groove detail belong to `12-keychain-patterns`.
+
+## Verification against the reference (task 5.2)
+
+`v_form.jpeg` with 70 mm, hmax 2, edge 6, pow 0.65, base 2, default silhouette settings (close 3, grow 2): bounding box 70 × 59.08 × 4 mm (reference 69.91 × 59.35 × 4.3 with the spine), volume 2181 mm³ at 35k triangles. The reference `keychain_v_form_010.stl` holds both halves of the symmetric relief (3487 mm³ total, 1743 mm³ per side) after engraving, spine, mount channel and pins, which this change does not have, so the volume is expected to be higher: tolerance used is **+30 % / −10 %** against the per-side reference. `o_form.jpeg` imports and builds (57.17 × 70 mm). Exported STL checked for a closed solid, min z = 0 and size by reading the downloaded file; opening it in a slicer is left to the user.
+
 ## Risks / Trade-offs
 
 - Large masks (4096²) make EDT and meshing slow → cap the working size, run in the worker, debounce like other modes, and drop stale requests (already provided by `modelClient`).

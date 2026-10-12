@@ -35,7 +35,7 @@ describe('Header: продукты и режимы', () => {
   it('переход в Keychain: переключатель режимов скрыт, активен Keychain Master', async () => {
     at('/gridfinity/box')
     await userEvent.click(within(screen.getByRole('navigation', { name: 'Product' })).getByRole('link', { name: 'Keychain Master' }))
-    expect(await screen.findByText('Keychain Master is coming soon')).toBeInTheDocument()
+    expect(await screen.findByText(/Choose an image to start/)).toBeInTheDocument()
     expect(screen.queryByRole('navigation', { name: 'Mode' })).toBeNull()
     expect(within(screen.getByRole('navigation', { name: 'Product' })).getByRole('link', { name: 'Keychain Master' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByRole('link', { name: /back to start/ })).toHaveTextContent('Keychain Master')

@@ -220,6 +220,9 @@ export interface Grid {
   /** Шаг по осям, мм (по X и Y отличаются на доли процента, чтобы габарит был ровно заданным). */
   dx: number
   dy: number
+  /** Первый узел твёрдых блоков по осям: от него отсчитываются координаты (тонкие кончики у края габарита выпадают из сетки, габарит считается по настоящим блокам). */
+  i0: number
+  j0: number
   mask: Uint8Array
   /** Блоки (между четырьмя узлами материала): 1 — твёрдый. */
   blocks: Uint8Array
@@ -234,20 +237,24 @@ export function buildGrid(mask: Uint8Array, w: number, bounds: [number, number, 
   const nx = sx + 2 * pad, ny = sy + 2 * pad
   const m = new Uint8Array(nx * ny)
   for (let j = 0; j < sy; j++) for (let i = 0; i < sx; i++) m[(j + pad) * nx + i + pad] = small[j * sx + i]
-  const dx = wMm / (sx - 1), dy = hMm / (sy - 1)
   const d = edt(m, nx, ny)
   const top = new Float32Array(nx * ny)
-  const pitch = (dx + dy) / 2
+  const pitch = cell
   for (let i = 0; i < top.length; i++) top[i] = m[i] ? reliefHeight(d[i] * pitch, r) : 0
   const blocks = new Uint8Array((nx - 1) * (ny - 1))
   for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++) {
     blocks[j * (nx - 1) + i] = m[j * nx + i] && m[j * nx + i + 1] && m[(j + 1) * nx + i] && m[(j + 1) * nx + i + 1] ? 1 : 0
   }
-  return { nx, ny, pad, dx, dy, mask: m, blocks, top }
+  // габарит по настоящим блокам: шаг подгоняется, чтобы сетка занимала ровно заданный размер
+  let bi0 = nx, bi1 = -1, bj0 = ny, bj1 = -1
+  for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++) if (blocks[j * (nx - 1) + i]) { if (i < bi0) bi0 = i; if (i > bi1) bi1 = i; if (j < bj0) bj0 = j; if (j > bj1) bj1 = j }
+  if (bi1 < 0) { bi0 = pad; bi1 = nx - pad - 2; bj0 = pad; bj1 = ny - pad - 2 }
+  const dx = wMm / (bi1 + 1 - bi0), dy = hMm / (bj1 + 1 - bj0)
+  return { nx, ny, pad, dx, dy, i0: bi0, j0: bj0, mask: m, blocks, top }
 }
 
 /** Узел (i, j) в мм: центр габарита фигуры в нуле, +Y вверх. */
-const nodeXY = (g: Grid, i: number, j: number, wMm: number, hMm: number): [number, number] => [(i - g.pad) * g.dx - wMm / 2, hMm / 2 - (j - g.pad) * g.dy]
+const nodeXY = (g: Grid, i: number, j: number, wMm: number, hMm: number): [number, number] => [(i - g.i0) * g.dx - wMm / 2, hMm / 2 - (j - g.j0) * g.dy]
 
 export interface ReliefMesh { vertProperties: Float32Array; triVerts: Uint32Array; triangles: number }
 

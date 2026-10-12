@@ -466,5 +466,107 @@
       "tag1": "image → relief",
       "tag2": "soon"
     }
+  },
+  "keychain": {
+    "empty": "Choose an image to start: a drawing, logo or emblem works best (dark shape on a light background, or a PNG with transparency).",
+    "image": {
+      "title": "Image",
+      "pick": "Choose image",
+      "replace": "Replace image",
+      "drop": "or drop a PNG, JPEG, WebP or SVG here",
+      "current": "{{name}}",
+      "loading": "Reading {{name}}…",
+      "unsupported": "This file type is not supported. Use PNG, JPEG, WebP or SVG.",
+      "decode": "The file could not be read as an image.",
+      "empty": "The image has no pixels.",
+      "downscaled": "The image ({{w}} × {{h}}) is larger than the working limit and was reduced to {{nw}} × {{nh}}.",
+      "notPersisted": "Storage is unavailable: the image will not be kept after a reload.",
+      "lost": "The saved image was not found on this device. Choose it again.",
+      "photo": "This looks like a photo. The relief works best with drawings, logos and emblems; a photo may give a poor silhouette."
+    },
+    "silhouette": {
+      "title": "Silhouette",
+      "auto": "Automatic threshold",
+      "threshold": "Threshold",
+      "invert": "Invert (light shape on dark)",
+      "close": "Close gaps",
+      "speck": "Remove specks smaller than",
+      "grow": "Grow (negative shrinks)",
+      "fillHoles": "Fill holes",
+      "holes": "Holes",
+      "noHoles": "No holes",
+      "holeRow": "Hole {{id}} · {{size}} px",
+      "keepOpen": "Keep hole {{id}} open",
+      "open": "Keep open",
+      "summary": "Threshold {{value}}",
+      "summaryAuto": "Auto, {{value}}"
+    },
+    "preview": {
+      "title": "Silhouette mask",
+      "label": "Mask of the silhouette with numbered holes",
+      "empty": "The mask is empty"
+    },
+    "size": {
+      "title": "Size",
+      "mode": "Size by",
+      "modes": {
+        "longest": "Longest",
+        "width": "Width",
+        "height": "Height",
+        "box": "W × H"
+      },
+      "longest": "Longest side",
+      "width": "Width",
+      "height": "Height",
+      "hint": "The silhouette is scaled; heights and thicknesses stay in millimetres.",
+      "hintBox": "Width and height are set exactly; the shape is stretched to fit."
+    },
+    "relief": {
+      "title": "Relief",
+      "hmax": "Plateau height",
+      "edgeWidth": "Bevel width",
+      "pow": "Bevel exponent",
+      "heightFloor": "Minimum rim height",
+      "summary": "Height {{h}} · bevel {{e}} {{u}}"
+    },
+    "base": {
+      "title": "Base plate",
+      "thickness": "Thickness",
+      "shape": "Plate shape",
+      "shapes": {
+        "silhouette": "Follow silhouette",
+        "rect": "Rectangle",
+        "rounded": "Rounded rectangle",
+        "circle": "Circle"
+      },
+      "offset": "Offset from the silhouette",
+      "auto": "Size from the silhouette",
+      "margin": "Margin",
+      "width": "Width",
+      "height": "Height",
+      "diameter": "Diameter",
+      "radius": "Corner radius",
+      "none": "No plate"
+    },
+    "quality": {
+      "title": "Resolution",
+      "cell": "Grid step",
+      "budget": "Triangle budget",
+      "reduced": "The resolution was reduced to fit the triangle budget: the grid step is {{cell}} {{u}}."
+    },
+    "error": {
+      "noImage": "Choose an image first.",
+      "emptyMask": "The settings leave an empty silhouette. Change the threshold, invert or the other silhouette settings.",
+      "plateTooSmall": "The base plate is smaller than the silhouette. Make the plate larger or choose another shape.",
+      "mesh": "The relief could not be built with these settings.",
+      "size": "Enter a size greater than zero",
+      "hmax": "Enter a height greater than zero",
+      "edgeWidth": "Enter a width greater than zero",
+      "pow": "Enter an exponent greater than zero",
+      "negative": "Must not be negative",
+      "heightFloor": "The minimum rim height must be below the plateau height",
+      "cell": "The grid step must be between 0.02 and 5 mm",
+      "budget": "The budget must be at least 10 000 triangles"
+    }
   }
 }

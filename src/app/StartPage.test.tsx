@@ -42,7 +42,7 @@ describe('StartPage (выбор продукта)', () => {
   it('клавиша 2 открывает Keychain Master', async () => {
     renderAt('/')
     await userEvent.keyboard('2')
-    expect(await screen.findByText('Keychain Master is coming soon')).toBeInTheDocument()
+    expect(await screen.findByText(/Choose an image to start/)).toBeInTheDocument()
   })
   it('плашка «Продолжить» скрыта без сохранённой сессии и ведёт в режим Gridfinity', () => {
     const { unmount } = renderAt('/')

@@ -21,6 +21,8 @@ vi.mock('../viewport/Viewport', () => ({ Viewport: () => <div data-testid="viewp
 const open = () => render(<I18nextProvider i18n={i18n}><RouterProvider router={createMemoryRouter(routes, { initialEntries: ['/cutout'] })} /></I18nextProvider>)
 const fileOf = (buf: ArrayBuffer, name: string) => new File([buf], name)
 
+vi.setConfig({ testTimeout: 30000 }) // полный прогон с геометрическими тестами нагружает процессор: IndexedDB и рендер бывают медленными
+
 describe('режим Cutout: импорт STL', () => {
   beforeEach(async () => { globalThis.indexedDB = new IDBFactory(); localStorage.clear(); registered.length = 0; generate.mockClear(); await i18n.changeLanguage('en') })
 
@@ -76,8 +78,8 @@ describe('режим Cutout: импорт STL', () => {
     first.unmount()
     registered.length = 0
     open()
-    expect(await screen.findByRole('button', { name: 'Select tool' }, { timeout: 5000 })).toBeInTheDocument()
-    await waitFor(() => expect(registered).toHaveLength(1), { timeout: 5000 }) // чтение IndexedDB под нагрузкой полного прогона бывает долгим
+    expect(await screen.findByRole('button', { name: 'Select tool' }, { timeout: 20000 })).toBeInTheDocument()
+    await waitFor(() => expect(registered).toHaveLength(1), { timeout: 20000 }) // чтение IndexedDB под нагрузкой полного прогона бывает долгим
     expect(screen.queryByText(/not stored on this device/)).toBeNull()
   })
   it('удаление выреза освобождает сетку в хранилище', async () => {

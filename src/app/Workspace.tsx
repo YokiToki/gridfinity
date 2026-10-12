@@ -8,7 +8,7 @@ import { ExportOptionsSection } from '../features/export/ExportOptionsSection'
 import { MeasurementsBar } from '../features/viewport/MeasurementsBar'
 
 /** Раскладка режима: панель параметров, закреплённый блок экспорта и 3D-вид. На узком экране панель — нижняя шторка. */
-export function Workspace({ panel, footer, model, plate, gap, busy, exportOptions = true }: {
+export function Workspace({ panel, footer, model, plate, gap, busy, exportOptions = true, overlay }: {
   panel: ReactNode
   footer?: ReactNode
   model: ModelResult | null
@@ -18,6 +18,8 @@ export function Workspace({ panel, footer, model, plate, gap, busy, exportOption
   busy?: boolean
   /** Секция параметров экспорта в панели (у заглушек без модели не нужна). */
   exportOptions?: boolean
+  /** Плавающий блок поверх вьюпорта (например, предпросмотр маски Keychain). */
+  overlay?: ReactNode
 }) {
   const { t } = useTranslation()
   const [view, setView] = usePersistedState('gridfinity.viewport', { tools: true })
@@ -73,6 +75,7 @@ export function Workspace({ panel, footer, model, plate, gap, busy, exportOption
             <IconShape size={16} stroke={1.75} />
           </button>
         )}
+        {overlay}
         <MeasurementsBar model={model} busy={busy} />
       </section>
     </div>
