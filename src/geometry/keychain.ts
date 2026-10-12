@@ -14,7 +14,7 @@ import { gaussianBlur, median3, sigmaCells } from './raster/blur'
 import { anchorField, exitRay, findAnchors, nearestExit, relToMm, type Anchor, type AnchorField, type Rejected } from './anchors'
 import { fitChecks, type FitIssue } from './keychainFit'
 import { inflateShape, shapeMask, type ShapeParams } from './shapes'
-import { defaultText, MAX_TEXT_CHARS, MAX_TEXT_LINES, type TextParams, type TextRegistry } from './text'
+import { defaultText, MAX_TEXT_CHARS, MAX_TEXT_LINES, textBoxMm, textSampler, type TextParams, type TextRaster, type TextRegistry } from './text'
 import { shapeCrossSection } from './shapeOutline'
 import { cylinderAlong, cylinderZ, lugJoin, lugSolid, pinLength, pinRadiusLoose, pinSolid } from './keychainMounts'
 
@@ -524,6 +524,8 @@ export interface GridInput {
   exactRim?: boolean
   /** Области с заданным уровнем: номера пикселей силуэта (разрешение картинки) и уровень каждой, мм над подложкой. */
   levels?: { ids: Int32Array; level: Map<number, number> }
+  /** Надпись: покрытие 0…1 в точке (мм от центра габарита силуэта) и правило высоты. */
+  text?: { cov: (x: number, y: number) => number; mode: 'emboss' | 'engrave'; height: number; depth: number }
 }
 
 const blocksOf = (m: Uint8Array, nx: number, ny: number) => {
@@ -596,6 +598,9 @@ export function buildGrid(inp: GridInput): Grid {
     raw[k] = gray ? floor + brightnessValue(gray[k], p.source) * (r.hmax - floor) : reliefHeight(dmm, r)
   }
   if (sSurface > 0) raw = gaussianBlur(raw, nx, ny, sSurface, m, fixed)
+  // надпись: рельеф поднимает поверхность на height, гравировка опускает на depth, но не ниже lo (минимальная высота кромки) и не выше прежней
+  const txt = inp.text
+  const lettered = (t: number, lo: number) => (txt!.mode === 'emboss' ? t + txt!.height : Math.max(t - txt!.depth, Math.min(t, lo)))
   const top = new Float32Array(nx * ny)
   const meshMask = plateInGrid ? new Uint8Array(m) : m
 
@@ -603,6 +608,7 @@ export function buildGrid(inp: GridInput): Grid {
     const i = k % nx, j = (k - i) / nx
     if (m[k] && levelAt[k] >= 0) {
       top[k] = base + Math.max(levelAt[k], floor) // ровная вершина области: без профиля, деталей, узора и сглаживания
+      if (txt && txt.cov(X(i), Y(j)) >= 0.5) top[k] = lettered(top[k], engraved ? floor : base + floor)
     } else if (m[k]) {
       const dmm = Math.max(d[k] * cell - shift, 0)
       const pv = profileValue(dmm / r.edgeWidth, r)
@@ -618,11 +624,14 @@ export function buildGrid(inp: GridInput): Grid {
         const lo = engraved ? floor : base + floor
         t = Math.max(t - pat.depth, Math.min(t, lo))
       }
+      // надпись после деталей и узора: буквы остаются чёткими
+      if (txt && txt.cov(X(i), Y(j)) >= 0.5) t = lettered(t, engraved ? floor : base + floor)
       top[k] = t
     } else if (plateInGrid && plate && plateInside(plate, X(i), Y(j), dOut ? dOut[k] * cell : 0)) {
       meshMask[k] = 1
       let t = base
       if (patOn && pat.scope === 'base' && coverage(pat, X(i), Y(j))) t = Math.max(base - pat.depth, Math.min(base, floor))
+      if (txt && txt.cov(X(i), Y(j)) >= 0.5) t = lettered(t, floor)
       top[k] = t
     }
   }
@@ -718,6 +727,8 @@ export interface KeychainInfo {
   minCell?: number
   triangles?: number
   mountInfo?: MountInfo
+  /** Надпись: размер коробки растра, мм; clipped — часть надписи вне материала (не строится). */
+  text?: { w: number; h: number; clipped: boolean }
 }
 
 /** Изображения, доступные воркеру по id. */
@@ -808,7 +819,35 @@ function layoutSheet(w: ManifoldToplevel, top: Manifold, bottom: Manifold, pins:
 }
 
 /** Сборка частей: одна деталь A1 (односторонний рельеф) или лист из двух половин и штифтов. */
-export function buildKeychainParts(w: ManifoldToplevel, p: KeychainParams, registry: ImageRegistry, texts: TextRegistry = new Map()): { parts: KeychainPart[]; info: KeychainInfo } {
+interface CoreResult { parts: KeychainPart[]; info: KeychainInfo; /** Две половины: верхняя собрана, нижняя и лист строятся в обёртке (там решается, нести ли надпись). */ halves?: { top: Manifold; pinCount: number } }
+
+/** Лежит ли точка (x, y) мм в материале силуэта (маска картинки или фигуры). */
+function silhouetteAt(mask: Uint8Array, imgW: number, b: [number, number, number, number], wMm: number, hMm: number, x: number, y: number) {
+  const px = Math.floor(b[0] + ((x + wMm / 2) / wMm) * (b[2] - b[0] + 1)), py = Math.floor(b[1] + ((hMm / 2 - y) / hMm) * (b[3] - b[1] + 1))
+  return px >= b[0] && px <= b[2] && py >= b[1] && py <= b[3] && mask[py * imgW + px] === 1
+}
+
+/**
+ * Где лежит надпись относительно материала: outside — часть букв вне силуэта (нужна подложка в сетке), clipped — часть букв вне
+ * силуэта и вне подложки (не строится). Проверка по решётке 0.3 мм поверх повёрнутой коробки надписи.
+ */
+export function textRegion(raster: TextRaster, t: TextParams, wMm: number, hMm: number, inSilhouette: (x: number, y: number) => boolean, onPlate: (x: number, y: number) => boolean) {
+  const cov = textSampler(raster, t, wMm, hMm)
+  const box = textBoxMm(raster)
+  const c = { x: (t.x - 0.5) * wMm, y: (t.y - 0.5) * hMm }
+  const a = (t.rotation * Math.PI) / 180, ca = Math.abs(Math.cos(a)), sa = Math.abs(Math.sin(a))
+  const hx = (box.w * ca + box.h * sa) / 2, hy = (box.w * sa + box.h * ca) / 2
+  const step = 0.3
+  let outside = false, clipped = false
+  for (let y = c.y - hy; y <= c.y + hy && !clipped; y += step) for (let x = c.x - hx; x <= c.x + hx; x += step) {
+    if (cov(x, y) < 0.5 || inSilhouette(x, y)) continue
+    outside = true
+    if (!onPlate(x, y)) { clipped = true; break }
+  }
+  return { outside, clipped }
+}
+
+function buildKeychainCore(w: ManifoldToplevel, p: KeychainParams, registry: ImageRegistry, texts: TextRegistry): CoreResult {
   const shape = p.origin.kind === 'shape' ? p.origin.shape : null
   let img: GrayImage, mask: Uint8Array, b: [number, number, number, number], wMm: number, hMm: number
   let base: { threshold: number; photoLike: boolean; preview: MaskPreview | null; goneAreas?: number[] }
@@ -840,7 +879,25 @@ export function buildKeychainParts(w: ManifoldToplevel, p: KeychainParams, regis
   const plate = plateSpec(p.base, wMm, hMm)
   if (plate.error) return { parts: [], info: { ...base, error: plate.error, size: [wMm, hMm] } }
   const needsField = p.mount.style !== 'none' || (p.split.enabled && p.split.pins > 0)
-  const plateInGrid = !!plate.spec && p.pattern.kind !== 'none' && p.pattern.scope === 'base'
+  // надпись: растр из реестра воркера (его кладёт рабочее пространство), покрытие в мм от центра габарита силуэта
+  const traster = p.text?.enabled && p.text.maskId ? texts.get(p.text.maskId) : undefined
+  let region = { outside: false, clipped: false }
+  if (traster) {
+    const sil = (x: number, y: number) => silhouetteAt(mask, img.width, b, wMm, hMm, x, y)
+    const onPlate = (x: number, y: number) => {
+      const sp = plate.spec
+      if (!sp) return false
+      if (sp.shape !== 'silhouette') return plateInside(sp, x, y, 0)
+      if (sil(x, y)) return true
+      // подложка «по силуэту»: в пределах смещения от края (проверка по кольцам вокруг точки)
+      for (const r of [sp.offset * 0.5, sp.offset]) for (let k = 0; k < 16; k++) if (sil(x + r * Math.cos((k * Math.PI) / 8), y + r * Math.sin((k * Math.PI) / 8))) return true
+      return false
+    }
+    region = textRegion(traster, p.text, wMm, hMm, sil, onPlate)
+  }
+  const textInput = traster ? { cov: textSampler(traster, p.text, wMm, hMm), mode: p.text.mode, height: p.text.height, depth: p.text.depth } : undefined
+  // подложка в сетке нужна узору на ней и надписи, которая выходит за силуэт на подложку
+  const plateInGrid = !!plate.spec && ((p.pattern.kind !== 'none' && p.pattern.scope === 'base') || region.outside)
   // Фигура без подложки в сетке строится с запасом m и обрезается по точному контуру: скругления не зависят от шага сетки.
   // Запас — полторы ячейки с поправкой на рост площади: так любая точка фигуры целиком лежит в блоках сетки.
   let rel = { img, mask, bounds: b, wMm, hMm, shift: 0 }
@@ -854,13 +911,13 @@ export function buildKeychainParts(w: ManifoldToplevel, p: KeychainParams, regis
   const fillSil = count / ((rel.bounds[2] - rel.bounds[0] + 1) * (rel.bounds[3] - rel.bounds[1] + 1))
   const fill = plateInGrid ? plate.spec!.area / (wMm * hMm) : fillSil
   const { cell, reduced, min } = effectiveCell(rel.wMm, rel.hMm, fill, p.quality)
-  const gridInput = { img: rel.img, mask: rel.mask, bounds: rel.bounds, wMm: rel.wMm, hMm: rel.hMm, cell, p, plate: plate.spec, plateInGrid, edgeShift: rel.shift, exactRim: rel.shift > 0, levels }
+  const gridInput = { img: rel.img, mask: rel.mask, bounds: rel.bounds, wMm: rel.wMm, hMm: rel.hMm, cell, p, plate: plate.spec, plateInGrid, edgeShift: rel.shift, exactRim: rel.shift > 0, levels, text: textInput }
   const grid = buildGrid(gridInput)
   const mesh = reliefMesh(grid, rel.wMm, rel.hMm)
   const raw = new w.Mesh({ numProp: 3, vertProperties: mesh.vertProperties, triVerts: mesh.triVerts })
   raw.merge()
   let relief = new w.Manifold(raw)
-  const info: KeychainInfo = { ...base, size: [wMm, hMm], cell, reduced, minCell: min, triangles: mesh.triangles }
+  const info: KeychainInfo = { ...base, size: [wMm, hMm], cell, reduced, minCell: min, triangles: mesh.triangles, ...(traster ? { text: { ...textBoxMm(traster), clipped: region.clipped } } : {}) }
   if (relief.status() !== 'NoError' || relief.isEmpty()) return { parts: [], info: { ...info, error: 'keychain.error.mesh' } }
   // точный контур фигуры (null у изображения): по нему обрезается рельеф и строится подложка по контуру
   const exact = shape ? shapeCrossSection(w, shape) : null
@@ -895,7 +952,7 @@ export function buildKeychainParts(w: ManifoldToplevel, p: KeychainParams, regis
   // поле для крепления: подложка должна быть в сетке, иначе места на подложке вне сетки не видны
   // у фигуры поле строится по точной маске без запаса (расстояния до края настоящие)
   const fgrid = shape && needsField
-    ? buildGrid({ img, mask, bounds: b, wMm, hMm, cell, p, plate: plate.spec, plateInGrid: true })
+    ? buildGrid({ img, mask, bounds: b, wMm, hMm, cell, p, plate: plate.spec, plateInGrid: true, text: textInput })
     : !needsField || plateInGrid || !plate.spec ? grid : buildGrid({ ...gridInput, plateInGrid: true })
   const field = needsField ? anchorField(fgrid, wMm, hMm, cell) : null
   const res = field ? resolveMounts(p, field, wMm, hMm) : { info: { mount: null, pins: [], candidates: [], rejected: [], issues: [] } as MountInfo, pins: [] as { x: number; y: number }[], mount: null as MountInfo['mount'] }
@@ -933,12 +990,30 @@ export function buildKeychainParts(w: ManifoldToplevel, p: KeychainParams, regis
   const finalInfo: KeychainInfo = { ...info, mountInfo: res.info }
   if (!sp.enabled) return { parts: [{ label: 'A1', col: 0, row: 0, solid }], info: finalInfo }
 
-  // две половины: нижняя — зеркало верхней относительно плоскости разъёма, затем поворот на 180° вокруг X (лицом вниз на стол)
-  const top = solid
-  const bottom = top.mirror([0, 0, 1]).rotate([180, 0, 0])
-  const loose = res.pins.map((q) => pinSolid(w, 0, 0, pinRadiusLoose(sp.pinRadius, sp.clearance), pinLength(sp.pinDepth)))
+  // две половины: верхнюю строит ядро, нижнюю и лист собирает обёртка
+  return { parts: [], info: finalInfo, halves: { top: solid, pinCount: res.pins.length } }
+}
+
+/**
+ * Модель Keychain. Две половины: нижняя — зеркало верхней относительно плоскости разъёма, затем поворот на 180° вокруг X (лицом
+ * вниз на стол). Надпись только на верхней: для нижней ядро строится ещё раз без надписи.
+ */
+export function buildKeychainParts(w: ManifoldToplevel, p: KeychainParams, registry: ImageRegistry, texts: TextRegistry = new Map()): { parts: KeychainPart[]; info: KeychainInfo } {
+  const r = buildKeychainCore(w, p, registry, texts)
+  if (!r.halves) return { parts: r.parts, info: r.info }
+  const sp = p.split
+  const top = r.halves.top
+  let source = top
+  if (p.text?.enabled && p.text.maskId && texts.has(p.text.maskId)) {
+    const plain = buildKeychainCore(w, { ...p, text: { ...p.text, enabled: false } }, registry, texts)
+    if (plain.halves) source = plain.halves.top
+  }
+  const bottom = source.mirror([0, 0, 1]).rotate([180, 0, 0])
+  if (source !== top) source.delete()
+  const loose = Array.from({ length: r.halves.pinCount }, () => pinSolid(w, 0, 0, pinRadiusLoose(sp.pinRadius, sp.clearance), pinLength(sp.pinDepth)))
   const sheet = layoutSheet(w, top, bottom, loose, sp.gap)
-  return { parts: sheet.parts, info: { ...finalInfo, mountInfo: { ...res.info, sheet: sheet.sheet } } }
+  const mountInfo = r.info.mountInfo ? { ...r.info.mountInfo, sheet: sheet.sheet } : undefined
+  return { parts: sheet.parts, info: { ...r.info, ...(mountInfo ? { mountInfo } : {}) } }
 }
 
 function nodeIndex(f: AnchorField, x: number, y: number): number | null {
