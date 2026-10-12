@@ -228,7 +228,9 @@ export function validateKeychain(p: KeychainParams): { ok: boolean; errors: Keyc
   if (so.kind === 'brightness' && !shape) {
     if (!pos(so.contrast)) bad('source.contrast', 'keychain.error.contrast')
     if (!pos(so.gamma)) bad('source.gamma', 'keychain.error.gamma')
+    if (so.smooth !== undefined && !(Number.isFinite(so.smooth) && so.smooth >= 0 && so.smooth <= MAX_SMOOTH)) bad('source.smooth', 'keychain.error.smooth')
   }
+  if (r.smooth !== undefined && !(Number.isFinite(r.smooth) && r.smooth >= 0 && r.smooth <= MAX_SMOOTH)) bad('relief.smooth', 'keychain.error.smooth')
   const d = p.detail
   if (!nonneg(d.spineAmp)) bad('detail.spineAmp', 'keychain.error.negative')
   else if (d.spineAmp > 0 && !pos(d.spineWidth)) bad('detail.spineWidth', 'keychain.error.size')
@@ -380,12 +382,22 @@ export function effectiveCell(wMm: number, hMm: number, fill: number, q: Quality
   return need > q.cell ? { cell: need, reduced: true, min: need } : { cell: q.cell, reduced: false, min: need }
 }
 
+/** Самый мелкий шаг сетки (сотые доли мм), который укладывается в бюджет треугольников. */
+const finestCell = (minCell: number) => Math.ceil(Math.max(minCell, 0.02) * 100) / 100
+
 /** Разрешение и узор: мелкие детали у шага сетки получаются ступенчатыми. */
 export interface PatternResolution { tooFine: boolean; minPitch: number; /** Можно ли уменьшить шаг сетки в пределах бюджета. */ canRaise: boolean; raiseTo: number }
 export function patternResolution(p: PatternParams, cell: number, minCell: number): PatternResolution {
   const minPitch = 4 * cell
-  const raiseTo = Math.ceil(Math.max(minCell, 0.02) * 100) / 100
+  const raiseTo = finestCell(minCell)
   return { tooFine: p.kind !== 'none' && p.pitch < minPitch - 1e-9, minPitch, canRaise: raiseTo < cell - 1e-9, raiseTo }
+}
+
+/** Разрешение и сглаживание: радиус меньше одной ячейки сетки на неё не действует. Предлагаемый шаг — радиус (но не мельче бюджета). */
+export interface SmoothResolution { noEffect: boolean; canRaise: boolean; raiseTo: number }
+export function smoothResolution(radius: number, cell: number, minCell: number): SmoothResolution {
+  const raiseTo = Math.max(finestCell(minCell), Math.floor(radius * 100) / 100)
+  return { noEffect: radius > 0 && radius < cell - 1e-9, canRaise: raiseTo < cell - 1e-9, raiseTo }
 }
 
 // ---------- подложка: форма ----------

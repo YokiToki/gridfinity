@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildGrid, buildKeychain, buildSilhouette, defaultKeychain, plateSpec, sizeMm, type KeychainParams } from './keychain'
+import { buildGrid, buildKeychain, buildSilhouette, defaultKeychain, plateSpec, sizeMm, smoothResolution, validateKeychain, type KeychainParams } from './keychain'
 import { maskBounds } from './raster/resample'
 import type { GrayImage } from './raster/threshold'
 import { expectValidSolid } from './testing'
@@ -146,5 +146,35 @@ describe('сглаживание поверхности', () => {
     const a = await buildKeychain(terrace(0), reg(img)), b = await buildKeychain(terrace(2), reg(img))
     const area = (m: { slice(z: number): { area(): number } }) => m.slice(1.0).area()
     expect(area(b.solid as never)).toBeCloseTo(area(a.solid as never), 3)
+  })
+})
+
+describe('проверка радиусов и разрешение', () => {
+  const ok = P({ source: { ...defaultKeychain.source, kind: 'brightness' } })
+  const rel = (smooth: unknown) => ({ ...ok, relief: { ...ok.relief, smooth: smooth as number } })
+  const src = (smooth: unknown) => ({ ...ok, source: { ...ok.source, smooth: smooth as number } })
+  it.each([
+    ['поверхность 0', rel(0), true], ['поверхность 3 (предел)', rel(3), true], ['поверхность 3.01', rel(3.01), false], ['поверхность −0.1', rel(-0.1), false], ['поверхность NaN', rel(NaN), false],
+    ['нет поля поверхности (старая запись)', ok, true],
+    ['яркость 0.4', src(0.4), true], ['яркость 3', src(3), true], ['яркость 5', src(5), false], ['яркость −1', src(-1), false], ['яркость Infinity', src(Infinity), false],
+  ])('%s', (_n, params, valid) => {
+    expect(validateKeychain(params).ok).toBe(valid)
+  })
+  it('ключи ошибок указывают на поле', () => {
+    expect(validateKeychain(rel(9)).errors).toContainEqual({ field: 'relief.smooth', key: 'keychain.error.smooth' })
+    expect(validateKeychain(src(9)).errors).toContainEqual({ field: 'source.smooth', key: 'keychain.error.smooth' })
+  })
+  it('сглаживание яркости не проверяется, если источник — расстояние', () => {
+    expect(validateKeychain({ ...ok, source: { ...ok.source, kind: 'distance', smooth: 99 } }).ok).toBe(true)
+  })
+  it.each([
+    // радиус, шаг, minCell → noEffect, canRaise, raiseTo
+    [0, 0.25, 0.1, false, true, 0.1], [0.1, 0.25, 0.05, true, true, 0.1], [0.25, 0.25, 0.05, false, false, 0.25],
+    [0.1, 0.25, 0.2, true, true, 0.2], [0.1, 0.25, 0.3, true, false, 0.3], [0.5, 0.25, 0.05, false, false, 0.5],
+  ] as const)('smoothResolution(радиус %f, шаг %f, минимум %f)', (radius, cell, minCell, noEffect, canRaise, raiseTo) => {
+    const r = smoothResolution(radius, cell, minCell)
+    expect(r.noEffect).toBe(noEffect)
+    expect(r.canRaise).toBe(canRaise)
+    expect(r.raiseTo).toBeCloseTo(raiseTo, 9)
   })
 })

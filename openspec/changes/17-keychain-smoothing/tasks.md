@@ -5,7 +5,7 @@
 - [x] 1.1 `geometry/raster/blur.ts`: masked separable Gaussian (σ from mm, clamps) and 3 × 3 median over material neighbours, with a "fixed" mask that is skipped and not averaged in. Tests: constant stays constant, impulse becomes a Gaussian, no leakage across the mask, median removes isolated pixels, radius/cost clamps.
 - [x] 1.2 Source smoothing in `buildGrid` (blur and despeckle before contrast/gamma); `SourceParams.smooth/despeckle`, migration (old = 0 / false, new brightness choice = 0.4). Tests: noisy gradient gets smoother (variance drop), silhouette identical, zero = identical volume to before.
 - [x] 1.3 Surface smoothing (`ReliefParams.smooth`) before detail lines, patterns and later features; floor and rim clamps. Tests: terraced profile gets slopes of about the radius width, rim ≥ floor, plate thickness unchanged, pattern edges unchanged, regression volumes with smoothing 0, valid solid.
-- [ ] 1.4 `validateKeychain` ranges and the "no effect below one cell" rule with the raise-resolution data (`patternResolution` generalised). Table test.
+- [x] 1.4 `validateKeychain` ranges and the "no effect below one cell" rule with the raise-resolution data (`patternResolution` generalised). Table test.
 
 ## 2. UI
 
