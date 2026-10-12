@@ -16,6 +16,8 @@ interface Api {
 }
 
 const GIZMO_SIZE = 120
+/** Отступ гизмо от низа: над нижней строкой измерений (h-9 = 36 px) плюс зазор. */
+const GIZMO_BOTTOM = 44
 const TOOL_COLOR = 0x35c9e8 // вырезающий инструмент: бирюзовый, отличается от модели
 const AXES = [
   { label: 'X', dir: [1, 0, 0], color: 0xe5484d },
@@ -281,7 +283,7 @@ export function Viewport({ model, plate, gap = 0, showTools = true, onFitReady }
     const ray = new THREE.Raycaster()
     const onClick = (e: MouseEvent) => {
       const r = renderer.domElement.getBoundingClientRect()
-      const gx = e.clientX - (r.right - GIZMO_SIZE), gy = e.clientY - (r.bottom - GIZMO_SIZE)
+      const gx = e.clientX - (r.right - GIZMO_SIZE), gy = e.clientY - (r.bottom - GIZMO_BOTTOM - GIZMO_SIZE)
       if (gx < 0 || gy < 0 || gx > GIZMO_SIZE || gy > GIZMO_SIZE) return
       ray.setFromCamera(new THREE.Vector2((gx / GIZMO_SIZE) * 2 - 1, 1 - (gy / GIZMO_SIZE) * 2), gCam)
       const hit = ray.intersectObjects(hits)[0]
@@ -310,8 +312,8 @@ export function Viewport({ model, plate, gap = 0, showTools = true, onFitReady }
       tmp.copy(camera.position).sub(controls.target).normalize().multiplyScalar(4)
       gCam.position.copy(tmp); gCam.lookAt(0, 0, 0)
       renderer.setScissorTest(true)
-      renderer.setViewport(w - GIZMO_SIZE, 0, GIZMO_SIZE, GIZMO_SIZE)
-      renderer.setScissor(w - GIZMO_SIZE, 0, GIZMO_SIZE, GIZMO_SIZE)
+      renderer.setViewport(w - GIZMO_SIZE, GIZMO_BOTTOM, GIZMO_SIZE, GIZMO_SIZE)
+      renderer.setScissor(w - GIZMO_SIZE, GIZMO_BOTTOM, GIZMO_SIZE, GIZMO_SIZE)
       renderer.clearDepth(); renderer.render(gScene, gCam)
     })
     return () => {
