@@ -7,6 +7,7 @@ import i18n from '../../i18n'
 import { axisMm, defaultParams, type BaseplateParams } from '../../geometry/baseplate'
 import { UnitContext } from '../../ui/units'
 import { BaseplatePanel } from './BaseplatePanel'
+import { expectAllNumericSteppers } from '../../ui/stepperAssert'
 import { bedOf, resetExportSettings } from '../../export/settings'
 
 let latest: BaseplateParams = defaultParams
@@ -161,5 +162,13 @@ describe('PlateSection', () => {
     render(<Harness start={big} />)
     await userEvent.selectOptions(screen.getByLabelText('Printer'), 'h2d')
     expect(screen.queryByText(/larger than the build plate/)).toBeNull()
+  })
+})
+
+describe('кнопки +/−', () => {
+  it('у каждого числового поля панели есть обе кнопки', async () => {
+    await i18n.changeLanguage('en')
+    render(<Harness />)
+    await expectAllNumericSteppers()
   })
 })

@@ -2,9 +2,9 @@
 
 ## 1. Numeric steppers
 
-- [ ] 1.1 `NumberField`: stepper on by default with `stepper={false}` opt-out; 32 px buttons, clamp/disable at limits, hold-to-repeat (400 ms delay, 10/s), Shift ×10, accessible names. Unit tests with fake timers for click, repeat, limits and Shift.
-- [ ] 1.2 `LengthField`: step in the display unit, stored value in mm. Test in inches (1 mm step → +0.039 in shown, +1 mm stored).
-- [ ] 1.3 Update the existing component tests that break (button counts, role queries) and add one test per mode panel proving every numeric input has both buttons. UI task: compare layouts in the browser in en and ru at 380 px (desktop panel) and 390 px (drawer) and fix rows that overflow; no artboard, built from the component library.
+- [x] 1.1 `NumberField`: stepper on by default with `stepper={false}` opt-out; 32 px buttons, clamp/disable at limits, hold-to-repeat (400 ms delay, 10/s), Shift ×10, accessible names. Unit tests with fake timers for click, repeat, limits and Shift.
+- [x] 1.2 `LengthField`: step in the display unit, stored value in mm. Test in inches (1 mm step → +0.039 in shown, +1 mm stored).
+- [x] 1.3 Update the existing component tests that break (button counts, role queries) and add one test per mode panel proving every numeric input has both buttons. UI task: compare layouts in the browser in en and ru at 380 px (desktop panel) and 390 px (drawer) and fix rows that overflow; no artboard, built from the component library.
 
 ## 2. Enlarged mask preview
 

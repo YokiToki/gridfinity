@@ -9,6 +9,7 @@ import { defaultOrientation, describeMesh, repairMesh, type IndexedMesh } from '
 import { boxSoup } from '../../geometry/stl-fixtures'
 import { UnitContext } from '../../ui/units'
 import { CutoutPanel } from './CutoutPanel'
+import { expectAllNumericSteppers } from '../../ui/stepperAssert'
 
 let latest: CutoutParams = defaultCutout
 let selection: string | null = null
@@ -251,5 +252,13 @@ describe('CutoutPanel: деталь из STL', () => {
     expect(screen.getByText('Импорт STL')).toBeInTheDocument()
     expect(screen.getByLabelText('Положить на грань')).toBeInTheDocument()
     expect(screen.getByRole('group', { name: 'Режим выреза' })).toBeInTheDocument()
+  })
+})
+
+describe('кнопки +/−', () => {
+  it('у каждого числового поля панели есть обе кнопки', async () => {
+    await i18n.changeLanguage('en')
+    render(<Harness start={withCuts(r())} />)
+    await expectAllNumericSteppers()
   })
 })

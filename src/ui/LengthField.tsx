@@ -14,7 +14,7 @@ export function LengthField({ value, onChange, min, max, step = 1, ...rest }: Nu
       min={toDisplay(min, unit)}
       max={toDisplay(max, unit)}
       step={unit === 'in' ? step / 25.4 : step}
-      onChange={(v) => onChange(fromDisplay(v, unit))}
+      onChange={(v) => onChange(Number(fromDisplay(v, unit).toFixed(6)))}
     />
   )
 }

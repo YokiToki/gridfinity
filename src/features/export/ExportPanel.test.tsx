@@ -9,6 +9,7 @@ import type { ModelResult, PartMesh } from '../../geometry/model'
 import { ExportPanel } from './ExportPanel'
 import { ExportOptionsSection } from './ExportOptionsSection'
 import { UnitContext } from '../../ui/units'
+import { expectAllNumericSteppers } from '../../ui/stepperAssert'
 
 /** Тетраэдр: достаточно для проверки имён файлов и раскладки. */
 const part = (label: string, col: number, size = 40, oversize = false): PartMesh => ({
@@ -100,5 +101,14 @@ describe('ExportOptionsSection', () => {
     await userEvent.type(screen.getByLabelText('File name'), 'tray')
     const saved = JSON.parse(localStorage.getItem('gridfinity.export')!)
     expect(saved).toMatchObject({ orientation: 'flipped', fileName: 'tray' })
+  })
+})
+
+describe('кнопки +/− в параметрах экспорта', () => {
+  it('у числовых полей есть обе кнопки', async () => {
+    localStorage.clear(); resetExportSettings(); await i18n.changeLanguage('en')
+    wrap(<ExportOptionsSection />)
+    await userEvent.click(screen.getByRole('button', { name: /Expand: Export options/ }))
+    await expectAllNumericSteppers()
   })
 })

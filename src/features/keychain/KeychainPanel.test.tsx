@@ -9,6 +9,7 @@ import { UnitContext } from '../../ui/units'
 import { defaultKeychain, type KeychainInfo, type KeychainParams } from '../../geometry/keychain'
 import { KeychainPanel } from './KeychainPanel'
 import { MaskPreview } from './MaskPreview'
+import { expectAllNumericSteppers } from '../../ui/stepperAssert'
 
 type S = KeychainParams & { imageName: string }
 let latest: S
@@ -278,5 +279,13 @@ describe('Линии детали и узоры (3.2)', () => {
     render(<Harness start={{ pattern: { ...defaultKeychain.pattern, kind: 'lines', pitch: 1, width: 1.5 } }} />)
     await openPattern()
     expect(await screen.findByText('The line or dot width must be smaller than the pitch')).toBeInTheDocument()
+  })
+})
+
+describe('кнопки +/−', () => {
+  it('у каждого числового поля панели есть обе кнопки', async () => {
+    await i18n.changeLanguage('en')
+    render(<Harness />)
+    await expectAllNumericSteppers()
   })
 })

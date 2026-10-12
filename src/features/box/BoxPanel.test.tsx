@@ -8,6 +8,7 @@ import { boxHeightMm, boxLayout, defaultBox, equalDividers, type BoxParams } fro
 import { loadPersisted } from '../../app/usePersistedState'
 import { UnitContext } from '../../ui/units'
 import { BoxPanel } from './BoxPanel'
+import { expectAllNumericSteppers } from '../../ui/stepperAssert'
 import { migrateBox } from './migrate'
 
 let latest: BoxParams = defaultBox
@@ -212,5 +213,13 @@ describe('BoxPanel: отсеки', () => {
     expect(screen.getByText('Стенки и пол')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Развернуть: Губа' }))
     expect(screen.getByText(/Губа — кромка сверху коробки/)).toBeInTheDocument()
+  })
+})
+
+describe('кнопки +/−', () => {
+  it('у каждого числового поля панели есть обе кнопки', async () => {
+    await i18n.changeLanguage('en')
+    render(<Harness />)
+    await expectAllNumericSteppers()
   })
 })
