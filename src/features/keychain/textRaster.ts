@@ -12,7 +12,8 @@ export function splitLines(content: string): string[] {
   return lines
 }
 
-export interface LineMetrics { width: number; ascent: number; descent: number }
+/** Строка: advance-ширина (по ней выравнивание), выносы чернил вверх и вниз, влево от точки начала и вправо от неё (у рукописных шрифтов «я», «f» и курсив выступают за advance). */
+export interface LineMetrics { width: number; ascent: number; descent: number; left?: number; right?: number }
 export interface Layout {
   /** Размер коробки растра, пиксели. */
   width: number
@@ -30,11 +31,12 @@ export function layoutLines(metrics: LineMetrics[], o: { lineHeight: number; pad
   if (n === 0) return { width: 0, height: 0, lines: [] }
   const content = Math.max(...metrics.map((m) => m.width))
   const ascent = Math.max(...metrics.map((m) => m.ascent)), descent = Math.max(...metrics.map((m) => m.descent))
-  const width = Math.ceil(content + 2 * o.pad), height = Math.ceil((n - 1) * o.lineHeight + ascent + descent + 2 * o.pad)
-  const lines = metrics.map((m, i) => ({
-    x: o.align === 'left' ? o.pad : o.align === 'right' ? width - o.pad - m.width : (width - m.width) / 2,
-    baseline: o.pad + ascent + i * o.lineHeight,
-  }))
+  // положение начала строки внутри advance-коробки, затем коробка расширяется до всех чернил (выносы влево и вправо)
+  const xs = metrics.map((m) => (o.align === 'left' ? 0 : o.align === 'right' ? content - m.width : (content - m.width) / 2))
+  const inkLeft = Math.min(...metrics.map((m, i) => xs[i] - (m.left ?? 0)))
+  const inkRight = Math.max(...metrics.map((m, i) => xs[i] + (m.right ?? m.width)))
+  const width = Math.ceil(inkRight - inkLeft + 2 * o.pad), height = Math.ceil((n - 1) * o.lineHeight + ascent + descent + 2 * o.pad)
+  const lines = metrics.map((m, i) => ({ x: o.pad - inkLeft + xs[i], baseline: o.pad + ascent + i * o.lineHeight }))
   return { width, height, lines }
 }
 
@@ -46,7 +48,7 @@ export interface Ctx2D {
   textBaseline: string
   textAlign: string
   fillStyle: string
-  measureText(s: string): { width: number; actualBoundingBoxAscent: number; actualBoundingBoxDescent: number }
+  measureText(s: string): { width: number; actualBoundingBoxAscent: number; actualBoundingBoxDescent: number; actualBoundingBoxLeft?: number; actualBoundingBoxRight?: number }
   fillText(s: string, x: number, y: number): void
   getImageData(x: number, y: number, w: number, h: number): { data: Uint8ClampedArray | number[] }
 }
@@ -59,7 +61,7 @@ export interface RasterDeps {
 
 /** Размер растра не больше стороны в пикселях: длинные надписи уменьшают разрешение, а не память. */
 export const MAX_RASTER_SIDE = 4096
-const PAD = 2
+const PAD = 4
 
 const domCanvas = (w: number, h: number): CanvasLike => {
   if (typeof OffscreenCanvas !== 'undefined') return new OffscreenCanvas(w, h) as unknown as CanvasLike
@@ -75,15 +77,17 @@ export interface RasterResult { raster: TextRaster; fontLost: boolean }
 function lineMetrics(ctx: Ctx2D, s: string, spacingPx: number, native: boolean): LineMetrics {
   if (native || spacingPx === 0) {
     const m = ctx.measureText(s)
-    return { width: m.width, ascent: m.actualBoundingBoxAscent, descent: m.actualBoundingBoxDescent }
+    return { width: m.width, ascent: m.actualBoundingBoxAscent, descent: m.actualBoundingBoxDescent, left: m.actualBoundingBoxLeft ?? 0, right: m.actualBoundingBoxRight ?? m.width }
   }
-  let width = 0, ascent = 0, descent = 0
+  let width = 0, ascent = 0, descent = 0, left = 0, right = 0, first = true
   for (const ch of s) {
     const m = ctx.measureText(ch)
+    if (first) { left = m.actualBoundingBoxLeft ?? 0; first = false }
+    right = Math.max(right, width + (m.actualBoundingBoxRight ?? m.width))
     width += m.width + spacingPx
     ascent = Math.max(ascent, m.actualBoundingBoxAscent); descent = Math.max(descent, m.actualBoundingBoxDescent)
   }
-  return { width: Math.max(0, width - spacingPx), ascent, descent }
+  return { width: Math.max(0, width - spacingPx), ascent, descent, left, right }
 }
 
 /**

@@ -62,6 +62,25 @@ describe('layoutLines', () => {
     expect(l.lines[0].x).toBeCloseTo(x0, 6)
     expect(l.lines[1].x).toBeCloseTo(x1, 6)
   })
+  it('выносы чернил: левый свес (как у «я» в Lobster) расширяет коробку и сдвигает начало строки вправо, текст не обрезается', () => {
+    const l = layoutLines([{ width: 100, ascent: 30, descent: 5, left: 12, right: 100 }], { lineHeight: 50, pad: 2, align: 'left' })
+    expect(l.width).toBe(Math.ceil(12 + 100 + 4))
+    expect(l.lines[0].x).toBe(2 + 12) // чернила начинаются ровно с отступа pad
+  })
+  it('правый свес шире advance расширяет коробку справа; без выносов размер прежний', () => {
+    const wide = layoutLines([{ width: 100, ascent: 30, descent: 5, left: 0, right: 109 }], { lineHeight: 50, pad: 2, align: 'left' })
+    expect(wide.width).toBe(Math.ceil(109 + 4))
+    const plain = layoutLines([{ width: 100, ascent: 30, descent: 5 }], { lineHeight: 50, pad: 2, align: 'left' })
+    expect(plain.width).toBe(104)
+  })
+  it('выравнивание по центру с выносами: все чернила внутри коробки', () => {
+    const m = [{ width: 100, ascent: 30, descent: 5, left: 8, right: 104 }, { width: 40, ascent: 30, descent: 5, left: 0, right: 40 }]
+    const l = layoutLines(m, { lineHeight: 50, pad: 2, align: 'center' })
+    m.forEach((q, i) => {
+      expect(l.lines[i].x - (q.left ?? 0)).toBeGreaterThanOrEqual(2 - 1e-9)
+      expect(l.lines[i].x + (q.right ?? q.width)).toBeLessThanOrEqual(l.width - 2 + 1e-9)
+    })
+  })
   it('без строк — пустая коробка', () => {
     expect(layoutLines([], { lineHeight: 10, pad: 2, align: 'left' })).toEqual({ width: 0, height: 0, lines: [] })
   })
@@ -138,6 +157,18 @@ describe('rasterizeText', () => {
     const r = (await rasterizeText(T({ size: 40, content: 'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW' }), f.deps))!
     expect(Math.max(r.raster.width, r.raster.height)).toBeLessThanOrEqual(MAX_RASTER_SIDE)
     expect(r.raster.pxPerMm).toBeLessThan(12)
+  })
+  it('левый свес шрифта (actualBoundingBoxLeft) попадает в раскладку: начало строки сдвинуто, коробка шире', async () => {
+    const plain = fake(), over = fake()
+    const orig = over.deps.createCanvas
+    over.deps.createCanvas = (w, h) => {
+      const c = orig(w, h), ctx = c.getContext('2d')!
+      const m = ctx.measureText.bind(ctx)
+      return { width: c.width, height: c.height, getContext: () => Object.assign(ctx, { measureText: (s: string) => ({ ...m(s), actualBoundingBoxLeft: 9, actualBoundingBoxRight: m(s).width + 5 }) }) }
+    }
+    const a = (await rasterizeText(T({ content: 'яXXXX', align: 'left' }), plain.deps))!, b = (await rasterizeText(T({ content: 'яXXXX', align: 'left' }), over.deps))!
+    expect(b.raster.width).toBeGreaterThan(a.raster.width + 8)
+    expect(over.calls.fillText[0][1]).toBeGreaterThan(plain.calls.fillText[0][1] + 8)
   })
   it('нет 2D-контекста — null', async () => {
     const deps: RasterDeps = { createCanvas: (w, h) => ({ width: w, height: h, getContext: () => null }), loadFont: async () => true }
