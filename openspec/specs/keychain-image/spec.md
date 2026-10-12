@@ -50,17 +50,6 @@ The app SHALL convert the image to a binary silhouette with these controls: thre
 - **WHEN** the settings produce an empty mask
 - **THEN** a localized message explains it, no geometry is generated and the previous mesh stays
 
-### Requirement: Holes
-Every enclosed background region (hole) SHALL be shown with a stable numeric id on the mask preview. Holes are filled solid by default; the user SHALL be able to keep individual holes open.
-
-#### Scenario: Keep a hole open
-- **WHEN** the user keeps hole 3 open
-- **THEN** the relief has an opening where hole 3 is and the other holes remain solid
-
-#### Scenario: Stable ids
-- **WHEN** a non-hole setting such as dilate changes without changing the set of holes
-- **THEN** the ids of the holes stay the same
-
 ### Requirement: Enlarged mask preview
 The mask preview SHALL have an Enlarge control that opens a large view of the same mask, centred over the 3D preview, with larger numbers on every enclosed region. The large view SHALL close with a close button, with Esc and by clicking outside it, and SHALL return focus to the Enlarge control.
 
@@ -75,3 +64,30 @@ The mask preview SHALL have an Enlarge control that opens a large view of the sa
 #### Scenario: Live
 - **WHEN** a silhouette setting changes while the large view is open
 - **THEN** the large mask updates with it
+
+### Requirement: Areas
+Every enclosed background region of the silhouette (an area) SHALL be shown with a stable numeric id on the mask preview and in a list in the panel; the word "hole" SHALL NOT be used for them. Each area has a mode: follow the relief (filled, the default), open (cut through) or level (a flat surface at a chosen height). The user SHALL be able to select an area from the list or by clicking it on the mask preview.
+
+#### Scenario: Open an area
+- **WHEN** the user sets area 3 to Open
+- **THEN** the relief has an opening where area 3 is and the other areas stay solid
+
+#### Scenario: Stable ids
+- **WHEN** a setting that does not change the set of areas, such as dilate, changes
+- **THEN** the ids of the areas and their settings stay the same
+
+#### Scenario: Select on the preview
+- **WHEN** the user clicks an area on the mask preview
+- **THEN** its row in the list is selected and the area is outlined on the preview
+
+#### Scenario: Apply to all
+- **WHEN** the user chooses Apply to all with mode Open
+- **THEN** every area is set to Open
+
+#### Scenario: Stored settings of a vanished area
+- **WHEN** a setting changes so that an area with stored settings no longer exists
+- **THEN** a warning names the id and the stored settings are ignored
+
+#### Scenario: Migration
+- **WHEN** a saved keychain has areas kept open from the previous version
+- **THEN** those areas are loaded as Open and all others as Follow
