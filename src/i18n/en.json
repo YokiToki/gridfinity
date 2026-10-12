@@ -450,7 +450,11 @@
     "fits": "Fits the bed",
     "plates": "{{n}} plates",
     "overflow": "{{n}} part(s) too big for the bed",
-    "part": "Download part {{label}}"
+    "part": "Download part {{label}}",
+    "partName": {
+      "top": "Top",
+      "bottom": "Bottom"
+    }
   },
   "products": {
     "label": "Product",
@@ -572,7 +576,12 @@
       "gamma": "Enter a gamma greater than zero",
       "patternPitch": "The line or dot width must be smaller than the pitch",
       "engraveNoPlate": "The engraved profile needs a base plate: set a thickness greater than zero",
-      "scopeNoPlate": "The base plate scope needs a base plate: set a thickness greater than zero"
+      "scopeNoPlate": "The base plate scope needs a base plate: set a thickness greater than zero",
+      "eyeletWall": "The eyelet wall is thinner than the minimum wall: make the outer diameter larger",
+      "eyeletNoPlate": "The eyelet needs a base plate: set a thickness greater than zero",
+      "channelNeedsSplit": "The channel needs the two-halves mode",
+      "pins": "Use 0 to 6 pins",
+      "clearance": "The clearance must be smaller than the pin radius"
     },
     "profile": {
       "source": "Height source",
@@ -631,6 +640,81 @@
       "tooFine": "The pattern is finer than the mesh resolution allows (grid step {{cell}} {{u}}, recommended pitch at least {{min}} {{u}}). Its edges will look stepped.",
       "raise": "Raise resolution (step {{cell}} {{u}})",
       "reset": "Reset to plain"
+    },
+    "mount": {
+      "title": "Ring mount",
+      "style": "Mount style",
+      "styles": {
+        "none": "None",
+        "hole": "Hole",
+        "eyelet": "Eyelet",
+        "channel": "Channel"
+      },
+      "channelNeedsSplit": "The embedded channel needs the two-halves mode: turn on Two halves below.",
+      "preset": "Ring wire",
+      "presets": {
+        "thin": "Thin wire · hole {{d}} {{u}}",
+        "standard": "Standard · hole {{d}} {{u}}",
+        "heavy": "Heavy · hole {{d}} {{u}}",
+        "custom": "Custom"
+      },
+      "diameter": "Hole diameter",
+      "channelDiameter": "Channel diameter",
+      "outer": "Eyelet outer diameter",
+      "minWall": "Minimum wall",
+      "suggest": "Suggest a place",
+      "showRejected": "Show rejected spots",
+      "noSpot": "No spot leaves the required wall. Try the eyelet style, a smaller hole or a larger keychain."
+    },
+    "editor": {
+      "label": "Placement editor, top view",
+      "target": "Item to move",
+      "mount": "Ring mount",
+      "channelEnd": "Channel inner end",
+      "exit": "Channel exit",
+      "pin": "Pin {{n}}",
+      "x": "X from the left edge",
+      "y": "Y from the bottom edge",
+      "snap": "Snap to outline",
+      "hint": "Drag a point or type X and Y. The grid is in millimetres from the lower left corner of the silhouette.",
+      "candidate": "Suggested place {{n}}: click to use",
+      "reasons": {
+        "outside": "Outside the material",
+        "rim": "Too close to the edge",
+        "thin": "Too thin under the footprint",
+        "spacing": "Too close to a chosen spot"
+      }
+    },
+    "split": {
+      "title": "Two halves",
+      "off": "Off",
+      "summary": "{{n}} pins",
+      "enable": "Print as two halves",
+      "hint": "The relief is made symmetric and split in the middle. Each half prints face down with a flat back and no supports; pins align the halves.",
+      "pins": "Pins",
+      "pinRadius": "Pin hole radius",
+      "clearance": "Pin clearance",
+      "pinDepth": "Hole depth in each half",
+      "loosePin": "Loose pin radius: {{r}} {{u}}",
+      "manual": "Pin positions: manual",
+      "auto": "Pin positions: automatic",
+      "resetPins": "Back to automatic",
+      "gap": "Gap between parts",
+      "sheet": "Print sheet: {{w}} × {{h}} {{u}}"
+    },
+    "feature": {
+      "hole": "The hole",
+      "channel": "The channel",
+      "eyelet": "The eyelet"
+    },
+    "warning": {
+      "outside": "{{feature}} is outside the material.",
+      "thinWall": "{{feature}} leaves a wall of {{actual}} {{u}}, less than the required {{required}} {{u}}.",
+      "thinFloor": "The material under {{feature}} is {{actual}} {{u}} thick, less than the required {{required}} {{u}}.",
+      "pinTooBig": "{{feature}} would break the surface (available {{actual}} {{u}}, required {{required}} {{u}}) and is not used.",
+      "noBreach": "The channel does not open to the outside: move its exit to the edge of the silhouette.",
+      "cavityBreach": "The channel exit ends in a closed cavity, not outside.",
+      "coarse": "{{feature}} is narrower than two grid steps ({{actual}} {{u}}): raise the resolution."
     }
   }
 }

@@ -17,9 +17,9 @@
 
 ## 3. UI
 
-- [ ] 3.1 `PlacementEditor` (SVG contour, mm grid, rulers, drag, numeric entry, snap to outline); unit conversion in the display only. Component tests for drag and numeric entry. No artboard: build from `ui/` components and `theme.css` tokens.
-- [ ] 3.2 `MountSection` (style, diameters, presets, Suggest with candidate/rejected overlay, warnings). Component tests: channel disabled without split, Suggest places the mount.
-- [ ] 3.3 `SplitSection` (toggle, pins count/radius/clearance/depth) and export block Sheet/Top/Bottom with sheet size. Component tests; persistence and migrate for old records.
+- [x] 3.1 `PlacementEditor` (SVG contour, mm grid, rulers, drag, numeric entry, snap to outline); unit conversion in the display only. Component tests for drag and numeric entry. No artboard: build from `ui/` components and `theme.css` tokens.
+- [x] 3.2 `MountSection` (style, diameters, presets, Suggest with candidate/rejected overlay, warnings). Component tests: channel disabled without split, Suggest places the mount.
+- [x] 3.3 `SplitSection` (toggle, pins count/radius/clearance/depth) and export block Sheet/Top/Bottom with sheet size. Component tests; persistence and migrate for old records.
 - [ ] 3.4 en/ru strings (parity test); compare with the component library, 390 px drawer, long Russian labels.
 
 ## 4. Verification

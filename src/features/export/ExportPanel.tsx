@@ -52,12 +52,15 @@ export function ExportPanel({ model, busy, name }: { model: ModelResult | null; 
       </div>
       {parts.length > 1 && (
         <div className="grid grid-cols-4 gap-1.5">
-          {parts.map((p) => (
-            <Button key={p.label} className="h-8 px-2 text-xs" disabled={disabled} aria-label={t('export.part', { label: p.label })}
-              onClick={() => buildExport([p], s, `${name}_${p.label}`).files.forEach((f) => download(f.blob, f.name))}>
-              {p.oversize && <span aria-hidden className="text-error">!</span>}{p.label}
-            </Button>
-          ))}
+          {parts.map((p) => {
+            const label = t(`export.partName.${p.label}`, { defaultValue: p.label })
+            return (
+              <Button key={p.label} className="h-8 px-2 text-xs" disabled={disabled} aria-label={t('export.part', { label })}
+                onClick={() => buildExport([p], s, `${name}_${p.label}`).files.forEach((f) => download(f.blob, f.name))}>
+                {p.oversize && <span aria-hidden className="text-error">!</span>}{label}
+              </Button>
+            )
+          })}
         </div>
       )}
     </div>

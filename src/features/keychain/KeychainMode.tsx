@@ -6,6 +6,7 @@ import { Workspace } from '../../app/Workspace'
 import { defaultKeychain, type KeychainParams } from '../../geometry/keychain'
 import type { GrayImage } from '../../geometry/raster/threshold'
 import { ExportPanel } from '../export/ExportPanel'
+import { formatLength, useUnit } from '../../ui/units'
 import { decodeImage, ImageError } from './decodeImage'
 import { openImageStore, type ImageStore } from './imageStore'
 import { migrateKeychain } from './migrate'
@@ -82,8 +83,16 @@ export function KeychainMode() {
         model={model} busy={busy}
         overlay={image ? <MaskPreview preview={info?.preview ?? null} /> : null}
         panel={<KeychainPanel params={params} onChange={setState} imageName={imageName} hasImage={!!image} info={info} notice={notice} onFile={(f) => void onFile(f)} />}
-        footer={<ExportPanel model={model} busy={pending} name={name} />}
+        footer={<><ExportPanel model={model} busy={pending} name={name} /><SheetSize sheet={info?.mountInfo?.sheet} /></>}
       />
     </div>
   )
+}
+
+/** Размер листа печати (две половины и штифты) под кнопками экспорта. */
+function SheetSize({ sheet }: { sheet?: { w: number; h: number } }) {
+  const { t } = useTranslation()
+  const { unit } = useUnit()
+  if (!sheet) return null
+  return <span className="mt-2 block text-xs text-text-muted" data-testid="sheet-size">{t('keychain.split.sheet', { w: formatLength(sheet.w, unit), h: formatLength(sheet.h, unit), u: t(`units.${unit}`) })}</span>
 }

@@ -20,6 +20,12 @@ export function migrateKeychain(raw: Record<string, unknown>): Record<string, un
   const pattern = { ...defaultKeychain.pattern, ...obj(raw.pattern) }
   if (!PATTERN_KINDS.includes(pattern.kind)) pattern.kind = 'none'
   if (pattern.scope !== 'relief' && pattern.scope !== 'plateau' && pattern.scope !== 'base') pattern.scope = 'relief'
+  const mount = { ...defaultKeychain.mount, ...obj(raw.mount) }
+  if (!['none', 'hole', 'eyelet', 'channel'].includes(mount.style)) mount.style = 'none'
+  const split = { ...defaultKeychain.split, ...obj(raw.split) }
+  // положения штифтов: массив точек с конечными x и y, иначе автоматически
+  split.pinPositions = Array.isArray(split.pinPositions) && (split.pinPositions as unknown[]).every((q) => { const o = obj(q); return Number.isFinite(o.x) && Number.isFinite(o.y) })
+    ? (split.pinPositions as { x: number; y: number }[]) : null
   return {
     ...raw,
     imageId: typeof raw.imageId === 'string' ? raw.imageId : '',
@@ -30,6 +36,8 @@ export function migrateKeychain(raw: Record<string, unknown>): Record<string, un
     relief,
     detail: { ...defaultKeychain.detail, ...obj(raw.detail) },
     pattern,
+    mount,
+    split,
     base: { ...defaultKeychain.base, ...obj(raw.base) },
     quality: { ...defaultKeychain.quality, ...obj(raw.quality) },
   }
