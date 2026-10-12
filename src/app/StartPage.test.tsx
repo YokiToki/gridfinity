@@ -108,6 +108,6 @@ describe('ModeChooser (/keychain)', () => {
     unmount()
     renderAt('/keychain')
     await userEvent.keyboard('2')
-    expect(await screen.findByRole('button', { name: /Expand: Relief/ })).toBeInTheDocument()
+    expect(await screen.findByRole('radio', { name: 'Rectangle' })).toBeInTheDocument()
   })
 })

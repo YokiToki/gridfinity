@@ -18,12 +18,12 @@ export type SharedParams = Pick<KeychainParams, 'source' | 'relief' | 'detail' |
  * Секции, общие для обоих режимов Keychain: рельеф, детали, узор, подложка, крепление, половины, разрешение.
  * `S` — состояние режима (оно шире общей части); `params` — полные параметры для проверок.
  */
-export function SharedSections<S extends SharedParams>({ params: p, info, onChange, imageSource = true }: {
+export function SharedSections<S extends SharedParams>({ params: p, info, onChange, imageOnly = true }: {
   params: KeychainParams
   info: KeychainInfo | null
   onChange: Dispatch<SetStateAction<S>>
-  /** Источник высоты «яркость» нужен только изображению. */
-  imageSource?: boolean
+  /** Рельеф (профиль, источник высоты) и линии детали — только для изображения: у фигуры высота задаётся подложкой и бортиком. */
+  imageOnly?: boolean
 }) {
   const { t } = useTranslation()
   const { errors } = validateKeychain(p)
@@ -43,8 +43,8 @@ export function SharedSections<S extends SharedParams>({ params: p, info, onChan
   const plateError = info?.error === 'keychain.error.plateTooSmall' ? info.error : null
   return (
     <>
-      <ProfileSection relief={p.relief} source={p.source} error={err} onRelief={patch('relief')} onSource={patch('source')} imageSource={imageSource} />
-      <DetailSection value={p.detail} error={err} onChange={patch('detail')} />
+      {imageOnly && <ProfileSection relief={p.relief} source={p.source} error={err} onRelief={patch('relief')} onSource={patch('source')} />}
+      {imageOnly && <DetailSection value={p.detail} error={err} onChange={patch('detail')} />}
       <PatternSection value={p.pattern} quality={p.quality} cell={info?.cell ?? null} minCell={info?.minCell ?? null} error={err} onChange={patch('pattern')} onRaise={(c) => patch('quality')({ cell: c })} />
       <BaseSection value={p.base} error={err} plateError={plateError} onChange={patch('base')} />
       <MountSection params={p} info={info} error={err} onMount={patch('mount')} onPlace={place} />

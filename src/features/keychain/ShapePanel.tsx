@@ -21,7 +21,7 @@ export function ShapePanel({ state, params, info, onChange }: { state: ShapeStat
       {otherError && <div className="px-4 pt-3"><Banner kind="warn">{t(otherError)}</Banner></div>}
       <ShapeSection value={state.shape} error={err} onChange={patchShape} />
       <RimSection value={state.shape.rim} error={err} onChange={patchRim} />
-      <SharedSections params={params} info={info} onChange={onChange} imageSource={false} />
+      <SharedSections params={params} info={info} onChange={onChange} imageOnly={false} />
     </>
   )
 }

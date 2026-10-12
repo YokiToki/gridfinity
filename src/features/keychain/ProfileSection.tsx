@@ -10,14 +10,12 @@ import { NumberField } from '../../ui/NumberField'
 import { formatLength, useUnit } from '../../ui/units'
 
 /** Рельеф: источник высоты (расстояние или яркость), пресет профиля (после правки значений — «Свой») и параметры профиля. Макета нет: собрана из ui/. */
-export function ProfileSection({ relief: r, source: s, error, onRelief, onSource, imageSource = true }: {
+export function ProfileSection({ relief: r, source: s, error, onRelief, onSource }: {
   relief: ReliefParams
   source: SourceParams
   error: (field: string) => string | undefined
   onRelief: (p: Partial<ReliefParams>) => void
   onSource: (p: Partial<SourceParams>) => void
-  /** Источник «яркость» нужен только изображению: у формы его нет. */
-  imageSource?: boolean
 }) {
   const { t } = useTranslation()
   const { unit } = useUnit()
@@ -30,9 +28,9 @@ export function ProfileSection({ relief: r, source: s, error, onRelief, onSource
   const usesPow = r.profile === 'bevel' || r.profile === 'engraved'
   return (
     <Section title={t('keychain.relief.title')} summary={summary} defaultOpen={false} onReset={() => { onRelief({ ...defaultKeychain.relief }); onSource({ ...defaultKeychain.source }) }}>
-      {imageSource && <SegmentedControl fill ariaLabel={t('keychain.profile.source')} value={s.kind} onChange={(v: HeightSource) => onSource({ kind: v })}
-        options={[{ value: 'distance', label: t('keychain.profile.sources.distance') }, { value: 'brightness', label: t('keychain.profile.sources.brightness') }]} />}
-      {imageSource && s.kind === 'brightness' && (
+      <SegmentedControl fill ariaLabel={t('keychain.profile.source')} value={s.kind} onChange={(v: HeightSource) => onSource({ kind: v })}
+        options={[{ value: 'distance', label: t('keychain.profile.sources.distance') }, { value: 'brightness', label: t('keychain.profile.sources.brightness') }]} />
+      {s.kind === 'brightness' && (
         <>
           <NumberField label={t('keychain.profile.contrast')} value={s.contrast} min={0.1} max={5} step={0.1} digits={2} error={error('source.contrast')} onChange={(v) => onSource({ contrast: v })} />
           <NumberField label={t('keychain.profile.gamma')} value={s.gamma} min={0.1} max={5} step={0.1} digits={2} error={error('source.gamma')} onChange={(v) => onSource({ gamma: v })} />

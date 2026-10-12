@@ -56,7 +56,7 @@ describe('маршруты', () => {
   })
   it('прямая ссылка /keychain/shape открывает режим Форма без секций изображения', async () => {
     const r = at('/keychain/shape')
-    expect(await screen.findByRole('button', { name: /Expand: Relief/ })).toBeInTheDocument()
+    expect(await screen.findByRole('radio', { name: 'Rectangle' })).toBeInTheDocument()
     expect(screen.queryByText(/Choose an image to start/)).toBeNull()
     expect(r.state.location.pathname).toBe('/keychain/shape')
   })

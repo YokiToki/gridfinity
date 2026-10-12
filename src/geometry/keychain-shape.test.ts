@@ -191,3 +191,47 @@ describe('бортик (2.3)', () => {
     expect(Math.abs(ring - Math.PI * (R * R - (R - 1) ** 2)) / (Math.PI * (R * R - (R - 1) ** 2))).toBeLessThan(0.2)
   })
 })
+
+describe('гладкие радиусы (контур не зависит от шага сетки)', () => {
+  type Sliceable = { slice(z: number): { toPolygons(): number[][][]; delete(): void } }
+  const outline = (m: Sliceable, z: number) => { const cs = m.slice(z); const pts = cs.toPolygons().flat(); cs.delete(); return pts }
+  const rrSdf = (x: number, y: number, w: number, h: number, r: number) => {
+    const qx = Math.abs(x) - (w / 2 - r), qy = Math.abs(y) - (h / 2 - r)
+    return Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - r
+  }
+  // грубая сетка 0.5 мм: раньше радиус 4 мм превращался в ступеньки по 0.5 мм
+  const coarse = { quality: { cell: 0.5, maxTriangles: 400_000 } }
+
+  it.each([['подложка', 0.8], ['рельеф', 2.1]])('скруглённый прямоугольник 54 × 30, радиус 4: %s лежит на дуге с точностью 0.02 мм', async (_n, z) => {
+    const m = (await solid(P({ kind: 'rect', width: 54, height: 30, radius: 4 }, coarse))).solid!
+    const pts = outline(m as never, z)
+    expect(pts.length).toBeGreaterThan(100) // дуги разбиты на много сегментов, а не на ступеньки сетки
+    for (const [x, y] of pts) expect(Math.abs(rrSdf(x, y, 54, 30, 4))).toBeLessThan(0.02)
+  })
+  it('круг 40 мм: все точки контура на окружности радиуса 20', async () => {
+    const m = (await solid(P({ kind: 'circle', width: 40 }, coarse))).solid!
+    for (const z of [0.8, 2.1]) for (const [x, y] of outline(m as never, z)) expect(Math.abs(Math.hypot(x, y) - 20)).toBeLessThan(0.02)
+  })
+  it('большое скругление и острые углы: острый угол остаётся острым', async () => {
+    const m = (await solid(P({ kind: 'rect', width: 40, height: 20, radius: 0 }, coarse))).solid!
+    const pts = outline(m as never, 2.1)
+    expect(Math.max(...pts.map((q) => Math.abs(q[0])))).toBeCloseTo(20, 2)
+    expect(pts.some(([x, y]) => Math.abs(Math.abs(x) - 20) < 1e-6 && Math.abs(Math.abs(y) - 10) < 1e-6)).toBe(true) // вершина (20, 10) на месте
+  })
+  it('многоугольник со скруглением 3 мм: вершины на расстоянии от ядра, равном радиусу', async () => {
+    const R = 15, r = 3, rho = R - r
+    const m = (await solid(P({ kind: 'polygon', sides: 6, width: 2 * R, radius: r }, coarse))).solid!
+    const core = Array.from({ length: 6 }, (_, k) => [rho * Math.cos((Math.PI / 3) * k), rho * Math.sin((Math.PI / 3) * k)])
+    const dist = (x: number, y: number) => Math.min(...core.map((c, k) => {
+      const d = core[(k + 1) % 6], ex = d[0] - c[0], ey = d[1] - c[1]
+      const t = Math.max(0, Math.min(1, ((x - c[0]) * ex + (y - c[1]) * ey) / (ex * ex + ey * ey)))
+      return Math.hypot(x - c[0] - t * ex, y - c[1] - t * ey)
+    }))
+    for (const [x, y] of outline(m as never, 0.8)) expect(Math.abs(dist(x, y) - r)).toBeLessThan(0.02)
+  })
+  it('габарит не раздувается запасом растра: ровно 54 × 30', async () => {
+    const b = box((await solid(P({ kind: 'rect', width: 54, height: 30, radius: 4 }, coarse))).solid!)
+    expect(Math.abs(b.w - 54)).toBeLessThan(0.005)
+    expect(Math.abs(b.h - 30)).toBeLessThan(0.005)
+  })
+})

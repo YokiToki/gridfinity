@@ -54,10 +54,10 @@ export const binLayout = (p: BinParams): BinLayout => {
   }
 }
 
-export const roundedRectCS = (w: ManifoldToplevel, x: number, y: number, r: number) => {
+export const roundedRectCS = (w: ManifoldToplevel, x: number, y: number, r: number, segments = 24) => {
   const rr = Math.min(r, x / 2 - 0.005, y / 2 - 0.005)
   return rr > 0.001
-    ? w.CrossSection.square([Math.max(x - 2 * rr, 0.01), Math.max(y - 2 * rr, 0.01)], true).offset(rr, 'Round', 2, 24)
+    ? w.CrossSection.square([Math.max(x - 2 * rr, 0.01), Math.max(y - 2 * rr, 0.01)], true).offset(rr, 'Round', 2, segments)
     : w.CrossSection.square([x, y], true)
 }
 

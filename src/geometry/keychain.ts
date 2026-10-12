@@ -12,7 +12,8 @@ import { coverage, type PatternParams } from './patterns/fields'
 import { skeleton } from './raster/thin'
 import { anchorField, exitRay, findAnchors, nearestExit, relToMm, type Anchor, type AnchorField, type Rejected } from './anchors'
 import { fitChecks, type FitIssue } from './keychainFit'
-import { shapeMask, type ShapeParams } from './shapes'
+import { inflateShape, shapeMask, type ShapeParams } from './shapes'
+import { shapeCrossSection } from './shapeOutline'
 import { cylinderAlong, cylinderZ, lugJoin, lugSolid, pinLength, pinRadiusLoose, pinSolid } from './keychainMounts'
 
 // ---------- параметры ----------
@@ -457,6 +458,8 @@ export interface GridInput {
   plate: PlateSpec | null
   /** Подложка строится в той же сетке (нужно для узора на подложке). */
   plateInGrid: boolean
+  /** Фигура растеризована с запасом на столько мм (потом обрезается по точному контуру): расстояния до кромки считаются от настоящего края. */
+  edgeShift?: number
 }
 
 const blocksOf = (m: Uint8Array, nx: number, ny: number) => {
@@ -471,6 +474,7 @@ const blocksOf = (m: Uint8Array, nx: number, ny: number) => {
  */
 export function buildGrid(inp: GridInput): Grid {
   const { img, mask, bounds, wMm, hMm, cell, p, plate, plateInGrid } = inp
+  const shift = inp.edgeShift ?? 0
   const r = p.relief, base = p.base.thickness, floor = r.heightFloor, engraved = r.profile === 'engraved'
   const pad = 2
   const ox = plateInGrid && plate ? Math.ceil(plate.overX / cell) + 1 : 0, oy = plateInGrid && plate ? Math.ceil(plate.overY / cell) + 1 : 0
@@ -510,7 +514,7 @@ export function buildGrid(inp: GridInput): Grid {
   for (let k = 0; k < top.length; k++) {
     const i = k % nx, j = (k - i) / nx
     if (m[k]) {
-      const dmm = d[k] * cell
+      const dmm = Math.max(d[k] * cell - shift, 0)
       const pv = profileValue(dmm / r.edgeWidth, r)
       // источник высоты: расстояние до кромки или яркость (с защитой кромки профилем скоса)
       let h = gray ? Math.min(floor + brightnessValue(gray[k], p.source) * (r.hmax - floor), reliefHeight(dmm, bevel)) : reliefHeight(dmm, r)
@@ -518,7 +522,7 @@ export function buildGrid(inp: GridInput): Grid {
       if (p.detail.grooveDepth > 0 && Math.abs(dmm - p.detail.grooveOffset) <= p.detail.grooveWidth / 2) h = Math.max(h - p.detail.grooveDepth, floor)
       let t = engraved ? Math.max(base - (h - floor), floor) : base + h
       // бортик: приподнимает кромку фигуры (расстояние от первого слоя узлов, который лежит на самом краю) до узора
-      if (rim && (d[k] - 1) * cell < rim.width - 1e-9) t += rim.height
+      if (rim && (d[k] - 1) * cell - shift < rim.width - 1e-9) t += rim.height
       if (patOn && (pat.scope === 'relief' || (pat.scope === 'plateau' && dmm >= r.edgeWidth)) && coverage(pat, X(i), Y(j))) {
         const lo = engraved ? floor : base + floor
         t = Math.max(t - pat.depth, Math.min(t, lo))
@@ -579,15 +583,16 @@ function silhouetteOutline(g: Grid, wMm: number, hMm: number): Pt[][] {
 }
 
 /** Контур подложки как CrossSection (подложка отдельным телом): по силуэту со смещением, прямоугольник, скруглённый, круг. */
-function plateCrossSection(w: ManifoldToplevel, s: PlateSpec, g: Grid, wMm: number, hMm: number, engraved: boolean): CrossSection {
+function plateCrossSection(w: ManifoldToplevel, s: PlateSpec, g: Grid, wMm: number, hMm: number, engraved: boolean, exact?: CrossSection): CrossSection {
   const { CrossSection } = w
   let cs: CrossSection
-  if (s.shape === 'silhouette') { const sil = CrossSection.ofPolygons(silhouetteOutline(g, wMm, hMm), 'EvenOdd'); cs = s.offset > 0 ? sil.offset(s.offset, 'Round', 2, 32) : sil }
-  else if (s.shape === 'circle') cs = CrossSection.circle(s.diameter / 2, 128)
+  const silhouette = () => exact ?? CrossSection.ofPolygons(silhouetteOutline(g, wMm, hMm), 'EvenOdd')
+  if (s.shape === 'silhouette') { const sil = silhouette(); cs = s.offset > 0 ? sil.offset(s.offset, 'Round', 2, exact ? 256 : 32) : sil }
+  else if (s.shape === 'circle') cs = CrossSection.circle(s.diameter / 2, exact ? 256 : 128)
   else if (s.shape === 'rect') cs = CrossSection.square([s.pw, s.ph], true)
-  else cs = roundedRectCS(w, s.pw, s.ph, Math.min(s.radius, Math.min(s.pw, s.ph) / 2))
+  else cs = roundedRectCS(w, s.pw, s.ph, Math.min(s.radius, Math.min(s.pw, s.ph) / 2), exact ? 256 : 24)
   // выгравированный рельеф лежит внутри подложки: сама подложка — кольцо вокруг силуэта
-  return engraved ? cs.subtract(CrossSection.ofPolygons(silhouetteOutline(g, wMm, hMm), 'EvenOdd')) : cs
+  return engraved ? cs.subtract(silhouette()) : cs
 }
 
 // ---------- сборка ----------
@@ -740,21 +745,38 @@ export function buildKeychainParts(w: ManifoldToplevel, p: KeychainParams, regis
   if (plate.error) return { parts: [], info: { ...base, error: plate.error, size: [wMm, hMm] } }
   const needsField = p.mount.style !== 'none' || (p.split.enabled && p.split.pins > 0)
   const plateInGrid = !!plate.spec && p.pattern.kind !== 'none' && p.pattern.scope === 'base'
+  // Фигура без подложки в сетке строится с запасом m и обрезается по точному контуру: скругления не зависят от шага сетки.
+  // Запас — полторы ячейки с поправкой на рост площади: так любая точка фигуры целиком лежит в блоках сетки.
+  let rel = { img, mask, bounds: b, wMm, hMm, shift: 0 }
+  if (shape && !plateInGrid) {
+    const m = 1.75 * effectiveCell(wMm, hMm, 1, p.quality).cell
+    const big = shapeMask(inflateShape(shape, m))
+    rel = { img: { width: big.width, height: big.height, gray: big.mask, alpha: null }, mask: big.mask, bounds: [0, 0, big.width - 1, big.height - 1], wMm: big.wMm, hMm: big.hMm, shift: m }
+  }
   let count = 0
-  for (let i = 0; i < mask.length; i++) count += mask[i]
-  const fillSil = count / ((b[2] - b[0] + 1) * (b[3] - b[1] + 1))
+  for (let i = 0; i < rel.mask.length; i++) count += rel.mask[i]
+  const fillSil = count / ((rel.bounds[2] - rel.bounds[0] + 1) * (rel.bounds[3] - rel.bounds[1] + 1))
   const fill = plateInGrid ? plate.spec!.area / (wMm * hMm) : fillSil
-  const { cell, reduced, min } = effectiveCell(wMm, hMm, fill, p.quality)
-  const gridInput = { img, mask, bounds: b, wMm, hMm, cell, p, plate: plate.spec, plateInGrid }
+  const { cell, reduced, min } = effectiveCell(rel.wMm, rel.hMm, fill, p.quality)
+  const gridInput = { img: rel.img, mask: rel.mask, bounds: rel.bounds, wMm: rel.wMm, hMm: rel.hMm, cell, p, plate: plate.spec, plateInGrid, edgeShift: rel.shift }
   const grid = buildGrid(gridInput)
-  const mesh = reliefMesh(grid, wMm, hMm)
+  const mesh = reliefMesh(grid, rel.wMm, rel.hMm)
   const raw = new w.Mesh({ numProp: 3, vertProperties: mesh.vertProperties, triVerts: mesh.triVerts })
   raw.merge()
   let relief = new w.Manifold(raw)
   const info: KeychainInfo = { ...base, size: [wMm, hMm], cell, reduced, minCell: min, triangles: mesh.triangles }
   if (relief.status() !== 'NoError' || relief.isEmpty()) return { parts: [], info: { ...info, error: 'keychain.error.mesh' } }
+  // точный контур фигуры (null у изображения): по нему обрезается рельеф и строится подложка по контуру
+  const exact = shape ? shapeCrossSection(w, shape) : null
+  if (exact && rel.shift > 0) {
+    const prism = w.Manifold.extrude(exact, relief.boundingBox().max[2] + 1)
+    const clipped = relief.intersect(prism)
+    prism.delete(); relief.delete()
+    relief = clipped
+    if (relief.status() !== 'NoError' || relief.isEmpty()) return { parts: [], info: { ...info, error: 'keychain.error.mesh' } }
+  }
   if (plate.spec && !plateInGrid) {
-    const cs = plateCrossSection(w, plate.spec, grid, wMm, hMm, p.relief.profile === 'engraved')
+    const cs = plateCrossSection(w, plate.spec, grid, rel.wMm, rel.hMm, p.relief.profile === 'engraved', exact ?? undefined)
     if (!cs.isEmpty()) {
       const slab = w.Manifold.extrude(cs, p.base.thickness)
       const merged = relief.add(slab)
@@ -765,7 +787,10 @@ export function buildKeychainParts(w: ManifoldToplevel, p: KeychainParams, regis
   if (!needsField && !p.split.enabled) return { parts: [{ label: 'A1', col: 0, row: 0, solid: relief }], info }
 
   // поле для крепления: подложка должна быть в сетке, иначе места на подложке вне сетки не видны
-  const fgrid = !needsField || plateInGrid || !plate.spec ? grid : buildGrid({ ...gridInput, plateInGrid: true })
+  // у фигуры поле строится по точной маске без запаса (расстояния до края настоящие)
+  const fgrid = shape && needsField
+    ? buildGrid({ img, mask, bounds: b, wMm, hMm, cell, p, plate: plate.spec, plateInGrid: true })
+    : !needsField || plateInGrid || !plate.spec ? grid : buildGrid({ ...gridInput, plateInGrid: true })
   const field = needsField ? anchorField(fgrid, wMm, hMm, cell) : null
   const res = field ? resolveMounts(p, field, wMm, hMm) : { info: { mount: null, pins: [], candidates: [], rejected: [], issues: [] } as MountInfo, pins: [] as { x: number; y: number }[], mount: null as MountInfo['mount'] }
   const zTop = relief.boundingBox().max[2]

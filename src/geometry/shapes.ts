@@ -154,3 +154,11 @@ export function shapeMask(s: ShapeParams, longest = SHAPE_MASK_PX): ShapeMask {
   }
   return { mask, width, height, wMm: b.w, hMm: b.h }
 }
+
+/** Фигура, расширенная на m мм во все стороны (сумма Минковского с кругом): габарит растёт ровно на m с каждой стороны; для эллипса — надмножество. */
+export function inflateShape(s: ShapeParams, m: number): ShapeParams {
+  const k = s.kind
+  if (k === 'circle') return { ...s, width: s.width + 2 * m }
+  const radius = k === 'rect' || k === 'polygon' ? effectiveRadius(s) + m : s.radius
+  return { ...s, width: s.width + 2 * m, height: k === 'polygon' ? s.height : s.height + 2 * m, radius }
+}

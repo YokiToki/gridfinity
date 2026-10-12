@@ -29,7 +29,7 @@ describe('Форма: панель без секций изображения', 
 
   it('общие секции есть, секций изображения, силуэта и маски нет', async () => {
     open('/keychain/shape')
-    for (const name of ['Shape', 'Rim', 'Relief', 'Detail lines', 'Surface pattern', 'Base plate', 'Ring mount', 'Two halves', 'Resolution']) {
+    for (const name of ['Shape', 'Rim', 'Surface pattern', 'Base plate', 'Ring mount', 'Two halves', 'Resolution']) {
       expect(await screen.findByRole('button', { name: new RegExp(`(Expand|Collapse): ${name}`) }), name).toBeInTheDocument()
     }
     const panel = within(screen.getByRole('complementary', { name: 'Parameters' }))
@@ -39,11 +39,12 @@ describe('Форма: панель без секций изображения', 
     expect(screen.queryByTestId('mask-preview')).toBeNull()
     expect(screen.queryByRole('button', { name: 'Enlarge mask' })).toBeNull()
   })
-  it('в Рельефе нет выбора источника высоты «яркость»', async () => {
+  it('рельеф и линии детали — только для изображения', async () => {
     open('/keychain/shape')
-    ;(await screen.findByRole('button', { name: /Expand: Relief/ })).click()
-    expect(await screen.findByLabelText('Plateau height')).toBeInTheDocument()
-    expect(screen.queryByText('Brightness')).toBeNull()
+    await screen.findByRole('radio', { name: 'Rectangle' })
+    expect(screen.queryByRole('button', { name: /(Expand|Collapse): Relief/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /(Expand|Collapse): Detail lines/ })).toBeNull()
+    expect(screen.queryByLabelText('Plateau height')).toBeNull()
   })
   it('режим Изображение по-прежнему показывает свои секции', async () => {
     open('/keychain/image')
