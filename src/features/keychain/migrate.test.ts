@@ -9,14 +9,15 @@ describe('migrateKeychain', () => {
   })
   it('частичные вложенные объекты сливаются, битые заменяются', () => {
     const m = migrateKeychain({ silhouette: { close: 9, keepOpen: 'x', threshold: 'abc' }, relief: null, base: 'zzz', size: { mode: 'box' } })
-    expect((m.silhouette as { close: number; keepOpen: number[]; threshold: unknown })).toMatchObject({ close: 9, keepOpen: [], threshold: 'auto' })
+    expect((m.silhouette as { close: number; areas: unknown; threshold: unknown })).toMatchObject({ close: 9, areas: {}, threshold: 'auto' })
     expect(m.relief).toEqual(defaultKeychain.relief)
     expect(m.base).toEqual(defaultKeychain.base)
     expect((m.size as { mode: string; longest: number })).toMatchObject({ mode: 'box', longest: 70 })
   })
-  it('keepOpen оставляет только целые числа; число в threshold сохраняется', () => {
+  it('keepOpen превращается в открытые области (только целые числа); число в threshold сохраняется', () => {
     const m = migrateKeychain({ silhouette: { keepOpen: [1, 'a', 2.5, 3], threshold: 120 } })
-    expect((m.silhouette as { keepOpen: number[]; threshold: number }).keepOpen).toEqual([1, 3])
+    expect(Object.keys((m.silhouette as { areas: Record<string, unknown> }).areas)).toEqual(['1', '3'])
+    expect((m.silhouette as { threshold: number }).threshold).toBe(120)
     expect((m.silhouette as { threshold: number }).threshold).toBe(120)
   })
   it('старая запись (до узоров) получает источник, детали, узор и профиль по умолчанию', () => {
