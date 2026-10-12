@@ -73,7 +73,7 @@ export function KeychainMode() {
   const { model, info, busy, pending } = useKeychainModel(params, image)
   const size = info?.size
 
-  useEffect(() => { if (size) recordSession(null, `${size[0].toFixed(0)} × ${size[1].toFixed(0)} ${t('units.mm')}`, 'keychain') }, [size, t])
+  useEffect(() => { if (size) recordSession('image', `${size[0].toFixed(0)} × ${size[1].toFixed(0)} ${t('units.mm')}`, 'keychain') }, [size, t])
 
   const onDrop = (e: DragEvent) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) void onFile(f) }
   const name = size ? `keychain_${Math.round(size[0])}x${Math.round(size[1])}` : 'keychain'

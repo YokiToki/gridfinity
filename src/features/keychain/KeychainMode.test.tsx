@@ -25,7 +25,7 @@ vi.mock('./decodeImage', async (orig) => {
   return { ...real, decodeImage: vi.fn(async (f: File) => (f.type === 'image/png' ? { image: tiny, original: { width: 4, height: 4 }, downscaled: false } : real.decodeImage(f))) }
 })
 
-const open = () => render(<I18nextProvider i18n={i18n}><RouterProvider router={createMemoryRouter(routes, { initialEntries: ['/keychain'] })} /></I18nextProvider>)
+const open = () => render(<I18nextProvider i18n={i18n}><RouterProvider router={createMemoryRouter(routes, { initialEntries: ['/keychain/image'] })} /></I18nextProvider>)
 const png = () => new File(['x'], 'logo.png', { type: 'image/png' })
 
 describe('Keychain: изображение (4.1)', () => {

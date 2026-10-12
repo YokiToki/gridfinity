@@ -2,7 +2,6 @@ import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { IconHistory } from '@tabler/icons-react'
-import { MODES } from './modes'
 import { PRODUCTS, productById } from './products'
 import { readSession } from './lastSession'
 import { ChoiceCard, StartLayout, useNumberHotkeys } from './StartLayout'
@@ -28,10 +27,10 @@ export function StartPage() {
   useNumberHotkeys(PATHS, navigate)
 
   const lastProduct = last ? productById(last.product) : undefined
-  const lastMode = last?.mode ? MODES.find((m) => m.id === last.mode) : undefined
+  const lastMode = last?.mode ? lastProduct?.modes?.find((m) => m.id === last.mode) : undefined
   // «Продолжить» ведёт в режим Gridfinity или в раздел продукта без режимов
   const lastTo = lastMode?.path ?? lastProduct?.path
-  const lastName = lastMode ? t(`modes.${lastMode.id}`) : lastProduct ? t(`products.${lastProduct.id}.name`) : ''
+  const lastName = lastMode ? t(lastMode.labelKey) : lastProduct ? t(`products.${lastProduct.id}.name`) : ''
   return (
     <StartLayout tagline={t('start.tagline')} title={t('start.title')}>
       <div className="relative flex flex-wrap justify-center gap-6">

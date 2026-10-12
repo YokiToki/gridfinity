@@ -42,4 +42,19 @@ describe('маршруты', () => {
   it('неизвестный режим Gridfinity возвращает к выбору режима', () => {
     expect(at('/gridfinity/zzz').state.location.pathname).toBe('/gridfinity')
   })
+  it('/keychain — выбор режима, режимы открываются по прямым ссылкам', async () => {
+    const a = at('/keychain')
+    expect(screen.getByRole('heading', { name: 'Choose a keychain start' })).toBeInTheDocument()
+    expect(screen.getByTestId('card-image')).toHaveAttribute('href', '/keychain/image')
+    expect(screen.getByTestId('card-shape')).toHaveAttribute('href', '/keychain/shape')
+    expect(a.state.location.pathname).toBe('/keychain')
+  })
+  it.each([['/keychain/image', /Choose an image to start/], ['/keychain/shape', /Shape is coming soon/]])('прямая ссылка %s', async (path, text) => {
+    const r = at(path)
+    expect(await screen.findByText(text)).toBeInTheDocument()
+    expect(r.state.location.pathname).toBe(path)
+  })
+  it('неизвестный путь в Keychain ведёт на выбор режима', () => {
+    expect(at('/keychain/zzz').state.location.pathname).toBe('/keychain')
+  })
 })

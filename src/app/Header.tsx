@@ -1,7 +1,6 @@
 import { NavLink, Link, useLocation } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { IconChevronDown } from '@tabler/icons-react'
-import { MODES } from './modes'
 import { PRODUCTS, productOf, type Product } from './products'
 import { Logo } from './Logo'
 import { SegmentedControl } from '../ui/SegmentedControl'
@@ -24,14 +23,14 @@ export function Header() {
       {product?.modes && (
         <>
           <nav aria-label={t('modes.label')} className="ml-6 hidden gap-0.5 rounded-group border border-border bg-bg p-0.5 md:inline-flex">
-            {MODES.map(({ id, path, Icon }) => (
+            {product.modes.map(({ id, path, Icon, labelKey }) => (
               <NavLink key={id} to={path} className={({ isActive }) =>
                 `inline-flex h-8 items-center gap-1.5 rounded-control px-3 no-underline ${isActive ? 'bg-surface-3 text-text shadow-[inset_0_0_0_1px_var(--color-border-strong)]' : 'text-text-muted hover:text-text'}`}>
-                <Icon size={16} stroke={1.75} />{t(`modes.${id}`)}
+                <Icon size={16} stroke={1.75} />{t(labelKey)}
               </NavLink>
             ))}
           </nav>
-          <MobileModeSelect />
+          <MobileModeSelect product={product} />
         </>
       )}
       <span className="hidden flex-1 md:block" />
@@ -44,34 +43,35 @@ export function Header() {
 }
 
 /** На узком экране режимы выбираются выпадающим списком. */
-function MobileModeSelect() {
+function MobileModeSelect({ product }: { product: Product }) {
   const { t } = useTranslation()
   return (
     <details className="relative md:hidden min-[440px]:min-w-0 min-[440px]:flex-1">
       <summary aria-label={t('modes.label')} className="flex h-10 cursor-pointer list-none items-center justify-between gap-1 rounded-control border border-border-strong bg-surface-2 px-2">
-        <ModeIcon /><span className="hidden min-w-0 truncate font-medium min-[440px]:inline"><ModeName /></span><IconChevronDown size={16} stroke={1.75} className="flex-none" />
+        <ModeIcon product={product} /><span className="hidden min-w-0 truncate font-medium min-[440px]:inline"><ModeName product={product} /></span><IconChevronDown size={16} stroke={1.75} className="flex-none" />
       </summary>
       <ul aria-label={t('modes.label')} className="absolute top-11 right-0 left-0 z-20 m-0 list-none rounded-group border border-border-strong bg-surface-2 p-1 shadow-float">
-        {MODES.map(({ id, path, Icon }) => (
+        {(product.modes ?? []).map(({ id, path, Icon, labelKey }) => (
           <li key={id}><NavLink to={path} className="flex h-10 items-center gap-2 rounded-control px-3 text-text no-underline hover:bg-surface-3"
-            onClick={(e) => e.currentTarget.closest('details')?.removeAttribute('open')}><Icon size={16} stroke={1.75} />{t(`modes.${id}`)}</NavLink></li>
+            onClick={(e) => e.currentTarget.closest('details')?.removeAttribute('open')}><Icon size={16} stroke={1.75} />{t(labelKey)}</NavLink></li>
         ))}
       </ul>
     </details>
   )
 }
 
-function ModeIcon() {
+function ModeIcon({ product }: { product: Product }) {
   const { pathname: path } = useLocation()
-  const Icon = (MODES.find((m) => path.startsWith(m.path)) ?? MODES[1]).Icon
+  const modes = product.modes ?? []
+  const Icon = (modes.find((m) => path.startsWith(m.path)) ?? modes[0]).Icon
   return <Icon size={16} stroke={1.75} className="flex-none" />
 }
 
-function ModeName() {
+function ModeName({ product }: { product: Product }) {
   const { t } = useTranslation()
   const { pathname: path } = useLocation()
-  const mode = MODES.find((m) => path.startsWith(m.path))
-  return <>{mode ? t(`modes.${mode.id}`) : t('modes.label')}</>
+  const mode = (product.modes ?? []).find((m) => path.startsWith(m.path))
+  return <>{mode ? t(mode.labelKey) : t('modes.label')}</>
 }
 
 const linkClass = (isActive: boolean) =>

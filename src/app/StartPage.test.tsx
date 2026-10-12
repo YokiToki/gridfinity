@@ -42,7 +42,7 @@ describe('StartPage (выбор продукта)', () => {
   it('клавиша 2 открывает Keychain Master', async () => {
     renderAt('/')
     await userEvent.keyboard('2')
-    expect(await screen.findByText(/Choose an image to start/)).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Choose a keychain start' })).toBeInTheDocument()
   })
   it('плашка «Продолжить» скрыта без сохранённой сессии и ведёт в режим Gridfinity', () => {
     const { unmount } = renderAt('/')
@@ -53,7 +53,13 @@ describe('StartPage (выбор продукта)', () => {
     const link = screen.getByText(/Continue: Baseplate 6 × 4/).closest('a')!
     expect(link).toHaveAttribute('href', '/gridfinity/baseplate')
   })
-  it('«Продолжить» после Keychain ведёт в раздел брелоков', () => {
+  it('«Продолжить» помнит режим Keychain: Форма ведёт на /keychain/shape', () => {
+    recordSession('shape', '54 × 30 mm', 'keychain')
+    renderAt('/')
+    const link = screen.getByText(/Continue: Shape 54 × 30 mm/).closest('a')!
+    expect(link).toHaveAttribute('href', '/keychain/shape')
+  })
+  it('«Продолжить» после Keychain без режима (старая запись) ведёт на выбор режима', () => {
     recordSession(null, '1 emblem', 'keychain')
     renderAt('/')
     const link = screen.getByText(/Continue: Keychain Master 1 emblem/).closest('a')!
@@ -82,5 +88,26 @@ describe('ModeChooser (/gridfinity)', () => {
     expect(await screen.findByLabelText('3D preview')).toBeInTheDocument()
     expect(screen.getByRole('complementary', { name: 'Parameters' })).toBeInTheDocument()
     expect(screen.getByText('Compartments')).toBeInTheDocument()
+  })
+})
+
+describe('ModeChooser (/keychain)', () => {
+  beforeEach(async () => { localStorage.clear(); await i18n.changeLanguage('en') })
+
+  it('две карточки ведут на свои режимы, вьюпорта нет, режимов Gridfinity нет', () => {
+    renderAt('/keychain')
+    expect(screen.getByTestId('card-image')).toHaveAttribute('href', '/keychain/image')
+    expect(screen.getByTestId('card-shape')).toHaveAttribute('href', '/keychain/shape')
+    expect(screen.queryByTestId('card-box')).toBeNull()
+    expect(screen.queryByTestId('viewport')).toBeNull()
+  })
+  it('клавиша 1 открывает Image, клавиша 2 — Shape', async () => {
+    const { unmount } = renderAt('/keychain')
+    await userEvent.keyboard('1')
+    expect(await screen.findByText(/Choose an image to start/)).toBeInTheDocument()
+    unmount()
+    renderAt('/keychain')
+    await userEvent.keyboard('2')
+    expect(await screen.findByText('Shape is coming soon')).toBeInTheDocument()
   })
 })

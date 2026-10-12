@@ -51,7 +51,18 @@
     },
     "continue": "Continue: {{mode}} {{size}}, saved {{when}}",
     "gridfinityTitle": "Choose a Gridfinity part",
-    "open": "Open {{name}}"
+    "open": "Open {{name}}",
+    "keychainTitle": "Choose a keychain start",
+    "keychainImage": {
+      "desc": "Relief keychain from a picture: a drawing, logo or emblem becomes a silhouette with a height pattern.",
+      "tag1": "image → relief",
+      "tag2": "mask"
+    },
+    "keychainShape": {
+      "desc": "A plain tag from a ready-made shape: rectangle, circle, ellipse, capsule or polygon, with an optional rim.",
+      "tag1": "shapes",
+      "tag2": "rim"
+    }
   },
   "baseplate": {
     "size": {
@@ -718,6 +729,10 @@
       "noBreach": "The channel does not open to the outside: move its exit to the edge of the silhouette.",
       "cavityBreach": "The channel exit ends in a closed cavity, not outside.",
       "coarse": "{{feature}} is narrower than two grid steps ({{actual}} {{u}}): raise the resolution."
+    },
+    "modes": {
+      "image": "Image",
+      "shape": "Shape"
     }
   }
 }
