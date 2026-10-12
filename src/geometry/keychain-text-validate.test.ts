@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { defaultKeychain, validateKeychain, type KeychainParams } from './keychain'
+import { defaultKeychain, textResolution, validateKeychain, type KeychainParams } from './keychain'
 import { defaultText, type TextParams } from './text'
 
 const P = (t: Partial<TextParams>): KeychainParams => ({ ...defaultKeychain, imageId: 'i', text: { ...defaultText, enabled: true, content: 'A', ...t } })
@@ -25,5 +25,23 @@ describe('проверка надписи', () => {
   })
   it('отрицательная добавка между буквами допустима (сжатие)', () => {
     expect(validateKeychain(P({ letterSpacing: -0.3 })).ok).toBe(true)
+  })
+})
+
+describe('тонкие штрихи (1.4)', () => {
+  it.each([
+    // размер мм, шаг, минимум по бюджету → tooFine, canRaise, raiseTo
+    [8, 0.25, 0.05, false, false, 0.25], // штрих 1.0 = 4 ячейки: ровно на пределе, предупреждения нет
+    [4, 0.25, 0.05, true, true, 0.12], [4, 0.25, 0.2, true, true, 0.2], [4, 0.25, 0.3, true, false, 0.3],
+    [20, 0.25, 0.05, false, false, 0.62], [2, 0.1, 0.05, true, true, 0.06],
+  ] as const)('размер %f мм, шаг %f, минимум %f', (size, cell, minCell, tooFine, canRaise, raiseTo) => {
+    const r = textResolution(size, cell, minCell)
+    expect(r.tooFine).toBe(tooFine)
+    expect(r.canRaise).toBe(canRaise)
+    if (tooFine) expect(r.raiseTo).toBeCloseTo(raiseTo, 9)
+    expect(r.stroke).toBeCloseTo(size / 8, 9)
+  })
+  it('нулевой размер не считается «тонким» (предупреждение не нужно)', () => {
+    expect(textResolution(0, 0.25, 0.05).tooFine).toBe(false)
   })
 })

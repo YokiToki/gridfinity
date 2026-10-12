@@ -6,7 +6,7 @@
 - [x] 1.1 `fonts.ts` and `textRaster.ts`: font loading (`document.fonts.load`), user font via `FontFace`, text → alpha mask at 12 px/mm with spacing/alignment/lines, mask bounds in mm. Tests with a mocked canvas (call arguments, sizing, multiline layout) and a pure measuring helper.
 - [x] 1.2 Worker message `{kind: 'text'}` + registry; `TextParams` in `KeychainParams`, validation and migration. Tests for the client message and the migrate table.
 - [x] 1.3 Heightfield: sample the mask by inverse transform, emboss/engrave rules, plate-in-grid when the text lies on the plate, clipping warning, text only on the top half. Tests on a synthetic mask: emboss height, engrave depth and clamp, rotation and position, plate case, two-halves case, valid solids.
-- [ ] 1.4 Resolution warning for fine strokes (reuse `patternResolution`). Test.
+- [x] 1.4 Resolution warning for fine strokes (reuse `patternResolution`). Test.
 
 ## 2. UI
 

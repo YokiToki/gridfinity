@@ -438,6 +438,14 @@ export function smoothResolution(radius: number, cell: number, minCell: number):
   return { noEffect: radius > 0 && radius < cell - 1e-9, canRaise: raiseTo < cell - 1e-9, raiseTo }
 }
 
+/** Разрешение и надпись: штрих букв ≈ size / 8; тоньше четырёх ячеек сетки — края ступенчатые. Предлагаемый шаг — четверть штриха (но не мельче бюджета). */
+export interface TextResolution { tooFine: boolean; stroke: number; canRaise: boolean; raiseTo: number }
+export function textResolution(size: number, cell: number, minCell: number): TextResolution {
+  const stroke = size / 8
+  const raiseTo = Math.max(finestCell(minCell), Math.floor((stroke / 4) * 100) / 100)
+  return { tooFine: size > 0 && stroke < 4 * cell - 1e-9, stroke, canRaise: raiseTo < cell - 1e-9, raiseTo }
+}
+
 // ---------- подложка: форма ----------
 
 export interface PlateSpec {
