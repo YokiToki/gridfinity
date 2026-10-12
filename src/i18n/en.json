@@ -545,7 +545,9 @@
       "edgeWidth": "Bevel width",
       "pow": "Bevel exponent",
       "heightFloor": "Minimum rim height",
-      "summary": "Height {{h}} · bevel {{e}} {{u}}"
+      "summary": "Height {{h}} · bevel {{e}} {{u}}",
+      "smooth": "Smooth surface",
+      "smoothHint": "Softens steps and creases of the relief. Applied before detail lines and patterns, so they stay crisp; the outline and the base plate do not change."
     },
     "base": {
       "title": "Base plate",
@@ -596,7 +598,8 @@
       "channelNeedsSplit": "The channel needs the two-halves mode",
       "pins": "Use 0 to 6 pins",
       "clearance": "The clearance must be smaller than the pin radius",
-      "sides": "Sides must be a whole number from 3 to 12"
+      "sides": "Sides must be a whole number from 3 to 12",
+      "smooth": "The smoothing radius must be between 0 and 3 mm"
     },
     "profile": {
       "source": "Height source",
@@ -616,7 +619,9 @@
         "engraved": "Engraved",
         "custom": "Custom"
       },
-      "steps": "Steps"
+      "steps": "Steps",
+      "smooth": "Smoothing",
+      "despeckle": "Remove speckles"
     },
     "detail": {
       "title": "Detail lines",
@@ -770,6 +775,10 @@
       "height": "Rim height",
       "off": "Off",
       "summary": "{{w}} × {{h}} {{u}}"
+    },
+    "smoothing": {
+      "noEffect": "The smoothing radius is below the grid step ({{cell}} {{u}}): it has no effect at this resolution.",
+      "raise": "Raise resolution (step {{cell}} {{u}})"
     }
   }
 }

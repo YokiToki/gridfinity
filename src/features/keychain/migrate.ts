@@ -17,6 +17,11 @@ export function migrateKeychain(raw: Record<string, unknown>): Record<string, un
   if (!PROFILE_KINDS.includes(relief.profile)) relief.profile = defaultKeychain.relief.profile
   const source = { ...defaultKeychain.source, ...obj(raw.source) }
   if (source.kind !== 'distance' && source.kind !== 'brightness') source.kind = 'distance'
+  // сглаживание: старые записи без полей остаются на 0 (модель не меняется), мусор приводится к 0
+  const num0 = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : 0)
+  source.smooth = num0(source.smooth)
+  source.despeckle = source.despeckle === true
+  relief.smooth = num0(relief.smooth)
   const pattern = { ...defaultKeychain.pattern, ...obj(raw.pattern) }
   if (!PATTERN_KINDS.includes(pattern.kind)) pattern.kind = 'none'
   if (pattern.scope !== 'relief' && pattern.scope !== 'plateau' && pattern.scope !== 'base') pattern.scope = 'relief'

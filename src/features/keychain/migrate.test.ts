@@ -37,4 +37,17 @@ describe('migrateKeychain', () => {
     expect(m.pattern).toMatchObject({ kind: 'hex', scope: 'plateau', pitch: 3 })
     expect(m.relief).toMatchObject({ profile: 'terrace', steps: 4 })
   })
+  it('сглаживание: старая запись с яркостью остаётся на 0 и без удаления пятен, мусор приводится к 0', () => {
+    const old = migrateKeychain({ source: { kind: 'brightness', contrast: 1.5, gamma: 1, invert: false }, relief: { hmax: 3 } })
+    expect(old.source).toMatchObject({ kind: 'brightness', contrast: 1.5, smooth: 0, despeckle: false })
+    expect((old.relief as { smooth: number }).smooth).toBe(0)
+    const junk = migrateKeychain({ source: { smooth: 'x', despeckle: 'yes' }, relief: { smooth: null } })
+    expect(junk.source).toMatchObject({ smooth: 0, despeckle: false })
+    expect((junk.relief as { smooth: number }).smooth).toBe(0)
+  })
+  it('сохранённое сглаживание сохраняется', () => {
+    const m = migrateKeychain({ source: { kind: 'brightness', smooth: 0.8, despeckle: true }, relief: { smooth: 1.2 } })
+    expect(m.source).toMatchObject({ smooth: 0.8, despeckle: true })
+    expect((m.relief as { smooth: number }).smooth).toBe(1.2)
+  })
 })

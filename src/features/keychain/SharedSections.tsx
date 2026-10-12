@@ -43,7 +43,7 @@ export function SharedSections<S extends SharedParams>({ params: p, info, onChan
   const plateError = info?.error === 'keychain.error.plateTooSmall' ? info.error : null
   return (
     <>
-      {imageOnly && <ProfileSection relief={p.relief} source={p.source} error={err} onRelief={patch('relief')} onSource={patch('source')} />}
+      {imageOnly && <ProfileSection relief={p.relief} source={p.source} error={err} onRelief={patch('relief')} onSource={patch('source')} cell={info?.cell ?? null} minCell={info?.minCell ?? null} onRaise={(c) => patch('quality')({ cell: c })} />}
       {imageOnly && <DetailSection value={p.detail} error={err} onChange={patch('detail')} />}
       <PatternSection value={p.pattern} quality={p.quality} cell={info?.cell ?? null} minCell={info?.minCell ?? null} error={err} onChange={patch('pattern')} onRaise={(c) => patch('quality')({ cell: c })} />
       <BaseSection value={p.base} error={err} plateError={plateError} onChange={patch('base')} />

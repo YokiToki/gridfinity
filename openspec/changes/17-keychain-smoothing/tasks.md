@@ -9,8 +9,8 @@
 
 ## 2. UI
 
-- [ ] 2.1 `ProfileSection`: Smoothing + Remove speckles for the brightness source, Smooth surface for all; warning with the raise-resolution button. Component tests for control visibility, values and the warning. No artboard: build from `ui/` components.
-- [ ] 2.2 en/ru strings (parity); check labels at 380 px and in Russian.
+- [x] 2.1 `ProfileSection`: Smoothing + Remove speckles for the brightness source, Smooth surface for all; warning with the raise-resolution button. Component tests for control visibility, values and the warning. No artboard: build from `ui/` components.
+- [x] 2.2 en/ru strings (parity); check labels at 380 px and in Russian.
 
 ## 3. Verification
 
