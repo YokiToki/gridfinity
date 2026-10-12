@@ -15,11 +15,11 @@
 
 ## 3. UI
 
-- [ ] 3.1 `ProfileSection` presets + height source controls; component tests for Custom detection and source switch. No artboard: build from `ui/` components.
-- [ ] 3.2 `PatternSection` with thumbnail picker, per-pattern controls (`LengthField` for pitch/width/depth), scope control, Reset to plain. Component tests for control sets per pattern.
-- [ ] 3.3 en/ru strings (parity test), labels fit at the 380 px panel width, 390 px mobile drawer check.
+- [x] 3.1 `ProfileSection` presets + height source controls; component tests for Custom detection and source switch. No artboard: build from `ui/` components.
+- [x] 3.2 `PatternSection` with thumbnail picker, per-pattern controls (`LengthField` for pitch/width/depth), scope control, Reset to plain. Component tests for control sets per pattern.
+- [x] 3.3 en/ru strings (parity test), labels fit at the 380 px panel width, 390 px mobile drawer check.
 
 ## 4. Verification
 
-- [ ] 4.1 `npm test` and `npm run build` are green; no console errors in the dev server.
-- [ ] 4.2 In the browser: a plain emblem with Lines 45° and Dots, a photo with the brightness source, Terraced and Engraved presets; check bbox and that the exported STL is a valid solid; confirm default settings still reproduce the `11` volume.
+- [x] 4.1 `npm test` and `npm run build` are green; no console errors in the dev server.
+- [x] 4.2 In the browser: a plain emblem with Lines 45° and Dots, a photo with the brightness source, Terraced and Engraved presets; check bbox and that the exported STL is a valid solid; confirm default settings still reproduce the `11` volume.

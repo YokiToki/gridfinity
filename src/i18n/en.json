@@ -566,7 +566,71 @@
       "negative": "Must not be negative",
       "heightFloor": "The minimum rim height must be below the plateau height",
       "cell": "The grid step must be between 0.02 and 5 mm",
-      "budget": "The budget must be at least 10 000 triangles"
+      "budget": "The budget must be at least 10 000 triangles",
+      "steps": "Use at least 2 steps",
+      "contrast": "Enter a contrast greater than zero",
+      "gamma": "Enter a gamma greater than zero",
+      "patternPitch": "The line or dot width must be smaller than the pitch",
+      "engraveNoPlate": "The engraved profile needs a base plate: set a thickness greater than zero",
+      "scopeNoPlate": "The base plate scope needs a base plate: set a thickness greater than zero"
+    },
+    "profile": {
+      "source": "Height source",
+      "sources": {
+        "distance": "Silhouette",
+        "brightness": "Brightness"
+      },
+      "contrast": "Contrast",
+      "gamma": "Gamma",
+      "invert": "Invert (bright is lower)",
+      "preset": "Profile",
+      "presets": {
+        "bevel": "Bevel",
+        "dome": "Dome",
+        "terrace": "Terraced",
+        "flat": "Flat",
+        "engraved": "Engraved",
+        "custom": "Custom"
+      },
+      "steps": "Steps"
+    },
+    "detail": {
+      "title": "Detail lines",
+      "spineAmp": "Spine height",
+      "spineWidth": "Spine width",
+      "grooveDepth": "Groove depth",
+      "grooveWidth": "Groove width",
+      "grooveOffset": "Groove distance from the rim",
+      "summary": "Spine {{s}} · groove {{g}} {{u}}",
+      "off": "Off"
+    },
+    "pattern": {
+      "title": "Surface pattern",
+      "kind": "Pattern",
+      "kinds": {
+        "none": "None",
+        "lines": "Lines",
+        "crosshatch": "Crosshatch",
+        "dots": "Dots",
+        "hex": "Hex",
+        "ripples": "Ripples"
+      },
+      "pitch": "Pitch",
+      "lineWidth": "Line width",
+      "dotDiameter": "Dot diameter",
+      "depth": "Depth",
+      "angle": "Angle",
+      "offset": "Offset",
+      "staggered": "Staggered rows",
+      "scope": "Apply to",
+      "scopes": {
+        "relief": "Whole relief",
+        "plateau": "Plateau only",
+        "base": "Base plate only"
+      },
+      "tooFine": "The pattern is finer than the mesh resolution allows (grid step {{cell}} {{u}}, recommended pitch at least {{min}} {{u}}). Its edges will look stepped.",
+      "raise": "Raise resolution (step {{cell}} {{u}})",
+      "reset": "Reset to plain"
     }
   }
 }
