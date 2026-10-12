@@ -10,6 +10,7 @@ import { midtoneShare, otsu, toMask, type GrayImage } from './raster/threshold'
 import { profileValue, type ProfileParams } from './patterns/profile'
 import { coverage, type PatternParams } from './patterns/fields'
 import { skeleton } from './raster/thin'
+import { gaussianBlur, median3, sigmaCells } from './raster/blur'
 import { anchorField, exitRay, findAnchors, nearestExit, relToMm, type Anchor, type AnchorField, type Rejected } from './anchors'
 import { fitChecks, type FitIssue } from './keychainFit'
 import { inflateShape, shapeMask, type ShapeParams } from './shapes'
@@ -47,6 +48,10 @@ export interface SourceParams {
   gamma: number
   /** Светлое ниже, тёмное выше. */
   invert: boolean
+  /** Размытие яркости до контраста и гаммы, радиус в мм (0 — выключено): убирает зерно фотографии. */
+  smooth?: number
+  /** Убрать одиночные пятна яркости (медиана 3 × 3) до размытия. */
+  despeckle?: boolean
 }
 
 export interface ReliefParams extends ProfileParams {
@@ -56,6 +61,8 @@ export interface ReliefParams extends ProfileParams {
   edgeWidth: number
   /** Минимальная высота рельефа у кромки, мм. */
   heightFloor: number
+  /** Сглаживание готовой поверхности рельефа, радиус в мм (0 или нет — выключено); до деталей, узоров и позднейших элементов. */
+  smooth?: number
 }
 
 /** Хребет вдоль срединной оси и канавка у кромки (порт spine/groove из 02_heightfield.py, в миллиметрах). */
@@ -154,7 +161,10 @@ export interface KeychainParams {
   quality: QualityParams
 }
 
-export const defaultSource: SourceParams = { kind: 'distance', contrast: 1, gamma: 1, invert: false }
+export const defaultSource: SourceParams = { kind: 'distance', contrast: 1, gamma: 1, invert: false, smooth: 0, despeckle: false }
+/** Сглаживание яркости, с которого начинается выбор источника «яркость» в интерфейсе (старые записи остаются на 0). */
+export const BRIGHTNESS_SMOOTH_DEFAULT = 0.4
+export const MAX_SMOOTH = 3
 export const defaultDetail: DetailParams = { spineAmp: 0, spineWidth: 0.55, grooveDepth: 0, grooveWidth: 0.6, grooveOffset: 1.5 }
 export const defaultPattern: PatternParams = { kind: 'none', pitch: 1.5, width: 0.5, depth: 0.3, angle: 45, offset: 0, staggered: true, scope: 'relief' }
 
@@ -167,7 +177,7 @@ export const defaultKeychain: KeychainParams = {
   silhouette: { threshold: 'auto', invert: false, close: 3, fillHoles: true, keepOpen: [], speck: 200, grow: 2 },
   size: { mode: 'longest', longest: 70, width: 70, height: 70 },
   source: defaultSource,
-  relief: { hmax: 2, edgeWidth: 6, pow: 0.65, heightFloor: 0.06, profile: 'bevel', steps: 3 },
+  relief: { hmax: 2, edgeWidth: 6, pow: 0.65, heightFloor: 0.06, profile: 'bevel', steps: 3, smooth: 0 },
   detail: defaultDetail,
   pattern: defaultPattern,
   base: { thickness: 2, shape: 'silhouette', offset: 0, margin: 3, radius: 4, auto: true, width: 80, height: 60 },
@@ -502,14 +512,27 @@ export function buildGrid(inp: GridInput): Grid {
   const spine = p.detail.spineAmp > 0 ? edt(inv(skeleton(m, nx, ny)), nx, ny) : null
   const shape = p.origin.kind === 'shape' ? p.origin.shape : null
   const rim = shape?.rim.enabled && shape.rim.height > 0 && !inp.exactRim ? shape.rim : null
-  const gray = p.source.kind === 'brightness' && !shape ? new Float32Array(nx * ny) : null
+  let gray: Float32Array | null = p.source.kind === 'brightness' && !shape ? new Float32Array(nx * ny) : null
   if (gray) {
     const g = resampleGray(img.gray, img.width, bounds[0], bounds[1], bounds[2] + 1, bounds[3] + 1, sx, sy)
     for (let j = 0; j < sy; j++) for (let i = 0; i < sx; i++) gray[(j + ay) * nx + i + ax] = g[j * sx + i]
+    // сглаживание яркости: сначала медиана (одиночные пятна), потом гаусс; усредняются только узлы силуэта, контур не меняется
+    if (p.source.despeckle) gray = median3(gray, nx, ny, m)
+    const sg = sigmaCells(p.source.smooth ?? 0, cell)
+    if (sg > 0) gray = gaussianBlur(gray, nx, ny, sg, m)
   }
   const dOut = plateInGrid && plate?.shape === 'silhouette' ? edt(inv(m), nx, ny) : null
   const bevel: ReliefParams = { ...r, profile: 'bevel' }
   const pat = p.pattern, patOn = pat.kind !== 'none' && pat.depth > 0
+  // Высота источника до деталей: для яркости без потолка скоса (он применяется после сглаживания, чтобы кромка не размылась).
+  const sSurface = sigmaCells(r.smooth ?? 0, cell)
+  let raw: Float32Array = new Float32Array(nx * ny)
+  for (let k = 0; k < raw.length; k++) {
+    if (!m[k]) continue
+    const dmm = Math.max(d[k] * cell - shift, 0)
+    raw[k] = gray ? floor + brightnessValue(gray[k], p.source) * (r.hmax - floor) : reliefHeight(dmm, r)
+  }
+  if (sSurface > 0) raw = gaussianBlur(raw, nx, ny, sSurface, m)
   const top = new Float32Array(nx * ny)
   const meshMask = plateInGrid ? new Uint8Array(m) : m
 
@@ -519,7 +542,8 @@ export function buildGrid(inp: GridInput): Grid {
       const dmm = Math.max(d[k] * cell - shift, 0)
       const pv = profileValue(dmm / r.edgeWidth, r)
       // источник высоты: расстояние до кромки или яркость (с защитой кромки профилем скоса)
-      let h = gray ? Math.min(floor + brightnessValue(gray[k], p.source) * (r.hmax - floor), reliefHeight(dmm, bevel)) : reliefHeight(dmm, r)
+      let h = gray ? Math.min(raw[k], reliefHeight(dmm, bevel)) : raw[k]
+      if (sSurface > 0) h = Math.max(h, floor)
       if (spine) h += p.detail.spineAmp * pv * Math.exp(-((spine[k] * cell) ** 2) / (2 * p.detail.spineWidth ** 2))
       if (p.detail.grooveDepth > 0 && Math.abs(dmm - p.detail.grooveOffset) <= p.detail.grooveWidth / 2) h = Math.max(h - p.detail.grooveDepth, floor)
       let t = engraved ? Math.max(base - (h - floor), floor) : base + h
