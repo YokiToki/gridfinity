@@ -27,4 +27,4 @@ Three small usability gaps found while using Keychain Master, one of them app-wi
 
 - `ui/NumberField.tsx` (+ `LengthField`), `features/keychain/MaskPreview.tsx`, `PlacementEditor.tsx`, `app/Workspace.tsx` (panel bottom padding), en/ru strings, component tests; existing tests that count buttons or query by role may need updating.
 - Out of scope: sliders, a different numeric input widget, touch gestures beyond the buttons, zoom/pan of the enlarged mask (it is a fit-to-view image), changing step values of individual fields.
-- Depends on: `13-keychain-mounts` (archived).
+- Depends on: `13-keychain-mounts` (archived). Blocks `16`, `17` and `18`, which reuse the steppers and the enlarged preview.

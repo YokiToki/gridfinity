@@ -23,4 +23,4 @@ In two-halves mode the viewport shows the print sheet: the halves side by side, 
 
 - `geometry/keychain.ts` (assembly transforms in the result), `ModelResult` (optional `assembly`), `features/viewport/Viewport.tsx` (apply transforms), `app/Workspace.tsx` toolbar button group, `keychain.*` strings, tests.
 - Out of scope: animating the closing of the halves, section/clipping view, exploded views for other modes, assembled export (3MF assemblies), showing the ring.
-- Depends on: `13-keychain-mounts` (archived).
+- Depends on: `13-keychain-mounts` (archived). Blocks nothing and is blocked by nothing else, so it can be taken at any point after 13.

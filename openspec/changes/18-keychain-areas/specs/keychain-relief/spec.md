@@ -3,7 +3,7 @@
 ## ADDED Requirements
 
 ### Requirement: Area levels
-An area in Level mode SHALL be solid with a flat top at the plate thickness plus the chosen level, in millimetres, and at least the minimum rim height. Any number of areas MAY have levels and each has its own. A levelled area has a sharp step at its border; relief profile, detail lines and surface patterns SHALL NOT be applied inside it.
+An area in Level mode SHALL be solid with a flat top at the plate thickness plus the chosen level, in millimetres, and at least the minimum rim height. Any number of areas MAY have levels and each has its own. A levelled area has a sharp step at its border; relief profile, detail lines, smoothing and surface patterns SHALL NOT be applied inside it.
 
 #### Scenario: Two levels
 - **WHEN** area 2 has level 0.6 mm and area 5 has level 1.4 mm

@@ -44,11 +44,15 @@ The app SHALL provide the shapes Rectangle, Circle, Ellipse, Capsule and Polygon
 - **THEN** they behave as for an image keychain
 
 ### Requirement: Rim
-The app SHALL offer an optional rim, a raised border along the edge of the silhouette with its own width and height in millimetres, for both shapes and image silhouettes. The inside of the rim is the normal relief level.
+The app SHALL offer an optional rim, a raised border along the edge of a ready-made shape with its own width and height in millimetres. The rim SHALL NOT be offered for image silhouettes. The inside of the rim is the normal relief level.
 
 #### Scenario: Rim on a plate
 - **WHEN** a rim of width 1.2 mm and height 0.8 mm is enabled on a flat rectangle tag
 - **THEN** a border 1.2 mm wide stands 0.8 mm above the inner surface along the whole edge
+
+#### Scenario: Image keychain
+- **WHEN** the starting point is an image
+- **THEN** no rim control is shown
 
 #### Scenario: Rim off
 - **WHEN** the rim is switched off

@@ -36,11 +36,19 @@ Text SHALL be either embossed, raised by a chosen height above the surface under
 - **THEN** the letters are cut only down to the minimum height and the model stays a valid solid
 
 ### Requirement: Fonts
-The app SHALL offer its bundled fonts and the generic families, and SHALL let the user load a font file (TTF, OTF or WOFF) from the device, which is kept in the browser and restored after a reload. No font SHALL be downloaded from the network. A file that cannot be read as a font SHALL produce a localized error and leave the previous font in place.
+The app SHALL offer at least 20 popular font families, grouped by style, all covering Latin and Cyrillic, together with the generic families, and SHALL let the user load a font file (TTF, OTF or WOFF) from the device, which is kept in the browser and restored after a reload. The families SHALL be files of the app itself, loaded when chosen, and no font SHALL be downloaded from a third-party server. A file that cannot be read as a font SHALL produce a localized error and leave the previous font in place.
 
 #### Scenario: Bundled font
-- **WHEN** the user picks a bundled font
-- **THEN** the text is drawn with that font offline
+- **WHEN** the user picks one of the bundled families
+- **THEN** the text is drawn with that font and no request goes to another host
+
+#### Scenario: Cyrillic
+- **WHEN** the text is "Анна" and a bundled family is chosen
+- **THEN** the letters are drawn in that family, not in a fallback
+
+#### Scenario: Grouped list
+- **WHEN** the user opens the font list
+- **THEN** the families are grouped as Sans, Serif, Display, Handwriting and Mono
 
 #### Scenario: Own font
 - **WHEN** the user loads a TTF file

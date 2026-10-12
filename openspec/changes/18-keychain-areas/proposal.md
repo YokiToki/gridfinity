@@ -25,4 +25,4 @@ In Keychain Master the enclosed background regions of a silhouette are called "h
 
 - `geometry/keychain.ts` (`SilhouetteParams.keepOpen` → `areas`, `buildSilhouette`, `buildGrid` level override), `geometry/raster/components.ts` unchanged (ids stable), `features/keychain/SilhouetteSection.tsx` (area list), `MaskPreview.tsx` (hit testing, selection outline), `migrate.ts`, en/ru strings, tests.
 - Out of scope: gradients or slopes inside an area, named shared levels (one level assigned to many areas by reference), areas that are not enclosed background (use the silhouette settings), per-area patterns, per-area colour.
-- Depends on: `11-keychain-relief`, `12-keychain-patterns` (both archived), `15-keychain-ui-polish` (the stepper and enlarged preview are reused).
+- Depends on: `11-keychain-relief`, `12-keychain-patterns` (both archived), `15-keychain-ui-polish` (the stepper and enlarged preview are reused), `17-keychain-smoothing` (levelled areas must stay flat under smoothing).
