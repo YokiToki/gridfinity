@@ -15,9 +15,9 @@
 
 - [x] 3.1 `ShapeSection` (kind thumbnails, sizes with `LengthField`, corner radius with effective value, sides/rotation, presets) and `RimSection`; Shape mode defaults. Component tests per kind control set and rim fields. No artboard: build from `ui/` components.
 - [x] 3.2 `PlacementEditor` outline for shapes and hiding the mask card; Shape mode state under `keychain.shape` with its own migrate. Component and persistence tests.
-- [ ] 3.3 en/ru strings (parity: `keychain.modes.*`, shape strings), labels at 380 px and in Russian, 390 px drawer.
+- [x] 3.3 en/ru strings (parity: `keychain.modes.*`, shape strings), labels at 380 px and in Russian, 390 px drawer.
 
 ## 4. Verification
 
-- [ ] 4.1 `npm test` and `npm run build` are green; no console errors.
-- [ ] 4.2 In the browser: chooser, header switching between modes with settings kept per mode, a 54 × 30 rounded tag with rim, a 40 mm round tag, a hexagon; add a through hole and two halves with pins in Shape mode; export STL and check the bounding boxes in the file; confirm Image mode still reproduces the volume of change 11.
+- [x] 4.1 `npm test` and `npm run build` are green; no console errors.
+- [x] 4.2 In the browser: chooser, header switching between modes with settings kept per mode, a 54 × 30 rounded tag with rim, a 40 mm round tag, a hexagon; add a through hole and two halves with pins in Shape mode; export STL and check the bounding boxes in the file; confirm Image mode still reproduces the volume of change 11.
