@@ -28,7 +28,8 @@ export function ChoiceCard({ to, testId, index, art, name, desc, tags }: { to: s
         <kbd aria-hidden className="absolute top-2.5 right-3 inline-flex h-[22px] min-w-[22px] items-center justify-center rounded-xs border border-b-2 border-border-strong bg-surface-1 px-1.5 font-mono text-xs text-text-muted">{index}</kbd>
         {art}
       </div>
-      <div>
+      {/* текст занимает место четырёх строк описания у всех карточек: рамка рисунка (flex-1) одной высоты на любой странице и в любом языке */}
+      <div className="min-h-[114px]">
         <div className="font-display text-xl font-semibold tracking-tight">{name}</div>
         <div className="mt-1.5 text-sm text-text-muted">{desc}</div>
       </div>

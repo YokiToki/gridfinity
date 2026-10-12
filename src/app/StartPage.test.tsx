@@ -111,3 +111,21 @@ describe('ModeChooser (/keychain)', () => {
     expect(await screen.findByRole('button', { name: /^Expand: Shape/ })).toBeInTheDocument()
   })
 })
+
+describe('карточки выбора: одинаковая вёрстка', () => {
+  beforeEach(async () => { localStorage.clear(); await i18n.changeLanguage('en') })
+  it('блок текста резервирует место четырёх строк описания у всех карточек, поэтому рамка рисунка одной высоты на любой странице и в любом языке', async () => {
+    for (const lang of ['en', 'ru']) {
+      await i18n.changeLanguage(lang)
+      for (const path of ['/', '/gridfinity', '/keychain']) {
+        const r = renderAt(path)
+        for (const card of screen.getAllByTestId(/^card-/)) {
+          const text = card.children[1] as HTMLElement
+          expect(text.className, `${lang} ${path}`).toContain('min-h-[114px]')
+          expect(card.children[0].className).toContain('flex-1')
+        }
+        r.unmount()
+      }
+    }
+  })
+})
