@@ -19,4 +19,22 @@ describe('migrateKeychain', () => {
     expect((m.silhouette as { keepOpen: number[]; threshold: number }).keepOpen).toEqual([1, 3])
     expect((m.silhouette as { threshold: number }).threshold).toBe(120)
   })
+  it('старая запись (до узоров) получает источник, детали, узор и профиль по умолчанию', () => {
+    const m = migrateKeychain({ imageId: 'i', imageName: 'a.png', relief: { hmax: 3, edgeWidth: 4, pow: 0.7, heightFloor: 0.1 }, base: { thickness: 1 } })
+    expect(m.source).toEqual(defaultKeychain.source)
+    expect(m.detail).toEqual(defaultKeychain.detail)
+    expect(m.pattern).toEqual(defaultKeychain.pattern)
+    expect(m.relief).toMatchObject({ hmax: 3, edgeWidth: 4, profile: 'bevel', steps: 3 }) // сохранённое остаётся, новое — по умолчанию
+  })
+  it('битые перечисления заменяются: профиль, источник, узор, область', () => {
+    const m = migrateKeychain({ relief: { profile: 'zzz' }, source: { kind: 'x' }, pattern: { kind: 'swirl', scope: 'nowhere', pitch: 2 } })
+    expect((m.relief as { profile: string }).profile).toBe('bevel')
+    expect((m.source as { kind: string }).kind).toBe('distance')
+    expect(m.pattern).toMatchObject({ kind: 'none', scope: 'relief', pitch: 2 })
+  })
+  it('корректный узор сохраняется', () => {
+    const m = migrateKeychain({ pattern: { kind: 'hex', scope: 'plateau', pitch: 3 }, relief: { profile: 'terrace', steps: 4 } })
+    expect(m.pattern).toMatchObject({ kind: 'hex', scope: 'plateau', pitch: 3 })
+    expect(m.relief).toMatchObject({ profile: 'terrace', steps: 4 })
+  })
 })

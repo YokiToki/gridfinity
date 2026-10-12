@@ -2,16 +2,16 @@
 
 ## 1. Profiles and sources
 
-- [ ] 1.1 Profile functions (bevel, dome, terrace, flat, engraved) and the preset table with "Custom" detection. Tests: monotonicity, end slopes, terrace levels count, preset ↔ params round trip.
-- [ ] 1.2 Brightness height source with contrast/gamma/invert and rim protection; the worker message accepts an optional gray plane. Tests: bright > dark, invert flips, rim height ≥ floor, default output identical to 11 (volume + bbox regression).
-- [ ] 1.3 Detail lines (spine from the distance ridge, groove from the edge band) ported from `02_heightfield.py`. Tests: spine amplitude bound, groove never below the floor, reference parameters give a volume within tolerance of `keychain_v_form_010.stl`.
+- [x] 1.1 Profile functions (bevel, dome, terrace, flat, engraved) and the preset table with "Custom" detection. Tests: monotonicity, end slopes, terrace levels count, preset ↔ params round trip.
+- [x] 1.2 Brightness height source with contrast/gamma/invert and rim protection; the worker message accepts an optional gray plane. Tests: bright > dark, invert flips, rim height ≥ floor, default output identical to 11 (volume + bbox regression).
+- [x] 1.3 Detail lines (spine from the distance ridge, groove from the edge band) ported from `02_heightfield.py`. Tests: spine amplitude bound, groove never below the floor, reference parameters give a volume within tolerance of `keychain_v_form_010.stl`.
 
 ## 2. Surface patterns
 
-- [ ] 2.1 Pattern fields: lines, crosshatch, dots (square/staggered), hex, ripples as pure `(x, y, params) → coverage` functions. Tests: period, width fraction and rotation on sampled points.
-- [ ] 2.2 Scope (whole / plateau / base plate) and depth clamp composed into the heightfield; `Δh` never takes height below the floor. Tests: valid solid for extreme depth, bbox unchanged by patterns that only cut, scope isolation.
-- [ ] 2.3 Params, `validateKeychain` additions (pitch > width, depth ≥ 0, steps ≥ 2) with `keychain.error.*` keys, persistence migrate (old records without patterns get defaults). Tests: migrate and validation tables.
-- [ ] 2.4 Resolution awareness: `effectiveCell` from 11, warning rule and the raise-resolution action. Test: warning appears below 4 cells and disappears after raising.
+- [x] 2.1 Pattern fields: lines, crosshatch, dots (square/staggered), hex, ripples as pure `(x, y, params) → coverage` functions. Tests: period, width fraction and rotation on sampled points.
+- [x] 2.2 Scope (whole / plateau / base plate) and depth clamp composed into the heightfield; `Δh` never takes height below the floor. Tests: valid solid for extreme depth, bbox unchanged by patterns that only cut, scope isolation.
+- [x] 2.3 Params, `validateKeychain` additions (pitch > width, depth ≥ 0, steps ≥ 2) with `keychain.error.*` keys, persistence migrate (old records without patterns get defaults). Tests: migrate and validation tables.
+- [x] 2.4 Resolution awareness: `effectiveCell` from 11, warning rule and the raise-resolution action. Test: warning appears below 4 cells and disappears after raising.
 
 ## 3. UI
 
