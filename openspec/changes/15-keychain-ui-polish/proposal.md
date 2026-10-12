@@ -5,7 +5,7 @@
 Three small usability gaps found while using Keychain Master, one of them app-wide:
 
 1. Numeric fields have no +/− buttons in most places (`NumberField` has an opt-in `stepper` that nothing uses), so values can only be typed or nudged with arrow keys.
-2. The silhouette mask preview is a small fixed card in the viewport corner; holes and thin features are hard to see and to tell apart.
+2. The silhouette mask preview (Image mode) is a small fixed card in the viewport corner; holes and thin features are hard to see and to tell apart.
 3. In the placement editor the axis rulers sit at the very bottom/left edge of the drawing: the sticky export block of the panel partly covers them and the thin grey lines and tiny labels are hard to read.
 
 ## What Changes

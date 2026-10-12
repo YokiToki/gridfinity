@@ -6,6 +6,8 @@ In Keychain Master the enclosed background regions of a silhouette are called "h
 
 ## What Changes
 
+Areas are a property of the silhouette mask, so they exist in the **Image mode** only (the Shape mode has no mask; see `16-keychain-shape-mode`).
+
 - **Rename:** "hole" becomes **area** everywhere (panel, mask preview labels, warnings, specs, i18n en/ru: "Область"). The numbers on the mask stay stable ids.
 - **Per-area mode:** each area has a mode: **Follow relief** (filled, as the default today), **Open** (cut through, as "keep open" today) or **Level** (the area becomes a flat surface at a given height above the plate). The level is set per area in millimetres; any number of areas can have levels, each its own.
 - **Level semantics:** a levelled area is solid with a flat top at `plate + level`, with `heightFloor ≤ level`; it has a hard step at its border (no bevel); patterns and detail lines are not applied inside it.
