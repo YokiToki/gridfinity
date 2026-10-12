@@ -1,6 +1,6 @@
 import { buildBaseplateParts, type BaseplateGeometry } from './baseplate'
 import { buildBox, type BoxParams } from './box'
-import { buildKeychain, type ImageRegistry, type KeychainInfo, type KeychainParams } from './keychain'
+import { buildKeychainSheet, type ImageRegistry, type KeychainInfo, type KeychainParams } from './keychain'
 import type { GrayImage } from './raster/threshold'
 import { buildCutout, buildCutoutTools, type CutoutParams, type MeshRegistry } from './cutout'
 import type { IndexedMesh } from './stl-import'
@@ -53,9 +53,10 @@ export async function generate<M extends ModeId>(mode: M, params: ModeParams[M],
       } finally { m.delete() }
     }
     case 'keychain': {
-      const { solid, info } = await buildKeychain(params as KeychainParams, imageRegistry, wasmUrl)
-      if (!solid) return { parts: [], keychain: info }
-      try { return { parts: [{ label: 'A1', col: 0, row: 0, oversize: false, mesh: meshOf(solid) }], keychain: info } } finally { solid.delete() }
+      const { parts, info } = await buildKeychainSheet(params as KeychainParams, imageRegistry, wasmUrl)
+      try {
+        return { parts: parts.map((q) => ({ label: q.label, col: q.col, row: q.row, oversize: false, mesh: meshOf(q.solid) })), keychain: info }
+      } finally { parts.forEach((q) => q.solid.delete()) }
     }
     default:
       throw new Error(`Unknown mode: ${String(mode)}`)

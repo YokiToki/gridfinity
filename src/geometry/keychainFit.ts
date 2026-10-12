@@ -1,4 +1,4 @@
-import { channelBreach, heightOver, nodeAt, rimAt, type AnchorField } from './anchors'
+import { channelBreach, distToSolid, heightOver, nodeAt, rimAt, type AnchorField } from './anchors'
 
 export type FitKind = 'outside' | 'thinWall' | 'thinFloor' | 'pinTooBig' | 'noBreach' | 'cavityBreach' | 'coarse'
 /** Нарушение посадки: что за элемент, какого рода, фактическое и требуемое значение (мм). Ключ i18n: keychain.warning.<kind>. */
@@ -7,7 +7,7 @@ export interface FitIssue { feature: string; kind: FitKind; actual: number; requ
 export interface FitInput {
   field: AnchorField
   /** Стиль крепления и его размеры, мм (центры от центра габарита силуэта). */
-  mount: { style: 'none' | 'hole' | 'eyelet' | 'channel'; x: number; y: number; diameter: number; exit?: { x: number; y: number } }
+  mount: { style: 'none' | 'hole' | 'eyelet' | 'channel'; x: number; y: number; diameter: number; exit?: { x: number; y: number }; /** Наружный диаметр ушка. */ outer?: number }
   pins: { x: number; y: number }[]
   pinRadius: number
   /** Глубина отверстия под штифт в каждой половине, мм. */
@@ -35,6 +35,14 @@ export function fitChecks(inp: FitInput): FitIssue[] {
       if (h < need - 1e-9) out.push({ feature: name, kind: 'thinFloor', actual: h, required: need })
     }
     coarse(name, r)
+  }
+  if (m.style === 'eyelet') {
+    const R = (m.outer ?? 0) / 2, wall = Math.max(0, (R * 2 - m.diameter) / 2)
+    const d = distToSolid(f, m.x, m.y)
+    // ушко должно перекрывать подложку не меньше чем на стенку, иначе тело распадётся
+    if (d > R - minWall + 1e-9) out.push({ feature: 'eyelet', kind: 'outside', actual: d, required: R - minWall })
+    if (wall < minWall - 1e-9) out.push({ feature: 'eyelet', kind: 'thinWall', actual: wall, required: minWall })
+    coarse('eyelet', m.diameter / 2)
   }
   if (m.style === 'channel' && m.exit) {
     const b = channelBreach(f, { x: m.x, y: m.y }, m.exit, m.diameter / 2)

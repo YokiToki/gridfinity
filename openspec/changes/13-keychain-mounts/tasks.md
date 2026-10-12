@@ -8,12 +8,12 @@
 
 ## 2. Mount geometry
 
-- [ ] 2.1 Through hole and mount params (relative position, diameter, presets); `Manifold` cut after patterns. Tests: hole volume removed ≈ π r² t, bbox unchanged, validity.
-- [ ] 2.2 Eyelet lug via `CrossSection` hull + union with the plate. Tests: single solid, bbox grows toward the edge, hole through, lug overlaps the plate.
-- [ ] 2.3 Symmetric build + `splitByPlane`, bottom half rotated 180° about X. Tests: two valid solids, volume sum within 0.5 % of the symmetric solid, both have bottom at z = 0.
-- [ ] 2.4 Alignment pin holes and loose pins; auto-placement through the anchors module. Tests: matching positions in both halves, pin radius = hole − clearance, rejected positions reported.
-- [ ] 2.5 Embedded channel across the mating plane with breach verification. Test: the exported halves, when stacked, leave a channel open to the exterior.
-- [ ] 2.6 Print sheet layout and `generate('keychain', …)` returns sheet / top / bottom; test: no overlap between parts, rotation not mirror (signed volume stays positive).
+- [x] 2.1 Through hole and mount params (relative position, diameter, presets); `Manifold` cut after patterns. Tests: hole volume removed ≈ π r² t, bbox unchanged, validity.
+- [x] 2.2 Eyelet lug via `CrossSection` hull + union with the plate. Tests: single solid, bbox grows toward the edge, hole through, lug overlaps the plate.
+- [x] 2.3 Symmetric build + `splitByPlane`, bottom half rotated 180° about X. Tests: two valid solids, volume sum within 0.5 % of the symmetric solid, both have bottom at z = 0.
+- [x] 2.4 Alignment pin holes and loose pins; auto-placement through the anchors module. Tests: matching positions in both halves, pin radius = hole − clearance, rejected positions reported.
+- [x] 2.5 Embedded channel across the mating plane with breach verification. Test: the exported halves, when stacked, leave a channel open to the exterior.
+- [x] 2.6 Print sheet layout and `generate('keychain', …)` returns sheet / top / bottom; test: no overlap between parts, rotation not mirror (signed volume stays positive).
 
 ## 3. UI
 

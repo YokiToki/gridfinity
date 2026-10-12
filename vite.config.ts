@@ -7,5 +7,6 @@ export default defineConfig({
   base: './',
   plugins: [react(), tailwindcss()],
   // .claude/worktrees — чужие рабочие копии (сессии приложения): их тесты не наши
-  test: { setupFiles: ['./src/test-setup.ts'], exclude: [...configDefaults.exclude, '.claude/**'] },
+  // геометрические тесты (WASM, сетки до сотен тысяч треугольников) в полном параллельном прогоне долгие: общий таймаут щедрый
+  test: { setupFiles: ['./src/test-setup.ts'], exclude: [...configDefaults.exclude, '.claude/**'], testTimeout: 30000 },
 })

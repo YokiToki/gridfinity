@@ -13,7 +13,7 @@ import { MaskPreview } from './MaskPreview'
 type S = KeychainParams & { imageName: string }
 let latest: S
 
-const preview = { width: 4, height: 4, data: new Uint8Array(16).fill(1), holes: [{ id: 1, size: 120, cx: 1, cy: 1, open: false }, { id: 2, size: 80, cx: 3, cy: 3, open: false }] }
+const preview = { width: 4, height: 4, data: new Uint8Array(16).fill(1), box: [0, 0, 4, 4] as [number, number, number, number], holes: [{ id: 1, size: 120, cx: 1, cy: 1, open: false }, { id: 2, size: 80, cx: 3, cy: 3, open: false }] }
 const info = (over: Partial<KeychainInfo> = {}): KeychainInfo => ({ threshold: 140, photoLike: false, preview, size: [70, 45], cell: 0.25, reduced: false, minCell: 0.1, triangles: 1000, ...over })
 
 function Harness({ unit = 'mm' as 'mm' | 'in', start = {} as Partial<S>, inf = info() }) {

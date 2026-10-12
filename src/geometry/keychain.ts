@@ -10,6 +10,9 @@ import { midtoneShare, otsu, toMask, type GrayImage } from './raster/threshold'
 import { profileValue, type ProfileParams } from './patterns/profile'
 import { coverage, type PatternParams } from './patterns/fields'
 import { skeleton } from './raster/thin'
+import { anchorField, exitRay, findAnchors, relToMm, type Anchor, type AnchorField, type Rejected } from './anchors'
+import { fitChecks, type FitIssue } from './keychainFit'
+import { cylinderAlong, cylinderZ, lugJoin, lugSolid, pinLength, pinRadiusLoose, pinSolid } from './keychainMounts'
 
 // ---------- параметры ----------
 
@@ -91,6 +94,44 @@ export interface QualityParams {
   maxTriangles: number
 }
 
+export type MountStyle = 'none' | 'hole' | 'eyelet' | 'channel'
+
+/** Крепление под кольцо. Положения — доля габарита силуэта (0 слева/снизу, Y вверх), поэтому переживают смену размера. */
+export interface MountParams {
+  style: MountStyle
+  x: number
+  y: number
+  /** Диаметр отверстия, канала или отверстия ушка, мм. */
+  diameter: number
+  /** Наружный диаметр ушка, мм. */
+  outer: number
+  /** Канал: точка выхода наружу (доля габарита). */
+  exitX: number
+  exitY: number
+  /** Минимальная стенка вокруг элементов, мм. */
+  minWall: number
+}
+
+/** Режим двух половин: симметричный рельеф делится по средней плоскости; штифты совмещают половины. */
+export interface SplitParams {
+  enabled: boolean
+  /** Число штифтов 0…6. */
+  pins: number
+  /** Радиус отверстия под штифт, мм. */
+  pinRadius: number
+  /** Зазор: свободный штифт тоньше отверстия на эту величину, мм. */
+  clearance: number
+  /** Глубина отверстия в каждой половине, мм. */
+  pinDepth: number
+  /** Положения штифтов (доли габарита); null — автоматически по лучшим местам. */
+  pinPositions: { x: number; y: number }[] | null
+  /** Зазор между деталями на листе, мм. */
+  gap: number
+}
+
+/** Готовые диаметры отверстия под кольцо по толщине проволоки. */
+export const RING_PRESETS = [{ id: 'thin', diameter: 3 }, { id: 'standard', diameter: 4 }, { id: 'heavy', diameter: 5 }] as const
+
 export interface KeychainParams {
   /** Изображение лежит вне параметров (в IndexedDB и в воркере), параметры ссылаются на него по id. */
   imageId: string
@@ -101,12 +142,17 @@ export interface KeychainParams {
   detail: DetailParams
   pattern: PatternParams
   base: BaseParams
+  mount: MountParams
+  split: SplitParams
   quality: QualityParams
 }
 
 export const defaultSource: SourceParams = { kind: 'distance', contrast: 1, gamma: 1, invert: false }
 export const defaultDetail: DetailParams = { spineAmp: 0, spineWidth: 0.55, grooveDepth: 0, grooveWidth: 0.6, grooveOffset: 1.5 }
 export const defaultPattern: PatternParams = { kind: 'none', pitch: 1.5, width: 0.5, depth: 0.3, angle: 45, offset: 0, staggered: true, scope: 'relief' }
+
+export const defaultMount: MountParams = { style: 'none', x: 0.5, y: 0.92, diameter: 4, outer: 9, exitX: 0.5, exitY: 1.04, minWall: 1.2 }
+export const defaultSplit: SplitParams = { enabled: false, pins: 3, pinRadius: 0.9, clearance: 0.1, pinDepth: 1, pinPositions: null, gap: 10 }
 
 export const defaultKeychain: KeychainParams = {
   imageId: '',
@@ -117,6 +163,8 @@ export const defaultKeychain: KeychainParams = {
   detail: defaultDetail,
   pattern: defaultPattern,
   base: { thickness: 2, shape: 'silhouette', offset: 0, margin: 3, radius: 4, auto: true, width: 80, height: 60 },
+  mount: defaultMount,
+  split: defaultSplit,
   quality: { cell: 0.25, maxTriangles: 400_000 },
 }
 
@@ -167,6 +215,26 @@ export function validateKeychain(p: KeychainParams): { ok: boolean; errors: Keyc
   if (!b.auto && b.shape === 'circle' && !pos(b.width)) bad('base.width', 'keychain.error.size')
   if (b.thickness <= 0 && r.profile === 'engraved') bad('base.thickness', 'keychain.error.engraveNoPlate')
   if (b.thickness <= 0 && t.kind !== 'none' && t.scope === 'base') bad('pattern.scope', 'keychain.error.scopeNoPlate')
+  const mo = p.mount, sp = p.split
+  if (mo.style !== 'none') {
+    if (!pos(mo.diameter)) bad('mount.diameter', 'keychain.error.size')
+    if (!nonneg(mo.minWall)) bad('mount.minWall', 'keychain.error.negative')
+    if (![mo.x, mo.y].every(Number.isFinite)) bad('mount.x', 'keychain.error.size')
+  }
+  if (mo.style === 'eyelet') {
+    if (!pos(mo.outer) || mo.outer < mo.diameter + 2 * (Number.isFinite(mo.minWall) ? mo.minWall : 0) - 1e-9) bad('mount.outer', 'keychain.error.eyeletWall')
+    if (!(b.thickness > 0)) bad('base.thickness', 'keychain.error.eyeletNoPlate')
+  }
+  if (mo.style === 'channel' && !sp.enabled) bad('mount.style', 'keychain.error.channelNeedsSplit')
+  if (sp.enabled) {
+    if (!(Number.isInteger(sp.pins) && sp.pins >= 0 && sp.pins <= 6)) bad('split.pins', 'keychain.error.pins')
+    if (sp.pins > 0) {
+      if (!pos(sp.pinRadius)) bad('split.pinRadius', 'keychain.error.size')
+      if (!nonneg(sp.clearance) || sp.clearance >= sp.pinRadius) bad('split.clearance', 'keychain.error.clearance')
+      if (!pos(sp.pinDepth)) bad('split.pinDepth', 'keychain.error.size')
+    }
+    if (!nonneg(sp.gap)) bad('split.gap', 'keychain.error.negative')
+  }
   const q = p.quality
   if (!(Number.isFinite(q.cell) && q.cell >= 0.02 && q.cell <= 5)) bad('quality.cell', 'keychain.error.cell')
   if (!(Number.isFinite(q.maxTriangles) && q.maxTriangles >= 10_000)) bad('quality.maxTriangles', 'keychain.error.budget')
@@ -217,6 +285,8 @@ export interface MaskPreview {
   width: number
   height: number
   data: Uint8Array
+  /** Габарит силуэта в пикселях предпросмотра: [x0, y0, x1, y1] (нужен редактору положения для перевода в мм). */
+  box: [number, number, number, number]
   /** Дырки с центрами в пикселях предпросмотра. */
   holes: { id: number; size: number; cx: number; cy: number; open: boolean }[]
 }
@@ -241,7 +311,7 @@ export function maskPreview(img: GrayImage, sil: SilhouetteResult): MaskPreview 
     const inHole = hole !== 0 && holeLabels.has(hole)
     data[j * pw + i] = sil.mask[p] ? (inHole ? 3 : 1) : inHole && openIds.has(hole) ? 2 : 0
   }
-  return { width: pw, height: ph, data, holes: sil.holes.map((x) => ({ id: x.id, size: x.size, cx: (x.cx - x0) * k, cy: (x.cy - y0) * k, open: x.open })) }
+  return { width: pw, height: ph, data, box: [(b[0] - x0) * k, (b[1] - y0) * k, (b[2] + 1 - x0) * k, (b[3] + 1 - y0) * k], holes: sil.holes.map((x) => ({ id: x.id, size: x.size, cx: (x.cx - x0) * k, cy: (x.cy - y0) * k, open: x.open })) }
 }
 
 // ---------- рельеф ----------
@@ -494,6 +564,20 @@ function plateCrossSection(w: ManifoldToplevel, s: PlateSpec, g: Grid, wMm: numb
 
 // ---------- сборка ----------
 
+/** Сведения о креплении и штифтах для редактора положения и предупреждений. Все координаты в мм от центра габарита силуэта, Y вверх. */
+export interface MountInfo {
+  /** Положение крепления с учётом режима; null — крепления нет. */
+  mount: { x: number; y: number; exit?: { x: number; y: number } } | null
+  /** Штифты: положение, автоматическое ли, использован ли в геометрии (отвергнутый вручную поставленный — нет). */
+  pins: { x: number; y: number; auto: boolean; used: boolean }[]
+  /** Лучшие места для крепления (Suggest) и образец отклонённых мест с причиной. */
+  candidates: Anchor[]
+  rejected: Rejected[]
+  issues: FitIssue[]
+  /** Габарит листа печати (обе половины и штифты), мм. */
+  sheet?: { w: number; h: number }
+}
+
 export interface KeychainInfo {
   /** Ключ i18n ошибки (пустая маска, подложка меньше силуэта); при ошибке геометрия не строится. */
   error?: string
@@ -507,35 +591,120 @@ export interface KeychainInfo {
   reduced?: boolean
   minCell?: number
   triangles?: number
+  mountInfo?: MountInfo
 }
 
 /** Изображения, доступные воркеру по id. */
 export type ImageRegistry = Map<string, GrayImage>
 
-export function buildKeychainSolid(w: ManifoldToplevel, p: KeychainParams, registry: ImageRegistry): { solid: Manifold | null; info: KeychainInfo } {
+/** Деталь листа печати: подпись, тело и положение в раскраске превью. */
+export interface KeychainPart { label: string; col: number; row: number; solid: Manifold }
+
+const eightDirs: [number, number][] = [[0, 1], [1, 1], [-1, 1], [1, 0], [-1, 0], [0, -1], [1, -1], [-1, -1]]
+
+/** Положения крепления и штифтов, подсказки и проверки посадки по полю высот. */
+function resolveMounts(p: KeychainParams, f: AnchorField, wMm: number, hMm: number): { info: MountInfo; pins: { x: number; y: number }[]; mount: MountInfo['mount'] } {
+  const mo = p.mount, sp = p.split
+  const wantMount = mo.style !== 'none'
+  const pinsOn = sp.enabled && sp.pins > 0
+  const mm = (rx: number, ry: number) => relToMm(rx, ry, wMm, hMm)
+  const mountPos = wantMount ? mm(mo.x, mo.y) : null
+  const exit = mo.style === 'channel' ? mm(mo.exitX, mo.exitY) : undefined
+  const r = mo.diameter / 2
+
+  // подсказки по месту крепления
+  let candidates: Anchor[] = [], rejected: Rejected[] = []
+  if (mo.style === 'hole' || mo.style === 'channel') {
+    const q = findAnchors(f, { radius: r, minHeight: mo.style === 'channel' ? r + mo.minWall : mo.minWall, minRim: mo.minWall }, { count: 5, spacing: Math.max(4, mo.diameter * 2), near: undefined })
+    candidates = q.accepted; rejected = q.rejected
+  } else if (mo.style === 'eyelet') {
+    // ушко подсказывается у края: из центра по восьми направлениям до выхода из материала, центр ушка смещается наружу
+    const R = mo.outer / 2
+    for (const [dx, dy] of eightDirs) {
+      const e = exitRay(f, { x: 0, y: 0 }, { x: dx, y: dy })
+      if (!e) continue
+      const l = Math.hypot(dx, dy)
+      const x = e.x + (dx / l) * (R - mo.minWall), y = e.y + (dy / l) * (R - mo.minWall)
+      candidates.push({ x, y, margin: y, height: 0, rim: 0 })
+    }
+    candidates.sort((a, b) => b.margin - a.margin)
+    candidates = candidates.slice(0, 5)
+  }
+
+  // штифты: заданные вручную (доли габарита) или лучшие места, не пересекающие крепление
+  const pins: MountInfo['pins'] = []
+  const issues: FitIssue[] = []
+  if (pinsOn) {
+    const req = { radius: sp.pinRadius, minHeight: sp.pinDepth + mo.minWall, minRim: mo.minWall }
+    const manual = sp.pinPositions && sp.pinPositions.length === sp.pins ? sp.pinPositions : null
+    if (manual) {
+      for (const q of manual) { const m = mm(q.x, q.y); pins.push({ x: m.x, y: m.y, auto: false, used: true }) }
+    } else {
+      const avoid = mountPos && mo.style !== 'eyelet' ? [{ x: mountPos.x, y: mountPos.y, r: r + sp.pinRadius }] : []
+      const q = findAnchors(f, req, { count: sp.pins, spacing: Math.max(5, sp.pinRadius * 6), avoid, rejectedSample: 0 })
+      for (const a of q.accepted) pins.push({ x: a.x, y: a.y, auto: true, used: true })
+      for (let i = q.accepted.length; i < sp.pins; i++) issues.push({ feature: `pin${i + 1}`, kind: 'pinTooBig', actual: 0, required: mo.minWall })
+    }
+  }
+  // проверки посадки; поставленные вручную штифты, которые ломают поверхность, отвергаются и в геометрию не попадают
+  const fit = fitChecks({
+    field: f, minWall: mo.minWall, pinRadius: sp.pinRadius, pinDepth: sp.pinDepth, pins: pins.map((x) => ({ x: x.x, y: x.y })),
+    mount: { style: mo.style, x: mountPos?.x ?? 0, y: mountPos?.y ?? 0, diameter: mo.diameter, outer: mo.outer, exit },
+  })
+  issues.push(...fit)
+  for (const i of fit) if (i.kind === 'pinTooBig' || (i.kind === 'outside' && i.feature.startsWith('pin'))) { const idx = Number(i.feature.slice(3)) - 1; if (pins[idx]) pins[idx].used = false }
+  return { info: { mount: mountPos ? { ...mountPos, exit } : null, pins, candidates, rejected, issues }, pins: pins.filter((x) => x.used), mount: mountPos ? { ...mountPos, exit } : null }
+}
+
+/** Лист печати: верхняя половина в начале, нижняя справа от неё через gap, свободные штифты рядом ниже. */
+function layoutSheet(w: ManifoldToplevel, top: Manifold, bottom: Manifold, pins: Manifold[], gap: number): { parts: KeychainPart[]; sheet: { w: number; h: number } } {
+  const tb = top.boundingBox(), bb = bottom.boundingBox()
+  const cyT = (tb.min[1] + tb.max[1]) / 2, cyB = (bb.min[1] + bb.max[1]) / 2
+  const bottomMoved = bottom.translate([tb.max[0] + gap - bb.min[0], cyT - cyB, 0])
+  const mb = bottomMoved.boundingBox()
+  const parts: KeychainPart[] = [{ label: 'top', col: 0, row: 0, solid: top }, { label: 'bottom', col: 1, row: 0, solid: bottomMoved }]
+  let x = tb.min[0], y = tb.min[1] - gap
+  let minY = Math.min(tb.min[1], mb.min[1])
+  pins.forEach((pin, i) => {
+    const b = pin.boundingBox()
+    const moved = pin.translate([x - b.min[0], y - b.max[1], 0])
+    const mb2 = moved.boundingBox()
+    parts.push({ label: `pin${i + 1}`, col: i, row: 1, solid: moved })
+    x = mb2.max[0] + 3
+    minY = Math.min(minY, mb2.min[1])
+  })
+  const maxX = Math.max(tb.max[0], mb.max[0], ...parts.slice(2).map((q) => q.solid.boundingBox().max[0]))
+  const maxY = Math.max(tb.max[1], mb.max[1])
+  return { parts, sheet: { w: maxX - tb.min[0], h: maxY - minY } }
+}
+
+/** Сборка частей: одна деталь A1 (односторонний рельеф) или лист из двух половин и штифтов. */
+export function buildKeychainParts(w: ManifoldToplevel, p: KeychainParams, registry: ImageRegistry): { parts: KeychainPart[]; info: KeychainInfo } {
   const img = registry.get(p.imageId)
-  if (!img) return { solid: null, info: { error: 'keychain.error.noImage', threshold: 0, photoLike: false, preview: null } }
+  if (!img) return { parts: [], info: { error: 'keychain.error.noImage', threshold: 0, photoLike: false, preview: null } }
   const sil = buildSilhouette(img, p.silhouette)
   const preview = maskPreview(img, sil)
   const base = { threshold: sil.threshold, photoLike: sil.photoLike, preview }
   const b = maskBounds(sil.mask, img.width, img.height)
-  if (!b) return { solid: null, info: { ...base, error: 'keychain.error.emptyMask' } }
+  if (!b) return { parts: [], info: { ...base, error: 'keychain.error.emptyMask' } }
   const { w: wMm, h: hMm } = sizeMm(p.size, b[2] - b[0] + 1, b[3] - b[1] + 1)
   const plate = plateSpec(p.base, wMm, hMm)
-  if (plate.error) return { solid: null, info: { ...base, error: plate.error, size: [wMm, hMm] } }
+  if (plate.error) return { parts: [], info: { ...base, error: plate.error, size: [wMm, hMm] } }
+  const needsField = p.mount.style !== 'none' || (p.split.enabled && p.split.pins > 0)
   const plateInGrid = !!plate.spec && p.pattern.kind !== 'none' && p.pattern.scope === 'base'
   let count = 0
   for (let i = 0; i < sil.mask.length; i++) count += sil.mask[i]
   const fillSil = count / ((b[2] - b[0] + 1) * (b[3] - b[1] + 1))
   const fill = plateInGrid ? plate.spec!.area / (wMm * hMm) : fillSil
   const { cell, reduced, min } = effectiveCell(wMm, hMm, fill, p.quality)
-  const grid = buildGrid({ img, mask: sil.mask, bounds: b, wMm, hMm, cell, p, plate: plate.spec, plateInGrid })
+  const gridInput = { img, mask: sil.mask, bounds: b, wMm, hMm, cell, p, plate: plate.spec, plateInGrid }
+  const grid = buildGrid(gridInput)
   const mesh = reliefMesh(grid, wMm, hMm)
   const raw = new w.Mesh({ numProp: 3, vertProperties: mesh.vertProperties, triVerts: mesh.triVerts })
   raw.merge()
   let relief = new w.Manifold(raw)
-  const info = { ...base, size: [wMm, hMm] as [number, number], cell, reduced, minCell: min, triangles: mesh.triangles }
-  if (relief.status() !== 'NoError' || relief.isEmpty()) return { solid: null, info: { ...info, error: 'keychain.error.mesh' } }
+  const info: KeychainInfo = { ...base, size: [wMm, hMm], cell, reduced, minCell: min, triangles: mesh.triangles }
+  if (relief.status() !== 'NoError' || relief.isEmpty()) return { parts: [], info: { ...info, error: 'keychain.error.mesh' } }
   if (plate.spec && !plateInGrid) {
     const cs = plateCrossSection(w, plate.spec, grid, wMm, hMm, p.relief.profile === 'engraved')
     if (!cs.isEmpty()) {
@@ -545,9 +714,72 @@ export function buildKeychainSolid(w: ManifoldToplevel, p: KeychainParams, regis
       relief = merged
     }
   }
-  return { solid: relief, info }
+  if (!needsField && !p.split.enabled) return { parts: [{ label: 'A1', col: 0, row: 0, solid: relief }], info }
+
+  // поле для крепления: подложка должна быть в сетке, иначе места на подложке вне сетки не видны
+  const fgrid = !needsField || plateInGrid || !plate.spec ? grid : buildGrid({ ...gridInput, plateInGrid: true })
+  const field = needsField ? anchorField(fgrid, wMm, hMm, cell) : null
+  const res = field ? resolveMounts(p, field, wMm, hMm) : { info: { mount: null, pins: [], candidates: [], rejected: [], issues: [] } as MountInfo, pins: [] as { x: number; y: number }[], mount: null as MountInfo['mount'] }
+  const zTop = relief.boundingBox().max[2]
+  const mo = p.mount, sp = p.split
+  const cuts: Manifold[] = []
+  let solid = relief
+
+  if (res.mount) {
+    const c = res.mount
+    if (mo.style === 'eyelet') {
+      const R = mo.outer / 2
+      const join = field ? lugJoin((x, y) => { const k = nodeIndex(field, x, y); return k !== null && fgrid.solid[k] === 1 }, c, mo.minWall, cell) : null
+      const lug = lugSolid(w, c, mo.outer, join ? { x: join.x, y: join.y, r: Math.max(mo.minWall, 0.8) } : null, p.base.thickness)
+      const merged = solid.add(lug)
+      lug.delete(); solid.delete()
+      solid = merged
+      void R
+    }
+    if (mo.style === 'hole' || mo.style === 'eyelet') cuts.push(cylinderZ(w, c.x, c.y, mo.diameter / 2, -zTop - 1, zTop + 1))
+    if (mo.style === 'channel' && c.exit) {
+      const dx = c.exit.x - c.x, dy = c.exit.y - c.y, l = Math.hypot(dx, dy) || 1
+      const over = mo.diameter / 2 + 1.5 // канал продолжается за точку выхода, чтобы открыться наружу
+      cuts.push(cylinderAlong(w, c, { x: c.exit.x + (dx / l) * over, y: c.exit.y + (dy / l) * over }, mo.diameter / 2, 0))
+    }
+  }
+  if (sp.enabled) for (const q of res.pins) cuts.push(cylinderZ(w, q.x, q.y, sp.pinRadius, -sp.pinDepth, sp.pinDepth))
+  if (cuts.length) {
+    const u = w.Manifold.union(cuts)
+    const cut = solid.subtract(u)
+    u.delete(); cuts.forEach((x) => x.delete())
+    if (solid !== relief) solid.delete()
+    solid = cut
+  }
+  const finalInfo: KeychainInfo = { ...info, mountInfo: res.info }
+  if (!sp.enabled) return { parts: [{ label: 'A1', col: 0, row: 0, solid }], info: finalInfo }
+
+  // две половины: нижняя — зеркало верхней относительно плоскости разъёма, затем поворот на 180° вокруг X (лицом вниз на стол)
+  const top = solid
+  const bottom = top.mirror([0, 0, 1]).rotate([180, 0, 0])
+  const loose = res.pins.map((q) => pinSolid(w, 0, 0, pinRadiusLoose(sp.pinRadius, sp.clearance), pinLength(sp.pinDepth)))
+  const sheet = layoutSheet(w, top, bottom, loose, sp.gap)
+  return { parts: sheet.parts, info: { ...finalInfo, mountInfo: { ...res.info, sheet: sheet.sheet } } }
+}
+
+function nodeIndex(f: AnchorField, x: number, y: number): number | null {
+  const i = Math.round((x + f.wMm / 2) / f.dx + f.i0), j = Math.round((f.hMm / 2 - y) / f.dy + f.j0)
+  return i >= 0 && j >= 0 && i < f.nx && j < f.ny ? j * f.nx + i : null
+}
+
+/** Совместимость: один Manifold (односторонняя деталь, а в режиме половин — верхняя половина) и сведения. */
+export function buildKeychainSolid(w: ManifoldToplevel, p: KeychainParams, registry: ImageRegistry): { solid: Manifold | null; info: KeychainInfo } {
+  const r = buildKeychainParts(w, p, registry)
+  const first = r.parts[0]?.solid ?? null
+  r.parts.slice(1).forEach((q) => q.solid.delete())
+  return { solid: first, info: r.info }
 }
 
 export async function buildKeychain(p: KeychainParams, registry: ImageRegistry, wasmUrl?: string) {
   return buildKeychainSolid(await getWasm(wasmUrl), p, registry)
 }
+
+export async function buildKeychainSheet(p: KeychainParams, registry: ImageRegistry, wasmUrl?: string) {
+  return buildKeychainParts(await getWasm(wasmUrl), p, registry)
+}
+

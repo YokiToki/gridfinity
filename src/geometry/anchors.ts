@@ -20,8 +20,10 @@ export interface AnchorField {
   solid: Uint8Array
   /** Высота верха над плоскостью стола, мм (у узлов с материалом). */
   top: Float32Array
-  /** Расстояние до ближайшего узла без материала, мм. */
+  /** Расстояние до ближайшего узла без материала, мм (внутри материала). */
   dist: Float32Array
+  /** Расстояние до ближайшего узла с материалом, мм (снаружи; в материале 0). */
+  distOut: Float32Array
   /** 1 — внешний фон (связан с краем сетки); замкнутые полости не считаются. */
   exterior: Uint8Array
 }
@@ -36,7 +38,12 @@ export function anchorField(g: FieldSource, wMm: number, hMm: number, cell: numb
   const d = edt(g.solid, g.nx, g.ny)
   const dist = new Float32Array(d.length)
   for (let i = 0; i < d.length; i++) dist[i] = d[i] * cell
-  return { ...g, cell, wMm, hMm, dist, exterior: exteriorOf(g.solid, g.nx, g.ny) }
+  const inv = new Uint8Array(g.solid.length)
+  for (let i = 0; i < inv.length; i++) inv[i] = g.solid[i] ? 0 : 1
+  const o = edt(inv, g.nx, g.ny)
+  const distOut = new Float32Array(o.length)
+  for (let i = 0; i < o.length; i++) distOut[i] = o[i] * cell
+  return { ...g, cell, wMm, hMm, dist, distOut, exterior: exteriorOf(g.solid, g.nx, g.ny) }
 }
 
 /** Внешний фон: компоненты пустых узлов, касающиеся края сетки. Замкнутая дырка (открытая полость) внешней не считается. */
@@ -139,6 +146,12 @@ function nearSolid(f: AnchorField, i: number, j: number) {
 export function nodeAt(f: AnchorField, x: number, y: number): number | null {
   const [i, j] = mmNode(f, x, y)
   return inGrid(f, i, j) ? j * f.nx + i : null
+}
+
+/** Расстояние от точки до ближайшего материала, мм (0 внутри); бесконечность вне сетки. */
+export function distToSolid(f: AnchorField, x: number, y: number): number {
+  const k = nodeAt(f, x, y)
+  return k === null ? Infinity : f.distOut[k]
 }
 
 /** Расстояние от края до точки (мм): 0 вне материала. */
