@@ -27,7 +27,15 @@ export function normalizeShape(raw: unknown): ShapeParams {
   const r = obj(raw)
   const s = { ...defaultShape, ...r, rim: { ...defaultRim, ...obj(r.rim) } } as ShapeParams
   if (!SHAPE_KINDS.includes(s.kind)) s.kind = defaultShape.kind
-  return s
+  // числа обязаны быть числами: строка или null в сохранённом не должны дойти до полей и геометрии
+  const num = <T extends Record<string, unknown>>(o: T, d: T): T => {
+    const out: Record<string, unknown> = { ...o }
+    for (const k of Object.keys(d)) if (typeof d[k] === 'number' && !(typeof out[k] === 'number' && Number.isFinite(out[k]))) out[k] = d[k]
+    return out as T
+  }
+  const fixed = num(s as unknown as Record<string, unknown>, defaultShape as unknown as Record<string, unknown>) as unknown as ShapeParams
+  fixed.rim = { ...num(s.rim as unknown as Record<string, unknown>, defaultRim as unknown as Record<string, unknown>) as unknown as typeof s.rim, enabled: s.rim.enabled === true }
+  return fixed
 }
 
 /** Донаполняет сохранённое теми же правилами, что и Изображение (вложенные объекты, перечисления), и оставляет только поля формы. */

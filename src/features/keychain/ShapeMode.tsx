@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { usePersistedState } from '../../app/usePersistedState'
 import { KeychainWorkspace } from './KeychainWorkspace'
-import { SharedSections } from './SharedSections'
+import { ShapePanel } from './ShapePanel'
 import { defaultShapeState, migrateShape, shapeParams, type ShapeState } from './shapeState'
 
 const KEY = 'keychain.shape'
@@ -15,7 +15,7 @@ export function ShapeMode() {
   return (
     <KeychainWorkspace
       mode="shape" params={params} image={null}
-      panel={(info) => <SharedSections params={params} info={info} onChange={setState} imageSource={false} />}
+      panel={(info) => <ShapePanel state={state} params={params} info={info} onChange={setState} />}
     />
   )
 }

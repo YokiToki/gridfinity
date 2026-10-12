@@ -595,7 +595,8 @@
       "eyeletNoPlate": "The eyelet needs a base plate: set a thickness greater than zero",
       "channelNeedsSplit": "The channel needs the two-halves mode",
       "pins": "Use 0 to 6 pins",
-      "clearance": "The clearance must be smaller than the pin radius"
+      "clearance": "The clearance must be smaller than the pin radius",
+      "sides": "Sides must be a whole number from 3 to 12"
     },
     "profile": {
       "source": "Height source",
@@ -733,6 +734,42 @@
     "modes": {
       "image": "Image",
       "shape": "Shape"
+    },
+    "shape": {
+      "title": "Shape",
+      "kind": "Shape type",
+      "kinds": {
+        "rect": "Rectangle",
+        "circle": "Circle",
+        "ellipse": "Ellipse",
+        "capsule": "Capsule",
+        "polygon": "Polygon"
+      },
+      "width": "Width",
+      "height": "Height",
+      "diameter": "Diameter",
+      "acrossCorners": "Width across corners",
+      "radius": "Corner radius",
+      "effectiveRadius": "Effective radius: {{r}} {{u}}",
+      "sides": "Sides",
+      "rotation": "Rotation, °",
+      "preset": "Size preset",
+      "presetPick": "Choose a preset…",
+      "presets": {
+        "idTag": "ID tag 54 × 30",
+        "round": "Round 40",
+        "wide": "Wide plate 70 × 25"
+      },
+      "summary": "{{kind}} {{w}} × {{h}} {{u}}",
+      "summaryRound": "{{kind}} Ø{{d}} {{u}}"
+    },
+    "rim": {
+      "title": "Rim",
+      "enabled": "Raised rim along the edge",
+      "width": "Rim width",
+      "height": "Rim height",
+      "off": "Off",
+      "summary": "{{w}} × {{h}} {{u}}"
     }
   }
 }
