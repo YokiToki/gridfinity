@@ -8,6 +8,8 @@ import { ExportOptionsSection } from '../features/export/ExportOptionsSection'
 import { useElementHeight } from './useElementHeight'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { MeasurementsBar } from '../features/viewport/MeasurementsBar'
+import { AssembledControls } from '../features/viewport/AssembledControls'
+import { OPEN_GAP_MAX, type KeychainView } from '../features/viewport/layout'
 
 /** Раскладка режима: панель параметров, закреплённый блок экспорта и 3D-вид. На узком экране панель — нижняя шторка. */
 export function Workspace({ panel, footer, model, plate, gap, busy, exportOptions = true, overlay, onStartOver, modeName }: {
@@ -28,7 +30,10 @@ export function Workspace({ panel, footer, model, plate, gap, busy, exportOption
   modeName?: string
 }) {
   const { t } = useTranslation()
-  const [view, setView] = usePersistedState('gridfinity.viewport', { tools: true })
+  const [view, setView] = usePersistedState<{ tools: boolean; keychainView: KeychainView; openGap: number }>('gridfinity.viewport', { tools: true, keychainView: 'sheet', openGap: 0 })
+  const hasAssembly = !!model?.assembly
+  const keychainView: KeychainView = view.keychainView === 'assembled' ? 'assembled' : 'sheet'
+  const openGap = Math.min(OPEN_GAP_MAX, Math.max(0, Number(view.openGap) || 0))
   const hasTools = (model?.tools?.length ?? 0) > 0
   const fitRef = useRef<() => void>(() => {})
   const [drawerTop, setDrawerTop] = useState(300) // отступ верха шторки на мобильном, px
@@ -88,7 +93,7 @@ export function Workspace({ panel, footer, model, plate, gap, busy, exportOption
         </ConfirmDialog>
       )}
       <section aria-label={t('viewport.label')} className="relative min-w-0 flex-1 overflow-hidden bg-[radial-gradient(ellipse_at_50%_40%,#1a2029_0%,#0b0d10_75%)]">
-        <Viewport model={model} plate={plate ?? null} gap={gap ?? 0} showTools={view.tools} onFitReady={(f) => (fitRef.current = f)} />
+        <Viewport model={model} plate={plate ?? null} gap={gap ?? 0} view={hasAssembly ? keychainView : 'sheet'} openGap={openGap} showTools={view.tools} onFitReady={(f) => (fitRef.current = f)} />
         <button type="button" aria-label={t('viewport.fit')} title={t('viewport.fit')} onClick={() => fitRef.current()}
           className="absolute top-4 right-4 inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-group border border-border bg-surface-1/90 text-text-muted hover:text-text md:h-8 md:w-8">
           <IconFocusCentered size={16} stroke={1.75} />
@@ -99,6 +104,7 @@ export function Workspace({ panel, footer, model, plate, gap, busy, exportOption
             <IconShape size={16} stroke={1.75} />
           </button>
         )}
+        {hasAssembly && <AssembledControls view={keychainView} openGap={openGap} onView={(v) => setView({ ...view, keychainView: v })} onOpenGap={(g) => setView({ ...view, openGap: g })} />}
         {overlay}
         <MeasurementsBar model={model} busy={busy} />
       </section>

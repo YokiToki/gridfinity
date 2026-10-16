@@ -7,10 +7,10 @@
 
 ## 2. Viewport and UI
 
-- [ ] 2.1 `Viewport` layout switch (`view`, `openGap`, matrices; labels and plate overlay hidden in the assembled view; Fit uses the current layout). Component test with the viewport mocked plus a unit test of the layout helper. Verify in the browser.
-- [ ] 2.2 Toolbar controls in `Workspace` (segmented Print sheet | Assembled, gap `NumberField` with steppers; shown only with `assembly`), persisted in `gridfinity.viewport`; en/ru strings (parity). No artboard: build from the existing toolbar buttons and `ui/` components.
+- [x] 2.1 `Viewport` layout switch (`view`, `openGap`, matrices; labels and plate overlay hidden in the assembled view; Fit uses the current layout). Component test with the viewport mocked plus a unit test of the layout helper. Verify in the browser.
+- [x] 2.2 Toolbar controls in `Workspace` (segmented Print sheet | Assembled, gap `NumberField` with steppers; shown only with `assembly`), persisted in `gridfinity.viewport`; en/ru strings (parity). No artboard: build from the existing toolbar buttons and `ui/` components.
 
 ## 3. Verification
 
-- [ ] 3.1 `npm test` and `npm run build` are green; no console errors.
-- [ ] 3.2 In the browser with `v_form.jpeg`, 3 pins and a channel: Assembled shows one keychain, pins in the holes, the channel open at the edge; gap 6 mm shows the inside; switching does not trigger regeneration (network/worker tab); export identical in both views.
+- [x] 3.1 `npm test` and `npm run build` are green; no console errors.
+- [x] 3.2 In the browser with `v_form.jpeg`, 3 pins and a channel: Assembled shows one keychain, pins in the holes, the channel open at the edge; gap 6 mm shows the inside; switching does not trigger regeneration (network/worker tab); export identical in both views.

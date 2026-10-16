@@ -4,6 +4,7 @@ import { toCreasedNormals } from 'three/examples/jsm/utils/BufferGeometryUtils.j
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import type { ModelResult } from '../../geometry/model'
 import { groundOpacity } from './ground'
+import { assembledMatrix, layoutBounds, type KeychainView } from './layout'
 
 export interface BuildPlate { x: number; y: number; /** Поле по краю: пунктирный контур рабочей области. */ margin?: number }
 
@@ -11,6 +12,7 @@ interface Api {
   setModel: (m: ModelResult | null) => void
   setTools: (m: ModelResult | null, show: boolean) => void
   setGap: (gap: number) => void
+  setLayout: (view: KeychainView, openGap: number) => void
   setPlate: (p: BuildPlate | null) => void
   fit: () => void
 }
@@ -89,11 +91,13 @@ function textSprite(text: string, color: string) {
   return s
 }
 
-export function Viewport({ model, plate, gap = 0, showTools = true, onFitReady }: { model: ModelResult | null; plate: BuildPlate | null; gap?: number; /** Показывать вырезающие инструменты (model.tools) полупрозрачными. */ showTools?: boolean; onFitReady?: (fit: () => void) => void }) {
+export function Viewport({ model, plate, gap = 0, view = 'sheet', openGap = 0, showTools = true, onFitReady }: { model: ModelResult | null; plate: BuildPlate | null; gap?: number; /** Keychain в режиме половин: лист печати или собранный брелок (нужен model.assembly). */ view?: KeychainView; /** Раздвижка собранных половин по Z, мм. */ openGap?: number; /** Показывать вырезающие инструменты (model.tools) полупрозрачными. */ showTools?: boolean; onFitReady?: (fit: () => void) => void }) {
   const host = useRef<HTMLDivElement>(null)
   const api = useRef<Api | null>(null)
   const gapRef = useRef(gap)
   gapRef.current = gap
+  const layoutRef = useRef({ view, openGap })
+  layoutRef.current = { view, openGap }
 
   useEffect(() => {
     const el = host.current!
@@ -137,10 +141,38 @@ export function Viewport({ model, plate, gap = 0, showTools = true, onFitReady }
     // вырезающие инструменты: полупрозрачные тела поверх модели, не часть частей (разнесение их не двигает)
     const toolGroup = new THREE.Group()
     scene.add(toolGroup)
-    let partGroups: { group: THREE.Group; col: number; row: number }[] = []
+    let partGroups: { group: THREE.Group; label: string; col: number; row: number; body: THREE.Mesh; labelSprite?: THREE.Sprite }[] = []
     let cols = 1, rows = 1
-    const applyGap = (g: number) => partGroups.forEach((p) => p.group.position.set(g * (p.col - (cols - 1) / 2), g * (p.row - (rows - 1) / 2), 0))
+    let current: ModelResult | null = null
+    let assembledNow = false
     let radius = 60
+    // раскладка деталей: разнесённый вид по сетке (gap) или матрицы собранного вида брелка (без пересчёта геометрии)
+    const applyGap = (g: number) => {
+      const { view: v, openGap: og } = layoutRef.current
+      assembledNow = false
+      for (const p of partGroups) {
+        const m = assembledMatrix(p.label, current?.assembly, v, og)
+        if (m) {
+          assembledNow = true
+          p.group.matrixAutoUpdate = false
+          p.group.matrix.fromArray(m)
+          p.group.matrixWorldNeedsUpdate = true
+        } else {
+          p.group.matrixAutoUpdate = true
+          p.group.position.set(g * (p.col - (cols - 1) / 2), g * (p.row - (rows - 1) / 2), 0)
+          p.group.updateMatrix()
+        }
+        if (p.labelSprite) p.labelSprite.visible = !m
+        // закрытые половины касаются по плоскости разъёма: сдвиг глубины у нижней гасит мерцание, только визуально
+        const mat = p.body.material as THREE.MeshStandardMaterial
+        mat.polygonOffsetFactor = m && p.label === 'bottom' ? 2 : 1
+        mat.polygonOffsetUnits = m && p.label === 'bottom' ? 2 : 1
+      }
+      if (current) {
+        const b = layoutBounds(current.parts, current.assembly, layoutRef.current.view, og)
+        radius = new THREE.Box3(new THREE.Vector3(...b.min), new THREE.Vector3(...b.max)).getBoundingSphere(new THREE.Sphere()).radius
+      }
+    }
 
     // гизмо осей
     const gScene = new THREE.Scene()
@@ -203,6 +235,7 @@ export function Viewport({ model, plate, gap = 0, showTools = true, onFitReady }
         }
       },
       setGap(g) { applyGap(g) },
+      setLayout() { applyGap(gapRef.current) },
       setTools(m, show) {
         toolGroup.traverse((o) => { const mesh = o as THREE.Mesh; if (mesh.geometry) mesh.geometry.dispose() })
         toolGroup.clear()
@@ -231,11 +264,11 @@ export function Viewport({ model, plate, gap = 0, showTools = true, onFitReady }
         })
         modelGroup.clear()
         partGroups = []
+        current = m
         if (!m || m.parts.length === 0) return
         const many = m.parts.length > 1
         cols = Math.max(...m.parts.map((p) => p.col)) + 1
         rows = Math.max(...m.parts.map((p) => p.row)) + 1
-        const total = new THREE.Box3()
         for (const part of m.parts) {
           const mm = part.mesh
           const pos = new Float32Array((mm.vertProperties.length / mm.numProp) * 3)
@@ -256,18 +289,17 @@ export function Viewport({ model, plate, gap = 0, showTools = true, onFitReady }
           const edges = new THREE.LineSegments(new THREE.EdgesGeometry(indexed, 25), new THREE.LineBasicMaterial({ color: part.oversize ? 0xf0707b : style.edge }))
           const group = new THREE.Group()
           group.add(body, edges)
+          let labelSprite: THREE.Sprite | undefined
           if (many) {
-            const label = textSprite(part.label, part.oversize ? '#F0707B' : style.outline)
-            label.position.set((mm.min[0] + mm.max[0]) / 2, (mm.min[1] + mm.max[1]) / 2, mm.max[2] + 6)
-            group.add(label)
+            labelSprite = textSprite(part.label, part.oversize ? '#F0707B' : style.outline)
+            labelSprite.position.set((mm.min[0] + mm.max[0]) / 2, (mm.min[1] + mm.max[1]) / 2, mm.max[2] + 6)
+            group.add(labelSprite)
           }
           modelGroup.add(group)
-          partGroups.push({ group, col: part.col, row: part.row })
-          total.expandByPoint(new THREE.Vector3(...mm.min)).expandByPoint(new THREE.Vector3(...mm.max))
+          partGroups.push({ group, label: part.label, col: part.col, row: part.row, body, labelSprite })
           indexed.dispose()
         }
         applyGap(gapRef.current)
-        radius = total.getBoundingSphere(new THREE.Sphere()).radius
         if (!fitted) { fitted = true; fit() }
       },
     }
@@ -307,7 +339,7 @@ export function Viewport({ model, plate, gap = 0, showTools = true, onFitReady }
       const ground = groundOpacity(camera.position.z, dist)
       ;(grid.material as THREE.ShaderMaterial).uniforms.uAlpha.value = ground
       grid.visible = ground > 0.01
-      plateGroup.visible = ground > 0.01
+      plateGroup.visible = ground > 0.01 && !assembledNow // в собранном виде стола нет
       if (plateMats) { plateMats.fill.opacity = 0.85 * ground; plateMats.line.opacity = ground; if (plateMats.safe) plateMats.safe.opacity = ground }
       const w = el.clientWidth, h = el.clientHeight
       renderer.setViewport(0, 0, w, h); renderer.setScissorTest(false)
@@ -330,6 +362,7 @@ export function Viewport({ model, plate, gap = 0, showTools = true, onFitReady }
   useEffect(() => { api.current?.setModel(model) }, [model])
   useEffect(() => { api.current?.setTools(model, showTools) }, [model, showTools])
   useEffect(() => { api.current?.setGap(gap) }, [gap])
+  useEffect(() => { api.current?.setLayout(view, openGap) }, [view, openGap])
   useEffect(() => { api.current?.setPlate(plate) }, [plate])
   return <div ref={host} style={{ width: '100%', height: '100%' }} />
 }

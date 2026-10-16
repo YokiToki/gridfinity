@@ -111,7 +111,11 @@
   "viewport": {
     "label": "3D preview",
     "fit": "Fit to view",
-    "tools": "Show cutting shapes (translucent)"
+    "tools": "Show cutting shapes (translucent)",
+    "view": "View",
+    "sheet": "Print sheet",
+    "assembled": "Assembled",
+    "openGap": "Open gap"
   },
   "shell": {
     "parameters": "Parameters",
