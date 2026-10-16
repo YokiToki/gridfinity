@@ -17,6 +17,7 @@ import { inflateShape, shapeMask, type ShapeParams } from './shapes'
 import { defaultText, MAX_TEXT_CHARS, MAX_TEXT_LINES, textBoxMm, textSampler, type TextParams, type TextRaster, type TextRegistry } from './text'
 import { shapeCrossSection } from './shapeOutline'
 import { textPolygons } from './textOutline'
+import { bottomAssembly, identity, pinAssembly, type Assembly } from './keychainAssembly'
 import { cylinderAlong, cylinderZ, lugJoin, lugSolid, pinLength, pinRadiusLoose, pinSolid } from './keychainMounts'
 
 // ---------- параметры ----------
@@ -806,25 +807,28 @@ function resolveMounts(p: KeychainParams, f: AnchorField, wMm: number, hMm: numb
 }
 
 /** Лист печати: верхняя половина в начале, нижняя справа от неё через gap, свободные штифты рядом ниже. */
-function layoutSheet(w: ManifoldToplevel, top: Manifold, bottom: Manifold, pins: Manifold[], gap: number): { parts: KeychainPart[]; sheet: { w: number; h: number } } {
+function layoutSheet(w: ManifoldToplevel, top: Manifold, bottom: Manifold, pins: Manifold[], gap: number): { parts: KeychainPart[]; sheet: { w: number; h: number }; shift: { x: number; y: number }; pinCentres: { x: number; y: number }[] } {
   const tb = top.boundingBox(), bb = bottom.boundingBox()
   const cyT = (tb.min[1] + tb.max[1]) / 2, cyB = (bb.min[1] + bb.max[1]) / 2
-  const bottomMoved = bottom.translate([tb.max[0] + gap - bb.min[0], cyT - cyB, 0])
+  const shift = { x: tb.max[0] + gap - bb.min[0], y: cyT - cyB }
+  const bottomMoved = bottom.translate([shift.x, shift.y, 0])
   const mb = bottomMoved.boundingBox()
   const parts: KeychainPart[] = [{ label: 'top', col: 0, row: 0, solid: top }, { label: 'bottom', col: 1, row: 0, solid: bottomMoved }]
   let x = tb.min[0], y = tb.min[1] - gap
   let minY = Math.min(tb.min[1], mb.min[1])
+  const pinCentres: { x: number; y: number }[] = []
   pins.forEach((pin, i) => {
     const b = pin.boundingBox()
     const moved = pin.translate([x - b.min[0], y - b.max[1], 0])
     const mb2 = moved.boundingBox()
     parts.push({ label: `pin${i + 1}`, col: i, row: 1, solid: moved })
+    pinCentres.push({ x: (mb2.min[0] + mb2.max[0]) / 2, y: (mb2.min[1] + mb2.max[1]) / 2 })
     x = mb2.max[0] + 3
     minY = Math.min(minY, mb2.min[1])
   })
   const maxX = Math.max(tb.max[0], mb.max[0], ...parts.slice(2).map((q) => q.solid.boundingBox().max[0]))
   const maxY = Math.max(tb.max[1], mb.max[1])
-  return { parts, sheet: { w: maxX - tb.min[0], h: maxY - minY } }
+  return { parts, sheet: { w: maxX - tb.min[0], h: maxY - minY }, shift, pinCentres }
 }
 
 /** Сборка частей: одна деталь A1 (односторонний рельеф) или лист из двух половин и штифтов. */
@@ -861,7 +865,7 @@ function applyExactText(w: ManifoldToplevel, relief: Manifold, p: KeychainParams
   return out
 }
 
-interface CoreResult { parts: KeychainPart[]; info: KeychainInfo; /** Две половины: верхняя собрана, нижняя и лист строятся в обёртке (там решается, нести ли надпись). */ halves?: { top: Manifold; pinCount: number } }
+interface CoreResult { parts: KeychainPart[]; info: KeychainInfo; /** Две половины: верхняя собрана, нижняя и лист строятся в обёртке (там решается, нести ли надпись). */ halves?: { top: Manifold; pinCount: number; pins: { x: number; y: number }[] } }
 
 /** Лежит ли точка (x, y) мм в материале силуэта (маска картинки или фигуры). */
 function silhouetteAt(mask: Uint8Array, imgW: number, b: [number, number, number, number], wMm: number, hMm: number, x: number, y: number) {
@@ -1066,14 +1070,14 @@ function buildKeychainCore(w: ManifoldToplevel, p: KeychainParams, registry: Ima
   if (!sp.enabled) return { parts: [{ label: 'A1', col: 0, row: 0, solid }], info: finalInfo }
 
   // две половины: верхнюю строит ядро, нижнюю и лист собирает обёртка
-  return { parts: [], info: finalInfo, halves: { top: solid, pinCount: res.pins.length } }
+  return { parts: [], info: finalInfo, halves: { top: solid, pinCount: res.pins.length, pins: res.pins.map((q) => ({ x: q.x, y: q.y })) } }
 }
 
 /**
  * Модель Keychain. Две половины: нижняя — зеркало верхней относительно плоскости разъёма, затем поворот на 180° вокруг X (лицом
  * вниз на стол). Надпись только на верхней: для нижней ядро строится ещё раз без надписи.
  */
-export function buildKeychainParts(w: ManifoldToplevel, p: KeychainParams, registry: ImageRegistry, texts: TextRegistry = new Map()): { parts: KeychainPart[]; info: KeychainInfo } {
+export function buildKeychainParts(w: ManifoldToplevel, p: KeychainParams, registry: ImageRegistry, texts: TextRegistry = new Map()): { parts: KeychainPart[]; info: KeychainInfo; assembly?: Assembly } {
   const r = buildKeychainCore(w, p, registry, texts)
   if (!r.halves) return { parts: r.parts, info: r.info }
   const sp = p.split
@@ -1088,7 +1092,10 @@ export function buildKeychainParts(w: ManifoldToplevel, p: KeychainParams, regis
   const loose = Array.from({ length: r.halves.pinCount }, () => pinSolid(w, 0, 0, pinRadiusLoose(sp.pinRadius, sp.clearance), pinLength(sp.pinDepth)))
   const sheet = layoutSheet(w, top, bottom, loose, sp.gap)
   const mountInfo = r.info.mountInfo ? { ...r.info.mountInfo, sheet: sheet.sheet } : undefined
-  return { parts: sheet.parts, info: { ...r.info, ...(mountInfo ? { mountInfo } : {}) } }
+  const len = pinLength(sp.pinDepth)
+  const assembly: Assembly = { top: identity(), bottom: bottomAssembly(sheet.shift.x, sheet.shift.y) }
+  sheet.pinCentres.forEach((c, i) => { assembly[`pin${i + 1}`] = pinAssembly(c, r.halves!.pins[i], len) })
+  return { parts: sheet.parts, info: { ...r.info, ...(mountInfo ? { mountInfo } : {}) }, assembly }
 }
 
 function nodeIndex(f: AnchorField, x: number, y: number): number | null {

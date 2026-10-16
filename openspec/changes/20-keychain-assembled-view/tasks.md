@@ -2,8 +2,8 @@
 
 ## 1. Assembly data
 
-- [ ] 1.1 `buildKeychainParts` returns assembly matrices for `top`, `bottom` and each pin; `ModelResult.assembly` (optional, worker-transferable plain arrays). Geometry test: transformed bottom equals the mirror of the top across z = 0 (1e-6), signed volume positive, pin axes coincide with hole axes, closed halves touch exactly.
-- [ ] 1.2 Opening gap composition (pure helper) with tests: ±gap/2 on the halves, pins fixed at the plane.
+- [x] 1.1 `buildKeychainParts` returns assembly matrices for `top`, `bottom` and each pin; `ModelResult.assembly` (optional, worker-transferable plain arrays). Geometry test: transformed bottom equals the mirror of the top across z = 0 (1e-6), signed volume positive, pin axes coincide with hole axes, closed halves touch exactly.
+- [x] 1.2 Opening gap composition (pure helper) with tests: ±gap/2 on the halves, pins fixed at the plane.
 
 ## 2. Viewport and UI
 

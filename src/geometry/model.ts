@@ -1,5 +1,6 @@
 import { buildBaseplateParts, type BaseplateGeometry } from './baseplate'
 import { buildBox, type BoxParams } from './box'
+import type { Assembly } from './keychainAssembly'
 import { buildKeychainSheet, type ImageRegistry, type KeychainInfo, type KeychainParams } from './keychain'
 import type { GrayImage } from './raster/threshold'
 import type { TextRaster, TextRegistry } from './text'
@@ -26,7 +27,7 @@ export type ModeId = keyof ModeParams
 export interface PartMesh { label: string; col: number; row: number; oversize: boolean; mesh: MeshData }
 /** Вырезающий инструмент: только для превью, не часть модели (габариты, объём и экспорт его не учитывают). */
 export interface ToolMesh { id: string; name: string; mesh: MeshData }
-export interface ModelResult { parts: PartMesh[]; tools?: ToolMesh[]; /** Только у keychain: сведения о силуэте и размерах, ошибка построения. */ keychain?: KeychainInfo; /** Детали уже стоят на листе печати: экспорт сохраняет их взаимное положение, а не раскладывает заново. */ sheetLayout?: boolean }
+export interface ModelResult { parts: PartMesh[]; tools?: ToolMesh[]; /** Только у keychain: сведения о силуэте и размерах, ошибка построения. */ keychain?: KeychainInfo; /** Детали уже стоят на листе печати: экспорт сохраняет их взаимное положение, а не раскладывает заново. */ sheetLayout?: boolean; /** Только у keychain в режиме половин: матрицы 4×4 (по столбцам) для собранного вида по подписям деталей. */ assembly?: Assembly }
 
 /** Габариты всей модели в собранных координатах. */
 export function modelBounds(r: ModelResult): { min: [number, number, number]; max: [number, number, number] } {
@@ -57,9 +58,9 @@ export async function generate<M extends ModeId>(mode: M, params: ModeParams[M],
       } finally { m.delete() }
     }
     case 'keychain': {
-      const { parts, info } = await buildKeychainSheet(params as KeychainParams, imageRegistry, wasmUrl, textRegistry)
+      const { parts, info, assembly } = await buildKeychainSheet(params as KeychainParams, imageRegistry, wasmUrl, textRegistry)
       try {
-        return { parts: parts.map((q) => ({ label: q.label, col: q.col, row: q.row, oversize: false, mesh: meshOf(q.solid) })), keychain: info, ...(parts.length > 1 ? { sheetLayout: true } : {}) }
+        return { parts: parts.map((q) => ({ label: q.label, col: q.col, row: q.row, oversize: false, mesh: meshOf(q.solid) })), keychain: info, ...(parts.length > 1 ? { sheetLayout: true } : {}), ...(assembly ? { assembly } : {}) }
       } finally { parts.forEach((q) => q.solid.delete()) }
     }
     default:
