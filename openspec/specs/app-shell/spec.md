@@ -113,7 +113,7 @@ The app SHALL be organised into product sections, Gridfinity Master and Keychain
 - **THEN** the app shows the matching `/gridfinity/...` route
 
 ### Requirement: Start page illustrations
-Each mode card on the Gridfinity and Keychain start pages and each product card on the root start page SHALL show an isometric illustration that is a render of an actual model produced by the app (a small part with default settings), not a schematic drawing or an icon. The Gridfinity product card SHALL show the box; the Keychain product card SHALL show an image-mode keychain; the Keychain Image and Shape cards SHALL each show a render of their own mode. Illustrations SHALL be static vector images, SHALL follow the app's colour tokens, and SHALL NOT require WebGL, geometry computation or network requests on the start page.
+Each mode card on the Gridfinity and Keychain start pages and each product card on the root start page SHALL show an isometric illustration that is a render of an actual model produced by the app (a small part with default settings), not a schematic drawing or an icon. The Gridfinity product card SHALL show the box; the Keychain product card SHALL show an image-mode keychain; the Keychain Image and Shape cards SHALL each show a render of their own mode. The image-mode keychain illustration SHALL show a shape with a complex organic outline (a paw print), not a circle or other plain geometric figure. Illustrations SHALL be static vector images, SHALL follow the app's colour tokens, and SHALL NOT require WebGL, geometry computation or network requests on the start page.
 
 #### Scenario: Renders match the editor
 - **WHEN** the Baseplate card is shown
@@ -125,7 +125,15 @@ Each mode card on the Gridfinity and Keychain start pages and each product card 
 
 #### Scenario: Keychain mode cards
 - **WHEN** the Keychain start page is shown
-- **THEN** the Image card shows a relief keychain and the Shape card shows a keychain with a geometric outline and rim, each a render of what that mode produces
+- **THEN** the Image card shows a relief keychain in the shape of a paw print with a ring eyelet and the Shape card shows a keychain with a geometric outline and rim, each a render of what that mode produces
+
+#### Scenario: Smooth outline
+- **WHEN** the Keychain Image illustration is viewed at 200 % zoom or on a high-density display
+- **THEN** its outer outline and the edges between shaded areas are smooth curves, with no visible pixel stairs
+
+#### Scenario: Cards stay level
+- **WHEN** the root start page is shown
+- **THEN** the drawn height of the Keychain illustration equals that of the Gridfinity box illustration
 
 #### Scenario: No runtime geometry
 - **WHEN** the start page is opened
