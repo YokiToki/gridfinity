@@ -1,7 +1,7 @@
 /**
  * Генерация иллюстраций карточек стартовой страницы: настоящие детали через generate(), изометрия, z-буфер, трассировка.
  * Две группы со своим масштабом: Gridfinity (baseplate, box, cutout: детали 2×2 ячейки) и Keychain (keychainImage, keychainShape).
- * Запуск: npm run art. Брелки не требуют файлов: растр для режима «Изображение» рисуется здесь же. Для выреза нужен образец
+ * Запуск: npm run art. Брелки не требуют файлов: растр для режима «Изображение» (лапа) строится кодом, см. geometry/art/paw.ts. Для выреза нужен образец
  * tmp/cutout.stl (в репозитории его нет: готовые картинки лежат в src/app/art, CI этот скрипт не запускает); без него группа
  * Gridfinity не пересоздаётся, а картинки брелков всё равно записываются.
  */
@@ -16,7 +16,7 @@ import { defaultFasteners } from '../src/geometry/fasteners'
 import { defaultKeychain, defaultMount } from '../src/geometry/keychain'
 import { defaultShape } from '../src/geometry/shapes'
 import { defaultShapeState, shapeParams } from '../src/features/keychain/shapeState'
-import type { GrayImage } from '../src/geometry/raster/threshold'
+import { pawBitmap } from '../src/geometry/art/paw'
 import { defaultOrientation, describeMesh, parseStl, repairMesh } from '../src/geometry/stl-import'
 import { ISO } from '../src/geometry/art/projection'
 import { defaultArtOptions, projectedSize, renderSvg } from '../src/geometry/art/svg'
@@ -60,34 +60,12 @@ async function gridfinityModels(): Promise<Record<string, TriMesh>> {
 }
 
 
-/** Растр для режима «Изображение»: тёмный диск с пятиконечной звездой-вырезом, нарисованные чистой математикой (без файлов). */
-function badgeBitmap(): GrayImage {
-  const W = 420, H = 420, gray = new Uint8Array(W * H).fill(255)
-  const star: [number, number][] = Array.from({ length: 10 }, (_, k) => {
-    const a = -Math.PI / 2 + (k * Math.PI) / 5, r = k % 2 === 0 ? 120 : 52
-    return [210 + r * Math.cos(a), 220 + r * Math.sin(a)]
-  })
-  const inStar = (x: number, y: number) => {
-    let inside = false
-    for (let i = 0, j = star.length - 1; i < star.length; j = i++) {
-      const [xi, yi] = star[i], [xj, yj] = star[j]
-      if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside
-    }
-    return inside
-  }
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    if (Math.hypot(x + 0.5 - 210, y + 0.5 - 220) <= 190) gray[y * W + x] = inStar(x + 0.5, y + 0.5) ? 255 : 0
-  }
-  return { width: W, height: H, gray, alpha: null }
-}
-
 async function keychainModels(): Promise<Record<string, TriMesh>> {
-  registerImage('art-badge', badgeBitmap())
+  registerImage('art-paw', pawBitmap(1000))
   const quality = { cell: 0.25, maxTriangles: 400_000 }
-  // «Изображение»: диск со звездой-вырезом, скос по краю, ушко
+  // «Изображение»: лапа со скосом по краю и ушком
   const image = await generate('keychain', {
-    ...defaultKeychain, imageId: 'art-badge', size: { ...defaultKeychain.size, longest: 56 }, quality,
-    silhouette: { ...defaultKeychain.silhouette, areas: { 1: { mode: 'open', level: 0.6 } } },
+    ...defaultKeychain, imageId: 'art-paw', size: { ...defaultKeychain.size, longest: 56 }, quality,
     relief: { ...defaultKeychain.relief, hmax: 2.4, edgeWidth: 5 },
     base: { ...defaultKeychain.base, thickness: 1.6 },
     mount: { ...defaultMount, style: 'eyelet', x: 0.5, y: 1.02, diameter: 4, outer: 9 },
