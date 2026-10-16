@@ -25,6 +25,16 @@ describe('renderSvg', () => {
     expect(small.length).toBeLessThanOrEqual(big.length)
     expect(small).not.toBe(big)
   })
+  it('smooth: по умолчанию вывод прежний, с smooth другой, но стабильный, цветов по-прежнему нет', () => {
+    const base = renderSvg(cube(), ISO)
+    expect(renderSvg(cube(), ISO, { ...defaultArtOptions, smooth: undefined })).toBe(base)
+    expect(renderSvg(cube(), ISO, { ...defaultArtOptions, smooth: 0 })).toBe(base)
+    const sm = renderSvg(cube(), ISO, { ...defaultArtOptions, smooth: 0.9 })
+    expect(sm).not.toBe(base)
+    expect(sm).toBe(renderSvg(cube(), ISO, { ...defaultArtOptions, smooth: 0.9 }))
+    expect(sm).toContain('art-edge')
+    expect(sm).not.toMatch(/fill="/)
+  })
   it('пустой меш даёт пустую картинку без путей', () => {
     const svg = renderSvg({ positions: Float32Array.from([0, 0, 0, 1, 0, 0, 0, 1, 0]), triangles: new Uint32Array(0) }, ISO)
     expect(svg).not.toContain('<path')
