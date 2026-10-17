@@ -114,6 +114,7 @@ Standing on the shoulders of:
 - [10 inch mini-rack generator](https://makerworld.com/ru/models/1765102-10-inch-mini-rack-generator) (MakerWorld, spuder): enclosure options
 - IKEA SKÅDIS pegboard: the slot layout of the Skadis panel pattern
 - [19 inch vs 10 inch rack dimensions](https://commons.wikimedia.org/wiki/File:19_inch_vs_10_inch_correct_rack_dimensions.svg) (Wikimedia Commons): standard 10-inch rack dimensions
+- [Keystone blank](https://makerworld.com/ru/models/1111789-keystone-blank) and [Keystone for other models](https://makerworld.com/ru/models/1135286-keystone-for-other-models) (MakerWorld): reference models for the keystone jack mount of the rack enclosure; only their dimensions were measured, no geometry is copied
 - [openscad-agent](https://github.com/iancanderson/openscad-agent): an agent-driven workflow for printable models, an inspiration for building this with an AI agent
 - [manifold](https://github.com/elalish/manifold): the geometry kernel; [three.js](https://threejs.org): the preview
 
