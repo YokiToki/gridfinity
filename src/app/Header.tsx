@@ -1,6 +1,7 @@
 import { NavLink, Link, useLocation } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { IconChevronDown } from '@tabler/icons-react'
+import { IconBrandGithub, IconChevronDown } from '@tabler/icons-react'
+import { GITHUB_URL } from './site'
 import { PRODUCTS, productOf, type Product } from './products'
 import { Logo } from './Logo'
 import { SegmentedControl } from '../ui/SegmentedControl'
@@ -15,9 +16,11 @@ export function Header() {
   const { unit, setUnit } = useUnit()
   const lang = (i18n.resolvedLanguage ?? 'en') as Language
   return (
-    <header className="relative z-10 flex h-[52px] flex-none items-center gap-2 border-b border-border bg-surface-1 px-2 md:gap-4 md:px-4">
+    <header className="relative z-10 flex h-[52px] flex-none items-center gap-1 border-b border-border bg-surface-1 px-2 max-[400px]:[&_[role=group]_button]:px-2 min-[440px]:gap-2 md:gap-4 md:px-4">
       <Link to="/" aria-label={t('app.logoLabel')} className="flex h-8 items-center gap-2 font-display text-[13px] font-semibold tracking-tight text-text no-underline">
-        <Logo />{product && <span className="hidden whitespace-nowrap lg:inline">{t(`products.${product.id}.name`)}</span>}
+        <Logo />{product
+          ? <span className="hidden whitespace-nowrap lg:inline">{t(`products.${product.id}.name`)}</span>
+          : <span data-testid="site-name" className="hidden whitespace-nowrap min-[440px]:inline">{t('app.title')}</span>}
       </Link>
       {product && <ProductSwitcher active={product} />}
       {product?.modes && (
@@ -38,6 +41,10 @@ export function Header() {
         options={[{ value: 'mm', label: t('units.mm') }, { value: 'in', label: t('units.in') }]} />
       <SegmentedControl ariaLabel={t('language.label')} value={lang} onChange={(l) => void i18n.changeLanguage(l)}
         options={LANGUAGES.map((l) => ({ value: l, label: l.toUpperCase() }))} />
+      <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" aria-label={t('site.github')} title={t('site.github')}
+        className="inline-flex h-10 w-10 flex-none items-center justify-center rounded-group border border-border bg-bg text-text-muted no-underline hover:text-text md:h-8 md:w-8">
+        <IconBrandGithub size={16} stroke={1.75} />
+      </a>
     </header>
   )
 }

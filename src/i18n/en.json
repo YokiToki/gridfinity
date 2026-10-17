@@ -1,7 +1,7 @@
 {
   "app": {
-    "title": "Gridfinity Generator",
-    "logoLabel": "Gridfinity Generator, back to start"
+    "title": "PrintKit",
+    "logoLabel": "PrintKit, back to start"
   },
   "common": {
     "reset": "Reset",
@@ -858,5 +858,26 @@
     "text": "All settings of “{{mode}}” return to their defaults. Other modes, the language, the units and the export settings stay as they are. This cannot be undone.",
     "confirm": "Reset settings",
     "cancel": "Cancel"
+  },
+  "site": {
+    "github": "PrintKit on GitHub",
+    "motivation": "Gridfinity is an open standard, and I believe the tools for it should be free too: no accounts, no paywalls, nothing to install. Everything runs in your browser. The other tools here (keychains, rack parts, photo cutouts) are things I make for myself and use myself, and I am simply sharing them.",
+    "footer": {
+      "label": "About this site",
+      "support": "Support the project",
+      "donate": "If PrintKit saved you time, you can say thanks with USDT on the TRON network (TRC20). Donations are optional.",
+      "address": "TRC20 address",
+      "copy": "Copy address",
+      "copied": "Copied",
+      "source": "Source code",
+      "analytics": "Analytics settings"
+    },
+    "consent": {
+      "label": "Analytics consent",
+      "text": "We would like to count visits to see how the site is used. This sets a cookie and sends page addresses and general visit data (browser, country) to an analytics service. Your photos, files and settings are never sent. Nothing is loaded until you accept.",
+      "accept": "Accept",
+      "decline": "Decline"
+    },
+    "motivationTitle": "Why it is free"
   }
 }

@@ -17,11 +17,11 @@ The site SHALL present itself as PrintKit: the browser tab title and the root st
 - **THEN** the product cards are still named by their products, not by the site name
 
 ### Requirement: Motivation
-The root start page SHALL show a short motivation text stating that Gridfinity is an open standard and that tools for it should be free, and that the other tools are made by the author for their own use and shared. The same text SHALL be in the README. It SHALL be localized.
+The root start page SHALL show, as its own block with a heading placed below the product cards, a short motivation text stating that Gridfinity is an open standard and that tools for it should be free, and that the other tools are made by the author for their own use and shared. The same text SHALL be in the README. It SHALL be localized.
 
 #### Scenario: Shown on the root page
 - **WHEN** the root start page is opened
-- **THEN** the motivation text is visible without scrolling on a desktop screen and readable on a phone
+- **THEN** a separate block with a heading and the motivation text is shown after the product cards and before the footer, readable on a phone
 
 #### Scenario: Language
 - **WHEN** the language is switched to Russian
@@ -58,7 +58,7 @@ The start pages SHALL show a footer with a donation address on the TRON network 
 - **THEN** the footer is not shown
 
 ### Requirement: Analytics consent
-The site SHALL use Yandex Metrika for visit statistics only after the visitor consents. A consent banner SHALL be shown on the first visit with Accept and Decline of equal prominence and a short statement of what is collected. Until Accept is pressed, the analytics script SHALL NOT be loaded and no analytics cookie or request SHALL be made. The choice SHALL be remembered and SHALL be changeable from the footer. Session replay and click maps SHALL be off, and the statistics SHALL NOT contain photos, files, parameter values or anything else the visitor enters.
+The site SHALL use Yandex Metrika for visit statistics only after the visitor consents. A consent banner SHALL be shown on the first visit with Accept and Decline of equal prominence and a short statement of what is collected, without naming the analytics service. Until Accept is pressed, the analytics script SHALL NOT be loaded and no analytics cookie or request SHALL be made. The choice SHALL be remembered and SHALL be changeable from the footer. Session replay and click maps SHALL be off, and the statistics SHALL NOT contain photos, files, parameter values or anything else the visitor enters.
 
 #### Scenario: First visit
 - **WHEN** a visitor opens the site for the first time

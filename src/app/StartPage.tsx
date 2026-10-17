@@ -6,6 +6,7 @@ import { PRODUCTS, productById } from './products'
 import { readSession } from './lastSession'
 import { ChoiceCard, StartLayout, useNumberHotkeys } from './StartLayout'
 import { ModeArt } from './ModeArt'
+import { Motivation } from './Motivation'
 
 function relativeTime(ms: number, lng: string, justNow: string) {
   const sec = Math.round((ms - Date.now()) / 1000)
@@ -33,7 +34,7 @@ export function StartPage() {
   const lastTo = lastMode?.path ?? lastProduct?.path
   const lastName = lastMode ? t(lastMode.labelKey) : lastProduct ? t(`products.${lastProduct.id}.name`) : ''
   return (
-    <StartLayout tagline={t('start.tagline')} title={t('start.title')}>
+    <StartLayout tagline={t('start.tagline')} title={t('start.title')} after={<Motivation />}>
       <div className="relative flex flex-wrap justify-center gap-6">
         {PRODUCTS.map(({ id, path, artId }, i) => (
           <ChoiceCard key={id} to={path} testId={`card-${id}`} index={i + 1}

@@ -2,17 +2,20 @@ import { useEffect, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { IconArrowRight } from '@tabler/icons-react'
+import { Footer } from './Footer'
 
 /** Каркас стартовых страниц: сетка на фоне, подпись, заголовок и карточки. Вьюпорт здесь не монтируется и геометрия не считается. */
-export function StartLayout({ tagline, title, children }: { tagline: string; title: string; children: ReactNode }) {
+export function StartLayout({ tagline, title, after, children }: { tagline: string; title: string; /** Отдельный блок под карточками, над подвалом (на корневой странице — мотивация). */ after?: ReactNode; children: ReactNode }) {
   return (
-    <main className="relative flex flex-1 flex-col items-center justify-center gap-7 overflow-auto px-6 pt-5 pb-7">
+    <main className="relative flex flex-1 flex-col items-center justify-center-safe gap-7 overflow-auto px-6 pt-5 pb-7">
       <div aria-hidden className="pointer-events-none absolute inset-0 [background-image:repeating-linear-gradient(30deg,rgba(124,156,255,.09)_0_1px,transparent_1px_56px),repeating-linear-gradient(150deg,rgba(124,156,255,.09)_0_1px,transparent_1px_56px)] [mask-image:radial-gradient(ellipse_at_50%_55%,#000_15%,transparent_70%)]" />
       <div className="relative flex flex-col items-center gap-3 text-center">
         <span className="rounded-xl border border-border-strong bg-surface-1/80 px-2.5 py-1 font-mono text-xs text-text-muted">{tagline}</span>
         <h1 className="m-0 font-display text-[38px] leading-[1.1] font-semibold tracking-tighter">{title}</h1>
       </div>
       {children}
+      {after}
+      <Footer />
     </main>
   )
 }
