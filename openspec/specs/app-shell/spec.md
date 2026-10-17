@@ -21,11 +21,15 @@ Inside Gridfinity Master the app SHALL offer three modes — Box, Baseplate and 
 - **THEN** a localized placeholder is shown in place of its parameter panel and the 3D viewport stays usable
 
 ### Requirement: Start page
-The app SHALL open on a start page at the root path that lets the user choose Gridfinity Master or Keychain Master, each as a card with an icon, a short localized description and a link. Gridfinity Master SHALL have its own start page at `/gridfinity` where the user chooses Box, Baseplate or Cutout.
+The app SHALL open on a start page at the root path that lets the user choose Gridfinity Master, Keychain Master or Rack Master, each as a card with an icon, a short localized description and a link. Gridfinity Master SHALL have its own start page at `/gridfinity` where the user chooses Box, Baseplate or Cutout, and Rack Master SHALL have its own start page at `/rack` where the user chooses among its modes.
 
 #### Scenario: Choose a product
 - **WHEN** the user opens the root URL and selects the Keychain Master card
 - **THEN** the keychain route opens and the product switcher shows Keychain Master as active
+
+#### Scenario: Choose Rack
+- **WHEN** the user opens the root URL and selects the Rack Master card, or presses 3
+- **THEN** the `/rack` start page opens, and choosing Panel opens the panel mode with the product switcher showing Rack Master
 
 #### Scenario: Choose a mode
 - **WHEN** the user opens `/gridfinity` and selects the Cutout card
@@ -94,7 +98,7 @@ Parameter panels SHALL be composed from shared controls: numeric field with unit
 - **THEN** the section's accessible name also states that its settings were changed, so the state is not conveyed by colour alone
 
 ### Requirement: Product sections
-The app SHALL be organised into product sections, Gridfinity Master and Keychain Master, each with its own routes, localized name and description, and its own persisted state. Language and display units SHALL be shared by all sections.
+The app SHALL be organised into product sections, Gridfinity Master, Keychain Master and Rack Master, each with its own routes, localized name and description, and its own persisted state. Language and display units SHALL be shared by all sections.
 
 #### Scenario: Switch product
 - **WHEN** the user selects Keychain Master in the product switcher
