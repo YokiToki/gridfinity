@@ -11,5 +11,5 @@
 
 ## 3. Verification
 
-- [ ] 3.1 `npm test` and `npm run build` are green, no console errors.
-- [ ] 3.2 In the browser, en and ru, at 390 and 768 px and desktop: the badge fits next to the logo on the start page, a product page and a mode page, the popover is readable, the footer shows the disclaimer and the version `v1.0.0`.
+- [x] 3.1 `npm test` and `npm run build` are green, no console errors.
+- [x] 3.2 In the browser, en and ru, at 390 and 768 px and desktop: the badge fits next to the logo on the start page, a product page and a mode page, the popover is readable, the footer shows the disclaimer and the version `v1.0.0`.
