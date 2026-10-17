@@ -10,7 +10,7 @@ The Enclosure mode SHALL generate one part from the device's width, depth and he
 
 #### Scenario: Automatic units
 - **WHEN** a device 120 mm high is entered with a 0.4 mm gap and 2 mm walls
-- **THEN** the shell is about 128.8 mm high and the plate is 3 U high (133.35 mm less the tolerance), and the count is shown
+- **THEN** the shell is 124.8 mm high and the plate is 3 U high (133.35 mm less the tolerance), and the count is shown
 
 #### Scenario: Forced units
 - **WHEN** the user sets more units than needed

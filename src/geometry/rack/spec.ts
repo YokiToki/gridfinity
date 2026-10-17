@@ -26,3 +26,8 @@ export function rackLayout(units: number, tolerance: number, margin = 0) {
   const region: RackRegion = { x0: -(RACK_WINDOW / 2 - margin), x1: RACK_WINDOW / 2 - margin, y0: margin, y1: height - margin }
   return { width: RACK_WIDTH, height, holes, region, window: RACK_WINDOW }
 }
+
+/** Проём под keystone-джек (мм): ширина, высота, расстояние между центрами соседних. По типовому размеру разъёма, правится здесь в одном месте. */
+export const KEYSTONE_W = 14.5
+export const KEYSTONE_H = 16
+export const KEYSTONE_PITCH = 19

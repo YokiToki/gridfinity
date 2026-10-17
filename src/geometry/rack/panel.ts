@@ -53,13 +53,22 @@ export function validateRackPanel(p: RackPanelParams): { errors: string[]; warni
 }
 
 /** Вырез отверстий ушей: оба уха, по юнитам, в осях панели (X от середины, Y от нижней кромки). */
-function earCut(w: Awaited<ReturnType<typeof getWasm>>, p: RackPanelParams, holes: ReturnType<typeof rackLayout>['holes']) {
+export function earCut(w: Awaited<ReturnType<typeof getWasm>>, ears: EarParams, holes: ReturnType<typeof rackLayout>['holes']) {
   const { CrossSection } = w
   // edges: только нижнее отверстие первого юнита и верхнее последнего (4 на панель при любом числе юнитов)
-  const used = holes.filter((h, i) => p.ears.positions === 'all' || (p.ears.positions === 'outer' && h.slot !== 1) || (p.ears.positions === 'edges' && (i === 0 || i === holes.length - 1)))
+  const used = holes.filter((h, i) => ears.positions === 'all' || (ears.positions === 'outer' && h.slot !== 1) || (ears.positions === 'edges' && (i === 0 || i === holes.length - 1)))
   if (!used.length) return null
-  const one = p.ears.shape === 'round' ? CrossSection.circle(p.ears.size / 2, 48) : roundedRectCS(w, Math.max(p.ears.slotLength, p.ears.size), p.ears.size, p.ears.size / 2, 24)
+  const one = ears.shape === 'round' ? CrossSection.circle(ears.size / 2, 48) : roundedRectCS(w, Math.max(ears.slotLength, ears.size), ears.size, ears.size / 2, 24)
   return CrossSection.compose(used.flatMap((h) => [one.translate([h.x, h.y]), one.translate([-h.x, h.y])]))
+}
+
+/** Контур панели с отверстиями ушей (без узора): общий для панели и корпуса. X от середины, Y от нижней кромки. */
+export function plateBase(w: Awaited<ReturnType<typeof getWasm>>, units: number, tolerance: boolean, cornerRadius: number, ears: EarParams) {
+  const l = rackLayout(units, tolerance ? HEIGHT_TOLERANCE : 0)
+  const r = Math.min(cornerRadius, l.height / 2 - 0.01)
+  const outline = roundedRectCS(w, RACK_WIDTH, l.height, r, 48).translate([0, l.height / 2])
+  const cut = earCut(w, ears, l.holes)
+  return { base: cut ? outline.subtract(cut) : outline, outline, layout: l }
 }
 
 export interface BuiltRackPanel { panel: Manifold | null; back: Manifold | null; /** Ключ rack.error.* при невозможности построить. */ error?: string; warnings: Issue[] }
@@ -74,10 +83,7 @@ export async function buildRackPanel(p: RackPanelParams, wasmUrl?: string): Prom
   const w = await getWasm(wasmUrl)
   const { Manifold } = w
   const l = rackLayout(p.units, p.tolerance ? HEIGHT_TOLERANCE : 0, p.pattern.margin)
-  const r = Math.min(p.cornerRadius, l.height / 2 - 0.01)
-  const outline = roundedRectCS(w, RACK_WIDTH, l.height, r, 48).translate([0, l.height / 2])
-  const ears = earCut(w, p, l.holes)
-  const base = ears ? outline.subtract(ears) : outline
+  const { base } = plateBase(w, p.units, p.tolerance, p.cornerRadius, p.ears)
   const cut = cutPattern(w, p.pattern, l.region)
   const plan = cut ? base.subtract(cut) : base
   const panel = Manifold.extrude(plan, p.thickness)
