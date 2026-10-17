@@ -16,5 +16,5 @@
 
 ## 3. Verification
 
-- [ ] 3.1 `npm test` and `npm run build` are green, the dev server starts, the console has no errors.
-- [ ] 3.2 In the browser, en and ru, desktop and 390 px: root → Rack Master → Panel; set 2 U with Skadis, then hex, pills, lines and pass-through; slot and round ear holes at the standard positions; the back wall shows as a second part; a 1 U STL has the expected bounding box (254 × 44.0 × thickness) and exports; the Rack card is level with the others on the start page.
+- [x] 3.1 `npm test` and `npm run build` are green, the dev server starts, the console has no errors.
+- [x] 3.2 In the browser, en and ru, desktop and 390 px: root → Rack Master → Panel; set 2 U with Skadis, then hex, pills, lines and pass-through; slot and round ear holes at the standard positions; the back wall shows as a second part; a 1 U STL has the expected bounding box (254 × 44.0 × thickness) and exports; the Rack card is level with the others on the start page.
