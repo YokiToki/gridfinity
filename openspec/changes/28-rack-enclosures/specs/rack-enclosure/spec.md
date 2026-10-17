@@ -20,6 +20,10 @@ The Enclosure mode SHALL generate one part from the device's width, depth and he
 - **WHEN** the device plus gap and walls is wider than the 222.25 mm window between the rails
 - **THEN** an error states how many millimetres too wide it is and no model is generated
 
+#### Scenario: Print orientation
+- **WHEN** the model is shown or exported
+- **THEN** the outer face of the front plate lies on the ground plane (z = 0) and the shell rises from its back, so the part prints front-face down
+
 #### Scenario: Shell depth
 - **WHEN** the depth is set
 - **THEN** the shell extends behind the front plate by the device depth plus the gap

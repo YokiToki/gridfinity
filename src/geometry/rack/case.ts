@@ -160,7 +160,8 @@ export function ventCutters(w: ManifoldToplevel, p: RackCaseParams, l: ReturnTyp
 }
 
 /**
- * Корпус: пластина с ушами (z от 0 до толщины, лицевая грань сверху) и оболочка позади неё (z от −(глубина + зазор) до 0), открытая сзади.
+ * Корпус: пластина с ушами и оболочка позади неё, открытая сзади. Строится с лицевой гранью сверху (пластина z от 0 до толщины, оболочка
+ * z от −(глубина + зазор) до 0), затем зеркалится по z: лицевая грань лежит на z = 0 (на столе при печати), оболочка растёт вверх.
  * Оболочка по центру пластины по X и по высоте. Окно и отверстия режутся в пластине, соты — в стенках.
  */
 export async function buildRackCase(p: RackCaseParams, wasmUrl?: string): Promise<BuiltRackCase> {
@@ -177,7 +178,9 @@ export async function buildRackCase(p: RackCaseParams, wasmUrl?: string): Promis
   const cavity = Manifold.extrude(roundedRectCS(w, l.cavityW, l.cavityH, 0, 4), l.shellLen + 1).translate([0, l.centreY, -l.shellLen - 1])
   let shell = outer.subtract(cavity)
   if (p.vents.enabled) for (const c of ventCutters(w, p, l)) { shell = shell.subtract(c) }
-  const solid = plate.add(shell)
+  const built = plate.add(shell)
+  const solid = built.mirror([0, 0, 1]).translate([0, 0, p.plateThickness])
+  built.delete()
   const parts = solid.decompose(), pieces = parts.length
   parts.forEach((q) => q.delete())
   if (pieces > 1) { solid.delete(); return { solid: null, error: 'rack.error.disconnected', warnings: v.warnings } }

@@ -92,16 +92,13 @@ async function rackModels(): Promise<Record<string, TriMesh>> {
   return { rackPanel: meshOf(panel) }
 }
 
-/** Rack: корпус 2 U с окном, двумя keystone и сотами; перевёрнут (z → −z), чтобы открытая задняя сторона оболочки смотрела на зрителя. */
+/** Rack: корпус 2 U с окном, двумя keystone и сотами; лицевая грань на столе, оболочка растёт вверх открытой стороной к зрителю. */
 async function rackCaseModels(): Promise<Record<string, TriMesh>> {
   const r = await generate('rackCase', {
     ...defaultRackCase, device: { width: 120, depth: 90, height: 60 }, keystones: { count: 2, side: 'right' },
     vents: { enabled: true, width: 14, wall: 2.4, margin: 8 }, ears: { ...defaultRackCase.ears, positions: 'outer' },
   })
-  const m = meshOf(r)
-  const positions = new Float32Array(m.positions)
-  for (let i = 0; i < positions.length; i += 3) { positions[i + 1] = -positions[i + 1]; positions[i + 2] = -positions[i + 2] }
-  return { rackCase: { positions, triangles: m.triangles } }
+  return { rackCase: meshOf(r) }
 }
 
 /**

@@ -67,22 +67,22 @@ describe('корпус: пластина, оболочка, окно', () => {
   const p = C({ device: dev(100, 80, 120), window: { enabled: true, lip: 3 } })
   it('габарит: 254 в ширину, высота пластины, глубина = толщина + глубина устройства + зазор', async () => {
     const m = await build(p), l = caseLayout(p)
-    expectValidSolid(m, { size: [254, l.plateH, 3 + 80 + 0.4], min: [-127, 0, -80.4], max: [127, l.plateH, 3] })
+    expectValidSolid(m, { size: [254, l.plateH, 3 + 80 + 0.4], min: [-127, 0, 0], max: [127, l.plateH, 83.4] })
   })
   it('оболочка открыта сзади: сечение у задней кромки — кольцо стенок, равное внешнему минус полость', async () => {
     const m = await build(p), l = caseLayout(p)
     const ring = l.outerW * l.outerH - l.cavityW * l.cavityH
-    expect(area(m, -l.shellLen + 0.01)).toBeCloseTo(ring, 2)
-    expect(area(m, -l.shellLen / 2)).toBeCloseTo(ring, 2)
+    expect(area(m, 3 + l.shellLen - 0.01)).toBeCloseTo(ring, 2) // у открытой кромки оболочки
+    expect(area(m, 3 + l.shellLen / 2)).toBeCloseTo(ring, 2)
   })
   it('полость ровно по устройству плюс зазор с каждой стороны', async () => {
-    const m = await build(p), s = m.slice(-10), polys = s.toPolygons(); s.delete()
+    const m = await build(p), s = m.slice(13), polys = s.toPolygons(); s.delete()
     const inner = polys.map((q) => ({ w: Math.max(...q.map((v) => v[0])) - Math.min(...q.map((v) => v[0])), h: Math.max(...q.map((v) => v[1])) - Math.min(...q.map((v) => v[1])) })).sort((a, b) => a.w - b.w)[0]
     expect(inner.w).toBeCloseTo(100.8, 3); expect(inner.h).toBeCloseTo(120.8, 3)
   })
   it('оболочка по центру пластины по X и по высоте', async () => {
     const m = await build(C({ ...p, units: { auto: false, value: 5 } })), l = caseLayout({ ...p, units: { auto: false, value: 5 } })
-    const s = m.slice(-10), polys = s.toPolygons(); s.delete()
+    const s = m.slice(13), polys = s.toPolygons(); s.delete()
     const ys = polys.flatMap((q) => q.map((v) => v[1])), xs = polys.flatMap((q) => q.map((v) => v[0]))
     expect((Math.min(...ys) + Math.max(...ys)) / 2).toBeCloseTo(l.plateH / 2, 6); expect((Math.min(...xs) + Math.max(...xs)) / 2).toBeCloseTo(0, 6)
   })
@@ -206,7 +206,7 @@ describe('корпус: соты', () => {
     expect(area(on, 1.5)).toBeCloseTo(area(off, 1.5), 6) // пластина та же
     expect(on.decompose()).toHaveLength(1)
     // внутренняя полость не изменилась: на глубине, где вент нет (за отступом от пластины), сечение внутри стенок то же
-    const s = on.slice(-3), polys = s.toPolygons(); s.delete()
+    const s = on.slice(6), polys = s.toPolygons(); s.delete()
     const inner = polys.map((q) => ({ w: Math.max(...q.map((v) => v[0])) - Math.min(...q.map((v) => v[0])) })).sort((a, b) => a.w - b.w)[0]
     expect(inner.w).toBeCloseTo(100.8, 3)
     cs.forEach((c) => c.delete())

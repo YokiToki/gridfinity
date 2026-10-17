@@ -32,7 +32,7 @@ describe('generate("rackCase")', () => {
     const r = await generate('rackCase', defaultRackCase)
     expect(r.parts.map((p) => p.label)).toEqual(['case'])
     const m = r.parts[0].mesh
-    expect(m.max[2]).toBeCloseTo(3, 6); expect(m.min[2]).toBeCloseTo(-160.4, 6); expect(r.rack).toEqual({ warnings: [] })
+    expect(m.min[2]).toBeCloseTo(0, 6); expect(m.max[2]).toBeCloseTo(163.4, 6); expect(r.rack).toEqual({ warnings: [] })
   })
   it('слишком широкое: частей нет, ошибка и превышение', async () => {
     const r = await generate('rackCase', { ...defaultRackCase, device: { ...defaultRackCase.device, width: 230 } })
