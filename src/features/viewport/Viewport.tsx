@@ -277,8 +277,7 @@ export function Viewport({ model, plate, gap = 0, view = 'sheet', openGap = 0, s
             for (let k = 0; k < 3; k++) pos[i * 3 + k] = mm.vertProperties[i * mm.numProp + k]
           const indexed = new THREE.BufferGeometry()
           indexed.setAttribute('position', new THREE.BufferAttribute(pos, 3))
-          // вырожденные треугольники (коллинеарные вершины) дают случайную нормаль и линию-«трещину» на грани
-          indexed.setIndex(new THREE.BufferAttribute(dropDegenerate(pos, mm.triVerts), 1))
+          indexed.setIndex(new THREE.BufferAttribute(mm.triVerts, 1))
           // плоское затенение — чёткие грани
           const g = indexed.toNonIndexed()
           g.computeVertexNormals()
@@ -288,7 +287,12 @@ export function Viewport({ model, plate, gap = 0, view = 'sheet', openGap = 0, s
             polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1,
           }))
           // контуры: только резкие рёбра (угол > 25°); у слишком большой части — красные
-          const edges = new THREE.LineSegments(new THREE.EdgesGeometry(indexed, 25), new THREE.LineBasicMaterial({ color: part.oversize ? 0xf0707b : style.edge }))
+          // из контуров убираем вырожденные треугольники (коллинеарные вершины): у них случайная нормаль, и по ним рисовалась бы линия.
+          // В тело они остаются: без них между соседними треугольниками появились бы щели
+          const edgeSource = new THREE.BufferGeometry()
+          edgeSource.setAttribute('position', indexed.getAttribute('position'))
+          edgeSource.setIndex(new THREE.BufferAttribute(dropDegenerate(pos, mm.triVerts), 1))
+          const edges = new THREE.LineSegments(new THREE.EdgesGeometry(edgeSource, 25), new THREE.LineBasicMaterial({ color: part.oversize ? 0xf0707b : style.edge }))
           const group = new THREE.Group()
           group.add(body, edges)
           let labelSprite: THREE.Sprite | undefined
@@ -299,7 +303,7 @@ export function Viewport({ model, plate, gap = 0, view = 'sheet', openGap = 0, s
           }
           modelGroup.add(group)
           partGroups.push({ group, label: part.label, col: part.col, row: part.row, body, labelSprite })
-          indexed.dispose()
+          indexed.dispose(); edgeSource.dispose()
         }
         applyGap(gapRef.current)
         if (!fitted) { fitted = true; fit() }
