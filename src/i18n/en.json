@@ -360,7 +360,8 @@
       "addCircle": "Add circle",
       "rectangle": "Rectangle",
       "circle": "Circle",
-      "defaultCircle": "Circle"
+      "defaultCircle": "Circle",
+      "fromPhoto": "From photo"
     },
     "props": {
       "title": "Selected cutout",
@@ -389,7 +390,8 @@
       "size": "Size: {{x}} × {{y}} × {{z}}",
       "file": "File: {{name}}",
       "meshMissing": "The mesh of this cutout is not stored on this device, so it is skipped until you import the file again.",
-      "diameter": "Diameter"
+      "diameter": "Diameter",
+      "tracedSize": "Traced outline: {{w}} × {{l}}"
     },
     "place": {
       "title": "Placement",
@@ -435,6 +437,61 @@
       "depth": "Depth must be greater than zero.",
       "size": "Width and length must be greater than zero.",
       "generation": "Could not build the model: {{message}}"
+    },
+    "photo": {
+      "title": "Cutouts from a photo",
+      "steps": "Steps",
+      "step1": "Photo and paper",
+      "step2": "Align",
+      "step3": "Silhouettes",
+      "close": "Close",
+      "choose": "Choose photo",
+      "loading": "Reading the photo…",
+      "loaded": "{{name}} ({{w}} × {{h}} px)",
+      "error": {
+        "unsupported": "Unsupported file. Use a PNG, JPEG or WebP photo.",
+        "decode": "The photo could not be read.",
+        "empty": "The photo has no pixels."
+      },
+      "downscaled": "The photo was reduced to fit the working size; accuracy is not affected.",
+      "paper": "Paper",
+      "letter": "US Letter",
+      "custom": "Custom",
+      "orientation": "Orientation",
+      "landscape": "Landscape",
+      "portrait": "Portrait",
+      "paperWidth": "Paper width",
+      "paperLength": "Paper length",
+      "paperSize": "Paper: {{w}} × {{h}}",
+      "help": "Lay the tools on a flat sheet of paper and shoot straight down from a distance. Dark tools on light paper work best; soft shadows are covered by the clearance. The photo stays on your device.",
+      "corner": "Corner {{n}}: {{where}}",
+      "where": {
+        "topLeft": "top left",
+        "topRight": "top right",
+        "bottomRight": "bottom right",
+        "bottomLeft": "bottom left"
+      },
+      "alignHelp": "Drag the four numbered handles onto the corners of the paper in the photo (or use the arrow keys, Shift for bigger steps). The straightened sheet is shown on the right.",
+      "quad": {
+        "notConvex": "The corners must form a convex quadrilateral without crossings.",
+        "mirrored": "The corners are in the wrong order: go clockwise starting from the top left.",
+        "tooSmall": "The corners are too close together."
+      },
+      "noPreview": "The straightened sheet appears when the corners are valid.",
+      "rectifiedLabel": "Straightened sheet with detected silhouettes",
+      "sensitivity": "Sensitivity",
+      "margin": "Edge margin",
+      "sensAuto": "Sensitivity: automatic",
+      "sensManual": "Sensitivity: manual",
+      "auto": "Auto",
+      "none": "No objects found. Try raising the sensitivity or reducing the edge margin.",
+      "list": "Silhouettes",
+      "silhouette": "Silhouette {{n}}",
+      "keepNote": "Existing cutouts are kept. The bin is resized to the smallest whole number of units.",
+      "back": "Back",
+      "next": "Next",
+      "create": "Create {{count}} cutouts",
+      "itemName": "Tool {{n}}"
     }
   },
   "export": {

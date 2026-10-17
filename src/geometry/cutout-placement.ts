@@ -99,3 +99,29 @@ export function snapMove(c: Cutout, others: Cutout[], cavity: Cavity, pitch: num
 }
 
 export { cutoutLayout }
+
+export interface FitUnitsResult extends FitResult {
+  /** Размер корпуса целыми юнитами. */
+  unitsX: number
+  unitsY: number
+}
+
+/**
+ * Подгонка габарита целыми юнитами: наименьшее число ячеек по каждой оси, в которое помещаются все видимые вырезы с отступом
+ * margin от стенки (стенка и зазор корпуса учтены, как в fitFootprint). Вырезы сдвигаются так, чтобы их общий габарит стоял по
+ * центру. Размер в мм (`sizeX`, `sizeY`) — размер целых юнитов.
+ */
+export function fitFootprintUnits(p: CutoutParams, margin = 0.8): FitUnitsResult | null {
+  const f = fitFootprint(p, margin)
+  if (!f) return null
+  const unitsX = Math.max(1, Math.ceil(f.sizeX / p.pitch - 1e-9)), unitsY = Math.max(1, Math.ceil(f.sizeY / p.pitch - 1e-9))
+  return {
+    ...f,
+    x: { mode: 'units', value: unitsX, align: p.x.align },
+    y: { mode: 'units', value: unitsY, align: p.y.align },
+    sizeX: unitsX * p.pitch,
+    sizeY: unitsY * p.pitch,
+    unitsX,
+    unitsY,
+  }
+}

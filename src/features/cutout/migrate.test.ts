@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { circleCutout, rectCutout, type Cutout } from '../../geometry/cutout'
+import { circleCutout, outlineCutout, rectCutout, type Cutout } from '../../geometry/cutout'
 import { migrateCutout } from './migrate'
 
 const list = (raw: unknown[]) => (migrateCutout({ cutouts: raw }).cutouts as Cutout[])
@@ -42,5 +42,21 @@ describe('migrateCutout: цвета (1.3)', () => {
   it('пустой и повреждённый список не падают', () => {
     expect(migrateCutout({}).cutouts).toEqual([])
     expect(migrateCutout({ cutouts: 'x' }).cutouts).toEqual([])
+  })
+})
+
+describe('migrateCutout: контуры с фото (2.1)', () => {
+  const L: [number, number][] = [[-20, -20], [20, -20], [20, -8], [-8, -8], [-8, 20], [-20, 20]]
+  const o = (id: string, points: unknown) => ({ ...outlineCutout({ id, source: { kind: 'outline', points: L, size: { w: 40, l: 40 } } }), source: { kind: 'outline', points, size: { w: 40, l: 40 } } })
+
+  it('сессия со всеми четырьмя видами выреза сохраняется и загружается без изменений', () => {
+    const mesh = { id: 'm', name: 'Part', x: 1, y: 2, rotation: 3, depth: 4, clearance: 0.5, visible: true, color: 3, source: { kind: 'mesh', meshId: 'a', filename: 'a.stl', unit: 'mm', orientation: {}, mode: 'projected', size: [1, 1, 1], hull: [] } }
+    const raw = [rectCutout({ id: 'r', color: 0 }), circleCutout({ id: 'c', color: 1 }), outlineCutout({ id: 'o', color: 2, source: { kind: 'outline', points: L, size: { w: 40, l: 40 } } }), mesh]
+    expect(list(JSON.parse(JSON.stringify(raw)))).toEqual(raw)
+  })
+
+  it('контур с менее чем тремя точками, нулевой площади, с нечисловыми или не массивом отбрасывается', () => {
+    const out = list([o('a', [[0, 0], [1, 0]]), o('b', [[0, 0], [1, 0], [2, 0]]), o('c', [[0, 0], [1, 0], [0, 'x']]), o('d', 'oops'), o('e', undefined), o('f', L)])
+    expect(out.map((c) => c.id)).toEqual(['f'])
   })
 })

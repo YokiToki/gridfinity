@@ -1,4 +1,4 @@
-import { defaultCutout, fillCutoutColors, type Cutout } from '../../geometry/cutout'
+import { defaultCutout, fillCutoutColors, validOutline, type Cutout } from '../../geometry/cutout'
 import { normalizeFasteners } from '../fasteners/normalize'
 
 const CUTOUT_DEFAULTS = { x: 0, y: 0, rotation: 0, depth: 10, clearance: 0.5, visible: true, name: 'Cutout' }
@@ -8,7 +8,7 @@ const obj = (v: unknown) => (v && typeof v === 'object' && !Array.isArray(v) ? (
 export function migrateCutout(raw: Record<string, unknown>): Record<string, unknown> {
   const cutouts = Array.isArray(raw.cutouts)
     ? (raw.cutouts as unknown[])
-        .filter((c) => { const o = obj(c), s = obj(o.source); return typeof o.id === 'string' && (s.kind === 'rect' || s.kind === 'mesh' || (s.kind === 'circle' && typeof s.diameter === 'number' && s.diameter > 0)) })
+        .filter((c) => { const o = obj(c), s = obj(o.source); return typeof o.id === 'string' && (s.kind === 'rect' || s.kind === 'mesh' || (s.kind === 'circle' && typeof s.diameter === 'number' && s.diameter > 0) || (s.kind === 'outline' && validOutline(s.points))) })
         .map((c) => ({ ...CUTOUT_DEFAULTS, ...obj(c) }) as unknown as Cutout)
     : []
   const colored = fillCutoutColors(cutouts) // старые сессии без цветов: цвета по порядку списка

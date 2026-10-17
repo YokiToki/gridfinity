@@ -1,6 +1,6 @@
 import { useRef, useState, type Dispatch, type DragEvent, type SetStateAction } from 'react'
 import { useTranslation } from 'react-i18next'
-import { IconArrowDown, IconArrowUp, IconCopy, IconEye, IconEyeOff, IconPlus, IconTrash, IconUpload } from '@tabler/icons-react'
+import { IconArrowDown, IconArrowUp, IconCopy, IconEye, IconEyeOff, IconPhoto, IconPlus, IconTrash, IconUpload } from '@tabler/icons-react'
 import {
   addCutout, cutoutBounds, cutoutLayout, cutoutNotices, duplicateCutout, moveCutout, circleCutout, rectCutout, removeCutout, toggleCutout, updateCutout, validateCutout, MIN_MARGIN,
   type Cutout, type CutoutParams, type MeshSource,
@@ -22,6 +22,9 @@ import { BoxSizeSection } from '../box/BoxSizeSection'
 import { FastenerSection } from '../fasteners/FastenerSection'
 import { TopView } from './TopView'
 import { cutoutColorVar } from './palette'
+import { PhotoDialog } from './photo/PhotoDialog'
+import { withTraced } from './photo/createCutouts'
+import { usePhotoTrace } from './photo/usePhotoTrace'
 
 export interface CutoutPanelProps {
   params: CutoutParams
@@ -45,6 +48,10 @@ export function CutoutPanel({ params, onChange, selectedId, onSelect, meshes, on
   const { unit } = useUnit()
   const [margin, setMargin] = useState(5)
   const file = useRef<HTMLInputElement>(null)
+  const photo = usePhotoTrace()
+  const [photoOpen, setPhotoOpen] = useState(false)
+  const photoBtn = useRef<HTMLButtonElement>(null)
+  const closePhoto = () => { setPhotoOpen(false); setTimeout(() => photoBtn.current?.focus(), 0) }
   const [over, setOver] = useState(false)
   const shown: CutoutParams = draft ? { ...params, cutouts: updateCutout(params.cutouts, draft.id, { x: draft.x, y: draft.y }) } : params
   const l = cutoutLayout(params)
@@ -102,13 +109,19 @@ export function CutoutPanel({ params, onChange, selectedId, onSelect, meshes, on
         <Banner>{t('box.lip.help')}</Banner>
       </Section>
 
+      {photoOpen && (
+        <PhotoDialog trace={photo} maxDepth={l.maxDepth} onClose={closePhoto}
+          onCreate={(created) => { if (!created.length) return; onChange((o) => withTraced(o, created)); onSelect(created[0].id); closePhoto() }} />
+      )}
+
       <Section title={t('cutout.list.title')} summary={summary}>
         <div onDragOver={(e) => { e.preventDefault(); setOver(true) }} onDragLeave={() => setOver(false)} onDrop={onDrop}
           className={`flex flex-col gap-3 rounded-control ${over ? 'outline-2 outline-dashed outline-accent' : ''}`}>
           <div className="grid grid-cols-2 gap-2">
             <button type="button" onClick={add} aria-label={t('cutout.list.add')} className="inline-flex h-9 min-w-0 cursor-pointer items-center justify-center gap-1.5 rounded-control border border-border-strong bg-surface-2 px-2 font-medium text-text hover:bg-surface-3"><IconPlus size={16} stroke={1.75} className="flex-none" /><span className="truncate">{t('cutout.list.rectangle')}</span></button>
             <button type="button" onClick={addCircle} aria-label={t('cutout.list.addCircle')} className="inline-flex h-9 min-w-0 cursor-pointer items-center justify-center gap-1.5 rounded-control border border-border-strong bg-surface-2 px-2 font-medium text-text hover:bg-surface-3"><IconPlus size={16} stroke={1.75} className="flex-none" /><span className="truncate">{t('cutout.list.circle')}</span></button>
-            <button type="button" onClick={() => file.current?.click()} className="col-span-2 inline-flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-control border border-accent bg-accent-muted px-3 font-medium text-white hover:brightness-110"><IconUpload size={16} stroke={1.75} />{t('cutout.list.import')}</button>
+            <button type="button" onClick={() => file.current?.click()} className="inline-flex h-9 min-w-0 cursor-pointer items-center justify-center gap-1.5 rounded-control border border-accent bg-accent-muted px-2 font-medium text-white hover:brightness-110"><IconUpload size={16} stroke={1.75} className="flex-none" /><span className="truncate">{t('cutout.list.import')}</span></button>
+            <button ref={photoBtn} type="button" onClick={() => setPhotoOpen(true)} className="inline-flex h-9 min-w-0 cursor-pointer items-center justify-center gap-1.5 rounded-control border border-accent bg-accent-muted px-2 font-medium text-white hover:brightness-110"><IconPhoto size={16} stroke={1.75} className="flex-none" /><span className="truncate">{t('cutout.list.fromPhoto')}</span></button>
             <input ref={file} type="file" accept=".stl,model/stl,application/sla" hidden data-testid="stl-input" onChange={(e) => { const f = e.target.files?.[0]; if (f) onImport(f); e.target.value = '' }} />
           </div>
           <span className="text-xs text-text-subtle">{t('cutout.list.drop')}</span>
@@ -150,6 +163,8 @@ export function CutoutPanel({ params, onChange, selectedId, onSelect, meshes, on
               </div>
               <LengthField label={t('cutout.props.radius')} value={sel.source.radius} min={0} max={100} step={0.5} onChange={(v) => patch(sel.id, { source: { ...sel.source, radius: v } as Cutout['source'] })} />
             </>
+          ) : sel.source.kind === 'outline' ? (
+            <div data-testid="traced-size" className="text-xs text-text-muted">{t('cutout.props.tracedSize', { w: fmt(sel.source.size.w), l: fmt(sel.source.size.l) })}</div>
           ) : sel.source.kind === 'circle' ? (
             <LengthField label={t('cutout.props.diameter')} value={sel.source.diameter} min={1} max={300} onChange={(v) => patch(sel.id, { source: { ...sel.source, diameter: v } as Cutout['source'] })} />
           ) : (

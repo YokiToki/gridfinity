@@ -24,7 +24,12 @@ export interface MeshSource {
   size: [number, number, number]
   hull: [number, number][]
 }
-export type CutoutSource = RectSource | CircleSource | MeshSource
+/**
+ * Контур, снятый с фотографии: замкнутый многоугольник без дырок в мм, ось y вверх, против часовой стрелки, относительно центра
+ * своего габарита (центр габарита совпадает с x, y выреза). size — габарит контура.
+ */
+export interface OutlineSource { kind: 'outline'; points: [number, number][]; size: { w: number; l: number } }
+export type CutoutSource = RectSource | CircleSource | OutlineSource | MeshSource
 
 export interface Cutout {
   id: string
@@ -96,6 +101,19 @@ export function fillCutoutColors(list: Cutout[]): Cutout[] {
   return out
 }
 
+/** Площадь многоугольника, мм² (по модулю). */
+export const polygonArea = (p: readonly [number, number][]) => Math.abs(p.reduce((a, [x, y], i) => { const [x2, y2] = p[(i + 1) % p.length]; return a + (x * y2 - x2 * y) / 2 }, 0))
+/** Наименьшая допустимая площадь контура, мм². */
+export const MIN_OUTLINE_AREA = 1
+/** Контур пригоден: не меньше трёх конечных точек и площадь не меньше минимума. */
+export const validOutline = (p: unknown): p is [number, number][] =>
+  Array.isArray(p) && p.length >= 3 && p.every((q) => Array.isArray(q) && q.length === 2 && Number.isFinite(q[0]) && Number.isFinite(q[1])) && polygonArea(p as [number, number][]) >= MIN_OUTLINE_AREA
+
+export function outlineCutout(over: Omit<Partial<Cutout>, 'source'> & { source: OutlineSource }): Cutout {
+  const { source, ...rest } = over
+  return { id: newCutoutId(), name: 'Traced', x: 0, y: 0, rotation: 0, depth: 10, clearance: 0.5, visible: true, ...rest, source }
+}
+
 export const addCutout = (list: Cutout[], c: Cutout): Cutout[] => [...list, { ...c, color: validColor(c.color) ? c.color : nextCutoutColor(list) }]
 
 /** Копия справа сверху от оригинала (чтобы не слилась с ним), вставляется следом. */
@@ -130,6 +148,7 @@ export function baseOutline(c: Cutout): Pt[] {
     const hw = c.source.width / 2, hl = c.source.length / 2
     return [[-hw, -hl], [hw, -hl], [hw, hl], [-hw, hl]]
   }
+  if (c.source.kind === 'outline') return c.source.points
   if (c.source.kind === 'circle') {
     const r = c.source.diameter / 2
     return Array.from({ length: CIRCLE_SEGMENTS }, (_, i) => { const a = (2 * Math.PI * i) / CIRCLE_SEGMENTS; return [r * Math.cos(a), r * Math.sin(a)] as Pt })
@@ -213,6 +232,7 @@ export function validateCutout(p: CutoutParams): { ok: boolean; errors: CutoutEr
     if (!(c.clearance >= 0)) bad(`cutout.${c.id}.clearance`, 'baseplate.error.negative')
     if (c.source.kind === 'rect' && !(c.source.width > 0 && c.source.length > 0 && c.source.radius >= 0)) bad(`cutout.${c.id}.size`, 'cutout.error.size')
     if (c.source.kind === 'circle' && !(c.source.diameter > 0)) bad(`cutout.${c.id}.size`, 'cutout.error.size')
+    if (c.source.kind === 'outline' && !validOutline(c.source.points)) bad(`cutout.${c.id}.size`, 'cutout.error.size')
   }
   return { ok: errors.length === 0, errors }
 }
@@ -258,6 +278,7 @@ export function pocketSolid(w: ManifoldToplevel, c: Cutout, l: CutoutLayout, reg
     return extrude(placeCS(grow(cs, c.clearance), c))
   }
   if (c.source.kind === 'circle') return extrude(placeCS(grow(circleCS(w, c.source.diameter), c.clearance), c))
+  if (c.source.kind === 'outline') return extrude(placeCS(grow(w.CrossSection.ofPolygons([c.source.points]), c.clearance), c))
   const mesh = registry.get(c.source.meshId)
   if (!mesh) return null
   const src = c.source
@@ -343,6 +364,11 @@ export function buildCutoutTools(w: ManifoldToplevel, p: CutoutParams, registry:
     }
     if (c.source.kind === 'circle') {
       const solid = w.Manifold.extrude(placeCS(circleCS(w, c.source.diameter), c), depth).translate([0, 0, floorZ])
+      try { out.push({ id: c.id, name: c.name, color: c.color ?? 0, mesh: meshOf(solid) }) } finally { solid.delete() }
+      continue
+    }
+    if (c.source.kind === 'outline') {
+      const solid = w.Manifold.extrude(placeCS(w.CrossSection.ofPolygons([c.source.points]), c), depth).translate([0, 0, floorZ])
       try { out.push({ id: c.id, name: c.name, color: c.color ?? 0, mesh: meshOf(solid) }) } finally { solid.delete() }
       continue
     }

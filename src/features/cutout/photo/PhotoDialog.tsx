@@ -1,0 +1,164 @@
+import { useEffect, useId, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { useTranslation } from 'react-i18next'
+import { IconPhoto, IconX } from '@tabler/icons-react'
+import type { Cutout } from '../../../geometry/cutout'
+import { CUSTOM_PAPER_MAX, CUSTOM_PAPER_MIN, type PaperOrientation, type PaperPreset } from '../../../geometry/photo/paper'
+import { Banner } from '../../../ui/Banner'
+import { Button } from '../../../ui/Button'
+import { LengthField } from '../../../ui/LengthField'
+import { NumberField } from '../../../ui/NumberField'
+import { SegmentedControl } from '../../../ui/SegmentedControl'
+import { formatLength, useUnit } from '../../../ui/units'
+import { tracedCutouts } from './createCutouts'
+import { CornerEditor } from './CornerEditor'
+import { RectifiedView } from './RectifiedView'
+import type { PhotoTrace } from './usePhotoTrace'
+
+type Step = 1 | 2 | 3
+
+/**
+ * Окно «Из фото»: три шага (снимок и лист, углы листа, силуэты). Esc и щелчок по затемнению закрывают, фокус не выходит из окна;
+ * вернуть фокус на кнопку, открывшую окно, должен вызывающий.
+ */
+export function PhotoDialog({ trace, maxDepth, onClose, onCreate }: { trace: PhotoTrace; maxDepth: number; onClose: () => void; onCreate: (created: Cutout[]) => void }) {
+  const { t } = useTranslation()
+  const { unit } = useUnit()
+  const titleId = useId()
+  const root = useRef<HTMLDivElement>(null)
+  const file = useRef<HTMLInputElement>(null)
+  const [step, setStep] = useState<Step>(1)
+  const { settings: s, set, photo, paper, quad, rectified, segmentation, selected } = trace
+  const fmt = (mm: number) => `${formatLength(mm, unit)} ${t(`units.${unit}`)}`
+
+  useEffect(() => { root.current?.querySelector<HTMLElement>('[data-autofocus]')?.focus() }, [])
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { e.stopPropagation(); onClose(); return }
+      if (e.key !== 'Tab') return
+      const items = [...(root.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), [tabindex="0"]') ?? [])].filter((n) => n.getAttribute('hidden') === null && n.getAttribute('type') !== 'file')
+      if (!items.length) return
+      const first = items[0], last = items[items.length - 1]
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
+    }
+    document.addEventListener('keydown', onKey, true)
+    return () => document.removeEventListener('keydown', onKey, true)
+  }, [onClose])
+
+  const canNext = step === 1 ? !!photo : step === 2 ? quad === 'ok' && !!rectified : false
+  const depth = Math.min(s.depth, maxDepth)
+  const create = () => {
+    if (!segmentation) return
+    onCreate(tracedCutouts(segmentation, selected, paper, { depth, clearance: s.clearance, name: (n) => t('cutout.photo.itemName', { n }) }))
+  }
+  const quadMessage = quad === 'ok' ? null : t(`cutout.photo.quad.${quad}`)
+  const autoSens = segmentation ? Math.round(segmentation.defaultSensitivity * 100) : 50
+  const sensValue = s.sensitivity === null ? autoSens : Math.round(s.sensitivity * 100)
+  const stepTitle = (n: Step) => t(`cutout.photo.step${n}`)
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2 md:p-4" data-testid="photo-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div ref={root} role="dialog" aria-modal="true" aria-labelledby={titleId}
+        className="flex max-h-full w-full max-w-[1100px] flex-col overflow-hidden rounded-card border border-border-strong bg-surface-1 shadow-float">
+        <header className="flex flex-none items-center gap-3 border-b border-border px-4 py-3">
+          <h2 id={titleId} className="m-0 text-[15px] font-semibold">{t('cutout.photo.title')}</h2>
+          <ol className="m-0 flex list-none gap-1 p-0 text-xs text-text-muted" aria-label={t('cutout.photo.steps')}>
+            {([1, 2, 3] as Step[]).map((n) => (
+              <li key={n} aria-current={step === n ? 'step' : undefined} className={`rounded-full px-2 py-0.5 ${step === n ? 'bg-accent-muted text-white' : ''}`}>{n}. {stepTitle(n)}</li>
+            ))}
+          </ol>
+          <span className="flex-1" />
+          <button type="button" data-autofocus aria-label={t('cutout.photo.close')} onClick={onClose}
+            className="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-control border-0 bg-transparent text-text-muted hover:bg-surface-3 hover:text-text"><IconX size={18} stroke={1.75} /></button>
+        </header>
+
+        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto p-4">
+          {step === 1 && (
+            <>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button primary onClick={() => file.current?.click()}><IconPhoto size={16} stroke={1.75} />{t('cutout.photo.choose')}</Button>
+                <input ref={file} type="file" accept="image/png,image/jpeg,image/webp" hidden data-testid="photo-input"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) void trace.load(f); e.target.value = '' }} />
+                {trace.loading && <span className="text-xs text-text-muted">{t('cutout.photo.loading')}</span>}
+                {photo && <span className="text-xs text-text-muted" data-testid="photo-name">{t('cutout.photo.loaded', { name: photo.name, w: photo.image.width, h: photo.image.height })}</span>}
+              </div>
+              {trace.error && <Banner kind="error">{t(`cutout.photo.error.${trace.error}`)}</Banner>}
+              {photo?.downscaled && <Banner>{t('cutout.photo.downscaled')}</Banner>}
+              <div className="flex flex-wrap items-end gap-4">
+                <div className="flex flex-col gap-1 text-xs text-text-muted">{t('cutout.photo.paper')}
+                  <SegmentedControl<PaperPreset> ariaLabel={t('cutout.photo.paper')} value={s.preset} onChange={(v) => set({ preset: v })}
+                    options={[{ value: 'letter', label: t('cutout.photo.letter') }, { value: 'a4', label: 'A4' }, { value: 'custom', label: t('cutout.photo.custom') }]} />
+                </div>
+                <div className="flex flex-col gap-1 text-xs text-text-muted">{t('cutout.photo.orientation')}
+                  <SegmentedControl<PaperOrientation> ariaLabel={t('cutout.photo.orientation')} value={s.orientation} onChange={(v) => set({ orientation: v })}
+                    options={[{ value: 'landscape', label: t('cutout.photo.landscape') }, { value: 'portrait', label: t('cutout.photo.portrait') }]} />
+                </div>
+                {s.preset === 'custom' && (
+                  <div className="grid w-64 grid-cols-2 gap-2">
+                    <LengthField label={t('cutout.photo.paperWidth')} value={s.custom.width} min={CUSTOM_PAPER_MIN} max={CUSTOM_PAPER_MAX} step={5} onChange={(v) => set({ custom: { ...s.custom, width: v } })} />
+                    <LengthField label={t('cutout.photo.paperLength')} value={s.custom.length} min={CUSTOM_PAPER_MIN} max={CUSTOM_PAPER_MAX} step={5} onChange={(v) => set({ custom: { ...s.custom, length: v } })} />
+                  </div>
+                )}
+                <span className="text-xs text-text-muted" data-testid="paper-size">{t('cutout.photo.paperSize', { w: fmt(paper.width), h: fmt(paper.height) })}</span>
+              </div>
+              <Banner>{t('cutout.photo.help')}</Banner>
+            </>
+          )}
+
+          {step === 2 && photo && (
+            <>
+              <p className="m-0 text-xs text-text-muted">{t('cutout.photo.alignHelp')}</p>
+              {quadMessage && <Banner kind="warn">{quadMessage}</Banner>}
+              <div className="grid gap-3 md:grid-cols-2">
+                <CornerEditor image={photo.image} corners={s.corners} onChange={(corners) => set({ corners })} />
+                <div>{rectified ? <RectifiedView rectified={rectified} /> : <div className="flex aspect-[4/3] items-center justify-center rounded-card border border-dashed border-border text-xs text-text-subtle">{t('cutout.photo.noPreview')}</div>}</div>
+              </div>
+            </>
+          )}
+
+          {step === 3 && (
+            <div className="grid gap-3 md:grid-cols-[1fr_300px]">
+              <div>{rectified && <RectifiedView rectified={rectified} segmentation={segmentation} selected={selected} onToggle={trace.toggle} />}</div>
+              <div className="flex flex-col gap-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <NumberField label={t('cutout.photo.sensitivity')} value={sensValue} min={0} max={100} step={5} unit="%" digits={0} onChange={(v) => set({ sensitivity: v / 100 })} />
+                  <LengthField label={t('cutout.photo.margin')} value={s.margin} min={0} max={30} step={0.5} onChange={(v) => set({ margin: v })} />
+                </div>
+                <div className="flex items-center gap-2 text-xs text-text-muted">
+                  <span data-testid="sens-mode">{s.sensitivity === null ? t('cutout.photo.sensAuto') : t('cutout.photo.sensManual')}</span>
+                  {s.sensitivity !== null && <Button onClick={() => set({ sensitivity: null })}>{t('cutout.photo.auto')}</Button>}
+                </div>
+                {segmentation && segmentation.silhouettes.length === 0 && <Banner kind="warn">{t('cutout.photo.none')}</Banner>}
+                <ul aria-label={t('cutout.photo.list')} className="m-0 flex max-h-64 list-none flex-col gap-1 overflow-auto p-0">
+                  {(segmentation?.silhouettes ?? []).map((sil) => (
+                    <li key={sil.id} className="rounded-control border border-border bg-bg px-2 py-1">
+                      <label className="flex cursor-pointer items-center gap-2 text-[13px]">
+                        <input type="checkbox" checked={selected.includes(sil.id)} onChange={() => trace.toggle(sil.id)} />
+                        <span>{t('cutout.photo.silhouette', { n: sil.id })}</span>
+                        <span className="ml-auto font-mono text-xs text-text-muted">{fmt(sil.widthMm)} × {fmt(sil.heightMm)}</span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+                <div className="grid grid-cols-2 gap-2">
+                  <LengthField label={t('cutout.props.depth')} value={depth} min={0.5} max={Math.max(1, maxDepth)} step={0.5} onChange={(v) => set({ depth: v })} />
+                  <LengthField label={t('cutout.props.clearance')} value={s.clearance} min={0} max={5} step={0.05} onChange={(v) => set({ clearance: v })} />
+                </div>
+                <span className="text-xs text-text-subtle">{t('cutout.photo.keepNote')}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <footer className="flex flex-none items-center justify-between gap-2 border-t border-border px-4 py-3">
+          <Button onClick={() => setStep((n) => (n > 1 ? ((n - 1) as Step) : n))} disabled={step === 1}>{t('cutout.photo.back')}</Button>
+          {step < 3
+            ? <Button primary onClick={() => setStep((n) => (n + 1) as Step)} disabled={!canNext}>{t('cutout.photo.next')}</Button>
+            : <Button primary onClick={create} disabled={selected.length === 0}>{t('cutout.photo.create', { count: selected.length })}</Button>}
+        </footer>
+      </div>
+    </div>,
+    document.body,
+  )
+}

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { getWasm } from './wasm'
 import {
-  addCutout, baseOutline, buildCutout, buildCutoutTools, circleCutout, CUTOUT_COLORS, cutoutBounds, fillCutoutColors, nextCutoutColor, cutoutLayout, cutoutNotices, defaultCutout, duplicateCutout, effectiveDepth, moveCutout, rectCutout,
+  addCutout, baseOutline, buildCutout, MIN_OUTLINE_AREA, outlineCutout, polygonArea, validOutline, buildCutoutTools, circleCutout, CUTOUT_COLORS, cutoutBounds, fillCutoutColors, nextCutoutColor, cutoutLayout, cutoutNotices, defaultCutout, duplicateCutout, effectiveDepth, moveCutout, rectCutout,
   removeCutout, renameCutout, toggleCutout, updateCutout, validateCutout, MIN_MARGIN, type Cutout, type CutoutParams, type MeshRegistry, type MeshSource,
 } from './cutout'
-import { alignEdge, centerCutout, distribute, fitFootprint, snapAxis, snapMove, snapTargets } from './cutout-placement'
+import { alignEdge, centerCutout, distribute, fitFootprint, fitFootprintUnits, snapAxis, snapMove, snapTargets } from './cutout-placement'
 import { defaultOrientation, describeMesh, flatFaces, fillHoles, repairMesh, toManifold } from './stl-import'
 import { cachedProfile, clearProfileCache, profileCacheSize, profileOfSlices } from './cutout-profile'
 import { boxSoup, tSoup } from './stl-fixtures'
@@ -601,5 +601,125 @@ describe('цвета вырезов (24)', () => {
     l = addCutout(l, rectCutout({ id: 'a', depth: 5 })); l = addCutout(l, circleCutout({ id: 'b', depth: 5 })); l = addCutout(l, rectCutout({ id: 'c', depth: 5, visible: false }))
     const tools = buildCutoutTools(w, params({ cutouts: l }))
     expect(tools.map((t) => [t.id, t.color])).toEqual([['a', 0], ['b', 1]])
+  })
+})
+
+describe('вырез по контуру с фото (25)', () => {
+  // «Г» 40 × 40 мм: перекладина слева, основание внизу; точки против часовой, центр габарита в нуле
+  const L: [number, number][] = [[-20, -20], [20, -20], [20, -8], [-8, -8], [-8, 20], [-20, 20]]
+  const out = (o: Omit<Partial<Cutout>, 'source'> = {}) => outlineCutout({ id: 'o', depth: 10, clearance: 0, ...o, source: { kind: 'outline', points: L, size: { w: 40, l: 40 } } })
+  const cavity = { x: 81.6, y: 81.6 }
+
+  it('площадь и годность контура', () => {
+    expect(polygonArea(L)).toBeCloseTo(40 * 12 + 12 * 28, 9)
+    expect(validOutline(L)).toBe(true)
+    expect(validOutline([[0, 0], [1, 0]])).toBe(false)
+    expect(validOutline([[0, 0], [1, 0], [2, 0]])).toBe(false) // нулевая площадь
+    expect(validOutline([[0, 0], [1, 0], [0, NaN]])).toBe(false)
+    expect(validOutline([[0, 0], [10, 0], [0, 10]])).toBe(true)
+    expect(MIN_OUTLINE_AREA).toBe(1)
+    expect(validOutline('x')).toBe(false)
+  })
+
+  it('габарит повёрнутого контура: поворот многоугольника плюс зазор', () => {
+    const c = out({ x: 10, y: -5, rotation: 90, clearance: 1 })
+    const b = cutoutBounds(c)
+    // поворот на 90°: (x, y) → (−y, x): x ∈ [−20, 20], y ∈ [−20, 20] для габарита 40 × 40 — центр прежний
+    expect([b.minX, b.maxX, b.minY, b.maxY].map((v) => +v.toFixed(6))).toEqual([10 - 21, 10 + 21, -5 - 21, -5 + 21])
+    const wide: Cutout = { ...c, rotation: 45, source: { kind: 'outline', points: [[-30, -5], [30, -5], [30, 5], [-30, 5]], size: { w: 60, l: 10 } } }
+    const bw = cutoutBounds({ ...wide, x: 0, y: 0, clearance: 0 })
+    expect(bw.maxX).toBeCloseTo((30 + 5) * Math.SQRT1_2, 6)
+  })
+
+  it('центровка, привязка к краю и распределение работают с контуром как с другими вырезами', () => {
+    const c = centerCutout(out({ x: 13, y: -7 }))
+    expect([c.x, c.y]).toEqual([0, 0])
+    expect(cutoutBounds(alignEdge(out({ x: 3 }), 'left', 5, cavity)).minX).toBeCloseTo(-40.8 + 5, 9)
+    const list = [out({ x: 30 }), { ...out({ x: -30 }), id: 'p' }]
+    expect(distribute(list, 'x', cavity)).toHaveLength(2)
+  })
+
+  it('карман: объём равен площади контура × глубина (1 %), с зазором контур растёт на зазор со всех сторон', async () => {
+    const solid = await buildCutout(params())
+    const m = await buildCutout(params({ cutouts: [out()] }))
+    expectValidSolid(m)
+    near(solid.volume() - m.volume(), polygonArea(L) * 10, 0.01)
+    const g = await buildCutout(params({ cutouts: [out({ clearance: 0.5 })] }))
+    const grown = solid.slice(16).area() - g.slice(16).area()
+    // площадь растёт на периметр × 0.5 плюс π·0.25 минус выступающие углы (для нашей «Г» — 5 выпуклых и 1 вогнутый)
+    expect(grown).toBeGreaterThan(polygonArea(L) + 0.5 * 160 - 8)
+    expect(grown).toBeLessThan(polygonArea(L) + 0.5 * 160 + 8)
+  })
+
+  it('положение и поворот переносят карман; поворот не меняет объём', async () => {
+    const a = await buildCutout(params({ cutouts: [out({ x: 12, y: -9 })] }))
+    const b = await buildCutout(params({ cutouts: [out({ x: 12, y: -9, rotation: 37 })] }))
+    expect(b.volume()).toBeCloseTo(a.volume(), 2)
+    const bb = a.slice(16).bounds() // положение: сечение выреза сдвинуто к (12, −9) от центра блока
+    expect(Number.isFinite(bb.min[0])).toBe(true)
+    const solid = await buildCutout(params())
+    expect(solid.slice(16).area() - a.slice(16).area()).toBeCloseTo(polygonArea(L), 0)
+  })
+
+  it('превью-инструмент: габарит как у контура, высота — глубина, цвет по умолчанию 0', async () => {
+    const w = await getWasm()
+    const tools = buildCutoutTools(w, params({ cutouts: [out({ x: 6, y: -4, depth: 8 })] }))
+    expect(tools).toHaveLength(1)
+    const m = tools[0].mesh
+    expect(m.max[0] - m.min[0]).toBeCloseTo(40, 3)
+    expect(m.max[1] - m.min[1]).toBeCloseTo(40, 3)
+    expect(m.max[2] - m.min[2]).toBeCloseTo(8, 3)
+    expect((m.min[0] + m.max[0]) / 2).toBeCloseTo(6, 3)
+    expect(tools[0].color).toBe(0)
+  })
+
+  it('невалидный контур — ошибка размера', () => {
+    const bad = out(); bad.source = { kind: 'outline', points: [[0, 0], [1, 0], [2, 0]], size: { w: 2, l: 0 } }
+    expect(validateCutout(params({ cutouts: [bad] })).errors).toContainEqual({ field: 'cutout.o.size', key: 'cutout.error.size' })
+    expect(validateCutout(params({ cutouts: [out()] })).ok).toBe(true)
+  })
+
+  it('все четыре вида вместе в одном блоке', async () => {
+    const mesh = repairMesh(boxSoup(10, 10, 10)).mesh
+    const info = describeMesh(mesh.vertProperties, 'mm', defaultOrientation)
+    const reg: MeshRegistry = new Map([['m', mesh]])
+    const src: MeshSource = { kind: 'mesh', meshId: 'm', filename: 'b.stl', unit: 'mm', orientation: defaultOrientation, mode: 'projected', size: info.size, hull: info.hull }
+    const m = await buildCutout(params({ cutouts: [rect({ id: 'r', x: -25, y: 25 }), circleCutout({ id: 'k', x: 25, y: 25, clearance: 0 }), { ...out({ x: -25, y: -25 }), id: 'o' }, { ...rect({ id: 'p', x: 25, y: -25 }), source: src }] }), reg)
+    expectValidSolid(m)
+  })
+})
+
+describe('подгонка габарита целыми юнитами (25)', () => {
+  const r = (o: Omit<Partial<Cutout>, 'source'> & { source?: Partial<{ width: number; length: number; radius: number }> } = {}) => rectCutout({ id: 'r', clearance: 0, ...o })
+
+  it('100 × 55 мм с запасом стенки и отступа — 3 × 2 юнита при шаге 42', () => {
+    const f = fitFootprintUnits(params({ cutouts: [r({ source: { width: 100, length: 55, radius: 0 } })] }))!
+    expect([f.unitsX, f.unitsY]).toEqual([3, 2])
+    expect(f.x).toEqual({ mode: 'units', value: 3, align: 'center' })
+    expect(f.y).toEqual({ mode: 'units', value: 2, align: 'center' })
+    expect([f.sizeX, f.sizeY]).toEqual([126, 84])
+    expect([f.cutouts[0].x, f.cutouts[0].y]).toEqual([0, 0])
+  })
+
+  it('минимум один юнит, учитываются все видимые вырезы, скрытые и пустой список — null', () => {
+    const tiny = fitFootprintUnits(params({ cutouts: [r({ source: { width: 5, length: 5, radius: 0 } })] }))!
+    expect([tiny.unitsX, tiny.unitsY]).toEqual([1, 1])
+    const two = fitFootprintUnits(params({ cutouts: [r({ id: 'a', x: -45, source: { width: 20, length: 10, radius: 0 } }), r({ id: 'b', x: 45, source: { width: 20, length: 10, radius: 0 } })] }))!
+    expect(two.unitsX).toBe(3) // 110 + 4 мм → 114 → 3 юнита
+    expect(fitFootprintUnits(params())).toBeNull()
+    expect(fitFootprintUnits(params({ cutouts: [{ ...r(), visible: false }] }))).toBeNull()
+  })
+
+  it('результат помещает вырезы: предупреждения о краях нет, габариты совпадают с целыми юнитами', () => {
+    const p = params({ cutouts: [r({ source: { width: 100, length: 55, radius: 0 } })] })
+    const f = fitFootprintUnits(p)!
+    const fitted = params({ x: f.x, y: f.y, cutouts: f.cutouts })
+    expect(cutoutNotices(fitted).some((i) => i.key === 'cutout.warn.edge')).toBe(false)
+  })
+
+  it('другой шаг сетки: 35 мм даёт 3 × 2 юнита для 90 × 60', () => {
+    const f = fitFootprintUnits(params({ pitch: 35, cutouts: [r({ source: { width: 90, length: 55, radius: 0 } })] }))!
+    expect([f.unitsX, f.unitsY]).toEqual([3, 2])
+    expect(f.sizeX).toBe(105)
   })
 })

@@ -5,7 +5,7 @@ import { fireEvent, screen, within } from '@testing-library/react'
 import { openSection, renderOpen as render } from '../../ui/renderOpen'
 import userEvent from '@testing-library/user-event'
 import i18n from '../../i18n'
-import { circleCutout, defaultCutout, rectCutout, type Cutout, type CutoutParams, type MeshSource, cutoutBounds } from '../../geometry/cutout'
+import { circleCutout, outlineCutout, defaultCutout, rectCutout, type Cutout, type CutoutParams, type MeshSource, cutoutBounds } from '../../geometry/cutout'
 import { defaultOrientation, describeMesh, repairMesh, type IndexedMesh } from '../../geometry/stl-import'
 import { boxSoup } from '../../geometry/stl-fixtures'
 import { UnitContext } from '../../ui/units'
@@ -389,5 +389,58 @@ describe('цвета вырезов в панели и виде сверху (24
     expect(Number(a.getAttribute('fill-opacity'))).toBeGreaterThan(Number(b.getAttribute('fill-opacity')))
     expect(Number(a.getAttribute('stroke-width'))).toBeGreaterThan(Number(b.getAttribute('stroke-width')))
     expect([...screen.getByTestId('top-view').querySelectorAll('rect')].some((n) => n.getAttribute('stroke-dasharray'))).toBe(true)
+  })
+})
+
+describe('контур с фото в панели и виде сверху (25)', () => {
+  const L: [number, number][] = [[-20, -20], [20, -20], [20, -8], [-8, -8], [-8, 20], [-20, 20]]
+  const traced = (o: Omit<Partial<Cutout>, 'source'> = {}) => outlineCutout({ id: 't', name: 'Wrench', ...o, source: { kind: 'outline', points: L, size: { w: 40, l: 40 } } })
+  beforeEach(async () => { await i18n.changeLanguage('en'); latest = defaultCutout })
+
+  it('в виде сверху контур — многоугольник с точками контура, у него те же обработчики и подпись', () => {
+    render(<Harness start={withCuts(traced())} />)
+    const shape = screen.getByTestId('cutout-shape')
+    expect(shape.tagName.toLowerCase()).toBe('polygon')
+    expect(shape).toHaveAccessibleName('Wrench')
+    expect(shape.getAttribute('points')!.split(' ')).toHaveLength(6)
+  })
+
+  it('перетаскивание двигает контур, параметры фиксируются при отпускании', () => {
+    render(<Harness start={withCuts(traced({ x: 5.3, y: 3.3 }))} />)
+    const svg = screen.getByTestId('top-view')
+    svg.getBoundingClientRect = rect(93.6, 93.6)
+    fireEvent.pointerDown(screen.getByTestId('cutout-shape'), { clientX: 50, clientY: 50 })
+    fireEvent.pointerMove(svg, { clientX: 63.7, clientY: 40.5, altKey: true })
+    expect(latest.cutouts[0].x).toBe(5.3)
+    fireEvent.pointerUp(svg)
+    expect(latest.cutouts[0].x).toBeCloseTo(19, 6)
+    expect(latest.cutouts[0].y).toBeCloseTo(12.8, 6)
+  })
+
+  it('свойства: размер контура показан в мм без полей ширины, длины и радиуса', async () => {
+    render(<Harness start={withCuts(traced())} />)
+    await openSection('Selected cutout')
+    expect(screen.getByTestId('traced-size')).toHaveTextContent('Traced outline: 40 mm × 40 mm')
+    expect(screen.queryByLabelText('Width')).toBeNull()
+    expect(screen.queryByLabelText('Diameter')).toBeNull()
+    expect(screen.getByLabelText('Clearance')).toBeInTheDocument()
+  })
+
+  it('размер контура показывается в выбранной единице (дюймы)', async () => {
+    render(<UnitContext.Provider value={{ unit: 'in', setUnit: () => {} }}><CutoutPanel params={withCuts(traced())} onChange={() => {}} selectedId="t" onSelect={() => {}} meshes={new Map()} onImport={() => {}} importMessage={null} draft={null} onDraft={() => {}} snap onSnap={() => {}} /></UnitContext.Provider>)
+    await openSection('Selected cutout')
+    expect(screen.getByTestId('traced-size')).toHaveTextContent('1.575')
+  })
+
+  it('на русском размер подписан', async () => {
+    await i18n.changeLanguage('ru')
+    render(<Harness start={withCuts(traced())} />)
+    await openSection('Выбранный вырез')
+    expect(screen.getByTestId('traced-size')).toHaveTextContent('Контур с фото')
+  })
+
+  it('кнопки +/− есть у всех числовых полей панели с контуром', async () => {
+    render(<Harness start={withCuts(traced())} />)
+    await expectAllNumericSteppers()
   })
 })
