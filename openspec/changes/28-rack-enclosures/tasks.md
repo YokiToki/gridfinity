@@ -14,5 +14,5 @@
 
 ## 3. Verification
 
-- [ ] 3.1 `npm test` and `npm run build` are green, no console errors.
-- [ ] 3.2 In the browser, en and ru and at 390 px: a 120 × 160 × 40 mm device gives the expected units and a shell open at the back, window with lip, two keystones and a cable hole appear where expected, vents appear on the top and sides, a too-wide device shows the error, STL exports with the expected bounding box.
+- [x] 3.1 `npm test` and `npm run build` are green, no console errors.
+- [x] 3.2 In the browser, en and ru and at 390 px: a 120 × 160 × 40 mm device gives the expected units and a shell open at the back, window with lip, two keystones and a cable hole appear where expected, vents appear on the top and sides, a too-wide device shows the error, STL exports with the expected bounding box.
