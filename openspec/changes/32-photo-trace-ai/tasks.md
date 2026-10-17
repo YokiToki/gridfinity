@@ -1,0 +1,39 @@
+# Tasks
+
+## 1. Spike: do the models beat the baseline? (gate)
+
+- [x] 1.0 PoC page `poc/ai/` (`npm run poc:ai`): candidates run in the owner's browser on both photos; results in `poc/ai/FINDINGS.md`. BiRefNet-lite 1024 dropped (bad_alloc); round 2 dropped MVANet and BEN2 (mark the whole sheet).
+- [ ] 1.1 Evaluation harness `scripts/eval-photo-ai.ts` (not shipped, not run by CI): for each fixture in `geometry/photo/fixtures` and for the owner's originals in `tmp/ai/photo_cutout_*.jpeg`, rectify, run the classic `segment` and each candidate model (BiRefNet-lite fp16, ISNet general, U²-Net-P; Node with `onnxruntime-node`), and print per silhouette: size in mm, IoU against the classic result, "network larger" and "network smaller" area, and time. Write each model's alpha for the fixtures to `geometry/photo/fixtures/ai/<model>-<fixture>.png`. Verify: the script prints the table for both fixtures.
+- [ ] 1.2 Record the table and the decision in `design.md` (Decisions → Model choice): the default AI model, the lighter model, the pinned revisions and licences, the measured sizes of the files. Verify against the targets in `design.md`. If no model reaches the raw targets (3 tools, ≤ 1 mm) stop here, update the artifacts with `/opsx:update` and close the change as a negative result.
+
+## 2. Baseline guard
+
+- [ ] 2.1 Frozen-output test for the classic path (`photoBaseline.test.ts`): per fixture the silhouette count, each silhouette's bbox, area and size, recorded from the current code; fails on any change. Verify: passes on the current code before anything else is touched; `git diff` shows `segment.ts`, `colour.ts`, `outline.ts` untouched at the end of the change.
+
+## 3. Pure AI post-processing
+
+- [ ] 3.1 `geometry/photo/ai.ts`: `aiSegmentation(rectified, alpha, params) → Segmentation` (threshold, close, fill holes, margin, specks, components, numbering top to bottom, minimum size and area as the classic path). Tests on the stored alphas from 1.1: three silhouettes per fixture, sizes within 1 mm of the baseline, nothing in the edge margin, empty alpha gives no silhouettes, two touching blobs stay one silhouette.
+- [ ] 3.2 Hybrid edge in `geometry/photo/ai.ts`: band around the mask, classic paper-colour test inside the band (calling `paperSurface` and `colourMask`), network edge kept where the test is uninformative, refined labels. Tests: sizes within 0.5 mm of the baseline and IoU ≥ 0.97 on both fixtures; a synthetic 40 × 20 mm rectangle (`synthetic.ts`) with a deliberately puffy mask measures 40 × 20 mm within 0.5 mm; a synthetic dark part merged into a shadow keeps the network edge and stays one piece; `refine: off` returns the raw mask result.
+
+## 4. ML runtime
+
+- [ ] 4.1 `src/ml/models.ts` registry (id, URL with commit hash, bytes, SHA-256, input size, normalisation, SPDX, `licenseClass` permissive | noncommercial | copyleft, purpose, source) and a test that refuses entries without SPDX, class or pinned revision and a non-permissive default. Verify: test green.
+- [ ] 4.2 `src/ml/runtime.ts` and `ml.worker.ts`: lazy session creation by dynamic import, WebGPU then WASM single-thread, `matte(rgb, w, h) → Float32Array`, resize to the model input and back. `mlClient.ts`: latest request wins, stale replies dropped, progress and cancel. Tests with a fake worker for ordering and cancel; pre/post-processing tested on a tiny fixed array. Verify in the browser that a classic-only session loads no ML chunk (network panel and build output).
+- [ ] 4.2a Capability detection (`src/ml/capabilities.ts`): WebGPU adapter and `shader-f16`, used by the manager to mark models as unavailable with a reason. Tests with a mocked `navigator.gpu`: no WebGPU hides WebGPU-only models, no `shader-f16` hides fp16 ones.
+- [ ] 4.3 `src/ml/modelStore.ts`: download with progress and cancel, SHA-256 check, Cache API storage under the revision key, list, delete, `persistent` flag with memory fallback. Tests with a mocked `fetch` and cache, several models side by side: checksum mismatch rejects, delete removes, interrupted download leaves nothing, no storage falls back to memory.
+
+## 5. UI
+
+- [ ] 5.1 `usePhotoTrace`: `engine` in `PhotoSettings` (default `classic`), `aiSegmentation` computed only when needed, an `active` segmentation, AI error falls back to classic with an error state, `computing` covers the AI run. Tests: default is classic and calls no model; switching uses the mocked client; a failing client leaves classic active; closing and reopening keeps the engine.
+- [ ] 5.2 `EngineSwitch` on the silhouette step (SegmentedControl Classic | AI, sensitivity hidden for AI) and `ModelManager` dialog (list with name, purpose, size, licence class, status; Download / Cancel / Delete / Delete all, active-model radio, used space, backend; per-class consent: the non-commercial confirmation checkbox gates Download), reachable from the switch and the footer. No artboard exists: built from `ui/` components and `theme.css` tokens, said in the commit; compare in en and ru and at 390 px. Component tests: consent before any download, the non-commercial checkbox disables and enables Download, progress, error banner, delete returns to "not downloaded" and asks for consent again, two models side by side, choosing the active one.
+- [ ] 5.3 `CompareOverlay` and the table of sizes (classic, AI, Δ) in the silhouette step; dashed outlines of the inactive engine over the straightened view; off by default. Tests: toggling draws the second outline set and the table values equal `silhouettes` of both engines; off costs no AI run.
+- [ ] 5.4 Strings in `en.json` and `ru.json` (engine, consent, progress, errors, compare, References licence list); the References page and README list the registry models, non-permissive ones in a separate section. Tests: key parity, a registry-to-References test, the `PhotoTips` and consent text exist in both languages.
+
+## 6. Version
+
+- [ ] 6.1 Bump to 1.3.0: `package.json` and a `CHANGELOG.md` entry `1.3.0 — 32-photo-trace-ai`. Test: the existing version test passes with the new number.
+
+## 7. Verification
+
+- [ ] 7.1 `npm test` and `npm run build` are green, the dev server starts, no console errors; `git diff main -- src/geometry/photo/segment.ts src/geometry/photo/colour.ts src/geometry/photo/outline.ts` is empty.
+- [ ] 7.2 In the browser with the two reference photos, en and ru and at 390 px: Classic is the default and gives today's three silhouettes; AI asks for consent, downloads with progress, gives three silhouettes; compare shows both sets and sizes within the targets; deleting the model asks again; with the network blocked after the download AI still works and with it blocked before, the error appears and Classic still works; no request carries image data; cutouts created from AI silhouettes have the right size and position in the bin.
