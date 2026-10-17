@@ -12,7 +12,7 @@ The site started as a Gridfinity baseplate generator and is now a set of paramet
 - **Motivation block** on the root start page and in the README: Gridfinity is an open standard and its tools should be free; the other tools are what the author makes and uses for themselves and shares.
 - **GitHub link** in the header.
 - **Donation address** (USDT on TRON, TRC20) in a footer on the start pages, with a copy button.
-- **Yandex Metrika** analytics (counter 113657472, through the `react-yandex-metrika` package) behind a consent banner: nothing is loaded or stored until the visitor presses Accept; the choice is remembered and can be changed from the footer. Session replay and click maps are off, and no user content (photos, parameters, files) is ever sent.
+- **Yandex Metrika** analytics (counter 113657472, through the `react-metrika` package) behind a consent banner: nothing is loaded or stored until the visitor presses Accept; the choice is remembered and can be changed from the footer. Session replay and click maps are off, and no user content (photos, parameters, files) is ever sent.
 
 ## Capabilities
 
@@ -25,6 +25,6 @@ The site started as a Gridfinity baseplate generator and is now a set of paramet
 
 - `index.html`, `package.json`, `README.md`, `CLAUDE.md` (description and the paragraph on storage keys), `i18n` (`app.title`, the new strings in en and ru), `app/Header.tsx`, `app/StartPage.tsx`/`StartLayout.tsx`, new `app/Footer.tsx`, `app/Motivation.tsx`, `app/ConsentBanner.tsx`, `app/analytics.ts`, `app/site.ts` (links, address, counter id), tests.
 - Values supplied by the owner and recorded in `app/site.ts`: donation address `TBjti2PPTiKg7BbnEKGYhWNjZLMBypfe8h` (TRON, the checksum has been verified), Metrika counter `113657472`, repository `https://github.com/YokiToki/printkit`, and the source of the rack dimension drawing, <https://commons.wikimedia.org/wiki/File:19_inch_vs_10_inch_correct_rack_dimensions.svg>, which goes into References as a link (the file itself is not added to the repository).
-- New dependency: `react-yandex-metrika` (MIT, 2.6.0, last released June 2022, peer dependencies `react` and `prop-types`), imported lazily so its code is not even downloaded before consent.
+- New dependency: `react-metrika` (MIT, 1.2.0, released September 2026, ships TypeScript types, about 32 KB, no peer dependencies), imported lazily so its code is not even downloaded before consent.
 - Out of scope: renaming the repository or the site address, a privacy-policy page beyond the short text in the banner, other analytics, translating the README to Russian, a custom logo, changing the stored data keys.
 - Depends on: `21-collapsed-sections-previews`, `22-keychain-art-paw` (start page). It deliberately leaves the "Start page" requirement in `app-shell` untouched (changes 26 and later modify it), and states its page content in its own capability.
