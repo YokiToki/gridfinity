@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import { dropDegenerate } from './degenerate'
+import { creaseEdges } from './degenerate'
 import { toCreasedNormals } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import type { ModelResult } from '../../geometry/model'
@@ -287,12 +287,10 @@ export function Viewport({ model, plate, gap = 0, view = 'sheet', openGap = 0, s
             polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1,
           }))
           // контуры: только резкие рёбра (угол > 25°); у слишком большой части — красные
-          // из контуров убираем вырожденные треугольники (коллинеарные вершины): у них случайная нормаль, и по ним рисовалась бы линия.
-          // В тело они остаются: без них между соседними треугольниками появились бы щели
-          const edgeSource = new THREE.BufferGeometry()
-          edgeSource.setAttribute('position', indexed.getAttribute('position'))
-          edgeSource.setIndex(new THREE.BufferAttribute(dropDegenerate(pos, mm.triVerts), 1))
-          const edges = new THREE.LineSegments(new THREE.EdgesGeometry(edgeSource, 25), new THREE.LineBasicMaterial({ color: part.oversize ? 0xf0707b : style.edge }))
+          // контур: складки (угол > 25°) считаются своим алгоритмом, вырожденные треугольники сетки не рисуют линий через грань
+          const edgeGeometry = new THREE.BufferGeometry()
+          edgeGeometry.setAttribute('position', new THREE.BufferAttribute(creaseEdges(pos, mm.triVerts), 3))
+          const edges = new THREE.LineSegments(edgeGeometry, new THREE.LineBasicMaterial({ color: part.oversize ? 0xf0707b : style.edge }))
           const group = new THREE.Group()
           group.add(body, edges)
           let labelSprite: THREE.Sprite | undefined
@@ -303,7 +301,7 @@ export function Viewport({ model, plate, gap = 0, view = 'sheet', openGap = 0, s
           }
           modelGroup.add(group)
           partGroups.push({ group, label: part.label, col: part.col, row: part.row, body, labelSprite })
-          indexed.dispose(); edgeSource.dispose()
+          indexed.dispose()
         }
         applyGap(gapRef.current)
         if (!fitted) { fitted = true; fit() }
