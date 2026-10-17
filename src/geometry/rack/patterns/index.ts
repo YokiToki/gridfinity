@@ -1,5 +1,7 @@
 import type { ManifoldToplevel } from 'manifold-3d'
 import type { RackRegion } from '../spec'
+import { asanohaCut } from './asanoha'
+import { engraveIssues } from '../engrave'
 import { hexCut } from './hex'
 import { linesCut, passthroughCut } from './lines'
 import { pillsCut } from './pills'
@@ -16,6 +18,7 @@ export function cutPattern(w: ManifoldToplevel, pat: PatternParams, region: Rack
     case 'pills': return at((b) => pillsCut(w, b, pat.pills))
     case 'lines': return at((b) => linesCut(w, b, pat.lines))
     case 'passthrough': return at((b) => passthroughCut(w, b, pat.passthrough))
+    case 'asanoha': return at((b) => asanohaCut(w, b, pat.asanoha))
     default: return {}
   }
 }
@@ -24,7 +27,7 @@ export function cutPattern(w: ManifoldToplevel, pat: PatternParams, region: Rack
  * Замечания о слишком тонких стенках и штрихах выбранного узора: каждое называет настройку, которая меньше MIN_FEATURE.
  * Поле margin проверяется отдельно: тонкая перемычка между узором и ушами тоже ломается при печати.
  */
-export function patternIssues(pat: PatternParams, region: RackRegion): Issue[] {
+export function patternIssues(pat: PatternParams, region: RackRegion, thickness: number): Issue[] {
   void region
   const checks: [string, number][] = []
   switch (pat.kind) {
@@ -36,8 +39,16 @@ export function patternIssues(pat: PatternParams, region: RackRegion): Issue[] {
     case 'hex': checks.push(['width', pat.hex.width], ['wall', pat.hex.wall]); break
     case 'pills': checks.push(['width', pat.pills.width], ['length', pat.pills.length], ['wall', pat.pills.wall]); break
     case 'lines': checks.push(['height', pat.lines.height], ['wall', pat.lines.wall]); break
+    case 'asanoha': {
+      const a = pat.asanoha
+      if (a.mainDepth > 0) checks.push(['mainWidth', a.mainWidth])
+      if (a.detailDepth > 0) checks.push(['detailWidth', a.detailWidth])
+      break
+    }
     default: break
   }
   if (pat.kind !== 'none') checks.push(['margin', pat.margin])
-  return checks.filter(([, v]) => v < MIN_FEATURE - 1e-9).map(([setting]) => ({ key: 'rack.warning.thin', setting }))
+  const thin = checks.filter(([, v]) => v < MIN_FEATURE - 1e-9).map(([setting]): Issue => ({ key: 'rack.warning.thin', setting }))
+  const deep = pat.kind === 'asanoha' ? engraveIssues([{ setting: 'mainDepth', depth: pat.asanoha.mainDepth }, { setting: 'detailDepth', depth: pat.asanoha.detailDepth }], thickness) : []
+  return [...thin, ...deep]
 }

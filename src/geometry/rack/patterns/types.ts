@@ -1,5 +1,5 @@
-export type PatternKind = 'none' | 'skadis' | 'hex' | 'pills' | 'lines' | 'passthrough'
-export const PATTERN_KINDS: PatternKind[] = ['none', 'skadis', 'hex', 'pills', 'lines', 'passthrough']
+export type PatternKind = 'none' | 'skadis' | 'hex' | 'pills' | 'lines' | 'passthrough' | 'asanoha'
+export const PATTERN_KINDS: PatternKind[] = ['none', 'skadis', 'hex', 'pills', 'lines', 'passthrough', 'asanoha']
 
 /** Параметры каждого узора хранятся отдельно, чтобы переключение вида не теряло настройки остальных. */
 export interface SkadisParams { slotWidth: number; slotLength: number; pitch: number; rowStep: number; shift: number }
@@ -7,6 +7,8 @@ export interface HexParams { width: number; wall: number }
 /** width — размер поперёк (по Y), length — вдоль (по X). */
 export interface PillsParams { width: number; length: number; wall: number; edgePills: boolean }
 export interface LinesParams { height: number; wall: number }
+/** Асаноха: width — ширина шестиугольника между гранями; штрихи гравируются, глубина 0 выключает набор. */
+export interface AsanohaParams { width: number; mainWidth: number; mainDepth: number; detailWidth: number; detailDepth: number }
 export interface PassthroughParams { borderX: number; borderY: number; radius: number }
 
 export interface PatternParams {
@@ -15,7 +17,7 @@ export interface PatternParams {
   margin: number
   /** Поворот узора на 90°. */
   rotate: boolean
-  skadis: SkadisParams; hex: HexParams; pills: PillsParams; lines: LinesParams; passthrough: PassthroughParams
+  skadis: SkadisParams; hex: HexParams; pills: PillsParams; lines: LinesParams; passthrough: PassthroughParams; asanoha: AsanohaParams
 }
 
 export const defaultPattern: PatternParams = {
@@ -25,6 +27,7 @@ export const defaultPattern: PatternParams = {
   pills: { width: 6, length: 20, wall: 2, edgePills: true },
   lines: { height: 3, wall: 2 },
   passthrough: { borderX: 0, borderY: 0, radius: 3 },
+  asanoha: { width: 20, mainWidth: 1.2, mainDepth: 1.2, detailWidth: 1, detailDepth: 0.8 },
 }
 
 /** Замечание о печатаемости: ключ перевода и имя настройки (ключ rack.field.*), которая слишком мала. */

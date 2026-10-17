@@ -16,6 +16,7 @@ const FIELDS: Record<Exclude<PatternKind, 'none'>, { key: string; min: number; m
   hex: [{ key: 'width', min: 2, max: 40, step: 0.5 }, { key: 'wall', min: 0.2, max: 10, step: 0.1 }],
   pills: [{ key: 'width', min: 2, max: 40, step: 0.5 }, { key: 'length', min: 2, max: 80, step: 0.5 }, { key: 'wall', min: 0.2, max: 10, step: 0.1 }],
   lines: [{ key: 'height', min: 1, max: 30, step: 0.5 }, { key: 'wall', min: 0.2, max: 10, step: 0.1 }],
+  asanoha: [{ key: 'width', min: 6, max: 80, step: 1 }, { key: 'mainWidth', min: 0.2, max: 6, step: 0.1 }, { key: 'mainDepth', min: 0, max: 8, step: 0.1 }, { key: 'detailWidth', min: 0.2, max: 6, step: 0.1 }, { key: 'detailDepth', min: 0, max: 8, step: 0.1 }],
   passthrough: [{ key: 'borderX', min: 0, max: 100, step: 0.5 }, { key: 'borderY', min: 0, max: 40, step: 0.5 }, { key: 'radius', min: 0, max: 20, step: 0.5 }],
 }
 

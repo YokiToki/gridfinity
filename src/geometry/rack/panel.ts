@@ -48,7 +48,7 @@ export function validateRackPanel(p: RackPanelParams): { errors: string[]; warni
   const warnings: Issue[] = []
   if (p.pattern.kind !== 'none') {
     if (l.region.x1 - l.region.x0 <= 0 || l.region.y1 - l.region.y0 <= 0) errors.push('rack.error.region')
-    else warnings.push(...patternIssues(p.pattern, l.region))
+    else warnings.push(...patternIssues(p.pattern, l.region, p.thickness))
   }
   return { errors, warnings }
 }
