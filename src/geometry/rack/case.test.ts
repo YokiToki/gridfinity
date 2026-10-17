@@ -175,3 +175,56 @@ describe('корпус: keystone и кабельные отверстия', () =
     expect(area(m, 1.5)).toBeCloseTo(area(plain, 1.5), 6)
   })
 })
+
+import { ventCutters } from './case'
+import { getWasm } from '../wasm'
+
+describe('корпус: соты', () => {
+  const vp = C({ device: dev(100, 80, 40), vents: { enabled: true, width: 8, wall: 1.6, margin: 6 } })
+  it('три вентиляционных выреза лежат в толще стенок и не заходят на края и пластину', async () => {
+    const w = await getWasm(), l = caseLayout(vp), cs = ventCutters(w, vp, l)
+    expect(cs).toHaveLength(3)
+    const top = l.centreY + l.outerH / 2
+    const [t, r, lf] = cs.map((c) => c.boundingBox())
+    // верх: по Y от внутренней грани стенки наружу, по X и Z внутри отступа
+    expect(t.min[1]).toBeCloseTo(top - 2 + 0, 6); expect(t.max[1]).toBeCloseTo(top + 1, 6)
+    expect(t.max[0]).toBeLessThanOrEqual(l.outerW / 2 - 6 + 1e-6); expect(t.min[0]).toBeGreaterThanOrEqual(-(l.outerW / 2 - 6) - 1e-6)
+    for (const b of [t, r, lf]) { expect(b.max[2]).toBeLessThanOrEqual(-6 + 1e-6); expect(b.min[2]).toBeGreaterThanOrEqual(-l.shellLen + 6 - 1e-6) }
+    // бока: по X от внутренней грани наружу, по Y внутри отступа
+    expect(r.min[0]).toBeCloseTo(l.outerW / 2 - 2, 6); expect(r.max[0]).toBeCloseTo(l.outerW / 2 + 1, 6)
+    expect(lf.max[0]).toBeCloseTo(-(l.outerW / 2 - 2), 6); expect(lf.min[0]).toBeCloseTo(-(l.outerW / 2 + 1), 6)
+    for (const b of [r, lf]) { expect(b.max[1]).toBeLessThanOrEqual(l.centreY + l.outerH / 2 - 6 + 1e-6); expect(b.min[1]).toBeGreaterThanOrEqual(l.centreY - l.outerH / 2 + 6 - 1e-6) }
+    cs.forEach((c) => c.delete())
+  })
+  it('в модели убран ровно объём сот в стенках; полость и пластина не тронуты', async () => {
+    const off = await build(C({ ...vp, vents: { ...vp.vents, enabled: false } })), on = await build(vp)
+    const w = await getWasm(), l = caseLayout(vp)
+    const cs = ventCutters(w, vp, l)
+    const inWall = cs.reduce((a, c) => a + (c.volume() * 2) / 3, 0) // толщина выреза 3 мм, из них 2 мм стенка и 1 мм воздух
+    expect(off.volume() - on.volume()).toBeGreaterThan(50)
+    expect(Math.abs(off.volume() - on.volume() - inWall) / inWall).toBeLessThan(0.01)
+    expect(area(on, 1.5)).toBeCloseTo(area(off, 1.5), 6) // пластина та же
+    expect(on.decompose()).toHaveLength(1)
+    // внутренняя полость не изменилась: на глубине, где вент нет (за отступом от пластины), сечение внутри стенок то же
+    const s = on.slice(-3), polys = s.toPolygons(); s.delete()
+    const inner = polys.map((q) => ({ w: Math.max(...q.map((v) => v[0])) - Math.min(...q.map((v) => v[0])) })).sort((a, b) => a.w - b.w)[0]
+    expect(inner.w).toBeCloseTo(100.8, 3)
+    cs.forEach((c) => c.delete())
+  })
+  it('количество сот в верхней стенке совпадает с раскладкой шестиугольников', async () => {
+    const { hexCells } = await import('./patterns/hex'), w = await getWasm(), l = caseLayout(vp)
+    const box = { width: l.outerW - 12, height: l.shellLen - 12 }
+    const n = hexCells(box, { width: 8, wall: 1.6 }).length
+    expect(n).toBeGreaterThan(20)
+    const [t] = ventCutters(w, vp, l)
+    const one = (Math.sqrt(3) / 2) * 64 * 3 // площадь шестиугольника 8 мм между гранями × толщина вырезa 3
+    expect(Math.abs(t.volume() - n * one) / (n * one)).toBeLessThan(0.01)
+    t.delete()
+  })
+  it('тонкая стенка сот предупреждает; слишком крупные соты для стенки просто ничего не вырезают', async () => {
+    expect(validateRackCase(C({ ...vp, vents: { ...vp.vents, wall: 0.5 } })).warnings).toContainEqual({ key: 'rack.warning.thin', setting: 'ventWall' })
+    expect(validateRackCase(vp).warnings).toEqual([])
+    const w = await getWasm()
+    expect(ventCutters(w, C({ ...vp, vents: { ...vp.vents, width: 40 } }), caseLayout(vp)).length).toBeLessThan(3)
+  })
+})

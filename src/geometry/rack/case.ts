@@ -144,7 +144,7 @@ function frontCut(w: ManifoldToplevel, p: RackCaseParams, l: ReturnType<typeof c
  * Вырезы-соты в трёх стенках оболочки: верх и оба бока. Узор строится плоским в оси стенки и выдавливается только на толщину стенки
  * (внутренняя грань совпадает с полостью, наружу запас), так что полость не затрагивается.
  */
-function ventCutters(w: ManifoldToplevel, p: RackCaseParams, l: ReturnType<typeof caseLayout>): Manifold[] {
+export function ventCutters(w: ManifoldToplevel, p: RackCaseParams, l: ReturnType<typeof caseLayout>): Manifold[] {
   const v = p.vents, m = v.margin, T = p.wall + 1, out: Manifold[] = []
   const zc = -l.shellLen / 2, top = l.centreY + l.outerH / 2, side = l.outerW / 2
   const topBox = { width: l.outerW - 2 * m, height: l.shellLen - 2 * m }, sideBox = { width: l.shellLen - 2 * m, height: l.outerH - 2 * m }

@@ -1,5 +1,6 @@
 import { buildBaseplateParts, type BaseplateGeometry } from './baseplate'
 import { buildBox, type BoxParams } from './box'
+import { buildRackCase, type RackCaseParams } from './rack/case'
 import { buildRackPanel, type RackPanelParams } from './rack/panel'
 import type { Issue } from './rack/patterns/types'
 import type { Assembly } from './keychainAssembly'
@@ -12,7 +13,7 @@ import { getWasm } from './wasm'
 import { meshOf, type MeshData } from './mesh'
 
 /** Параметры по режимам. Новые режимы (box, cutout) добавляются сюда. */
-export interface ModeParams { baseplate: BaseplateGeometry; box: BoxParams; cutout: CutoutParams; keychain: KeychainParams; rackPanel: RackPanelParams }
+export interface ModeParams { baseplate: BaseplateGeometry; box: BoxParams; cutout: CutoutParams; keychain: KeychainParams; rackPanel: RackPanelParams; rackCase: RackCaseParams }
 
 /** Импортированные сетки этого потока (воркера): вырезы ссылаются на них по id. */
 export const meshRegistry: MeshRegistry = new Map()
@@ -29,7 +30,7 @@ export type ModeId = keyof ModeParams
 export interface PartMesh { label: string; col: number; row: number; oversize: boolean; mesh: MeshData }
 /** Вырезающий инструмент: только для превью, не часть модели (габариты, объём и экспорт его не учитывают). */
 export interface ToolMesh { id: string; name: string; /** Индекс цвета выреза в палитре (одинаков в списке, виде сверху и 3D). */ color: number; mesh: MeshData }
-export interface ModelResult { parts: PartMesh[]; tools?: ToolMesh[]; /** Только у rackPanel: ключ ошибки (модели нет) и замечания о тонком. */ rack?: { error?: string; warnings: Issue[] }; /** Только у keychain: сведения о силуэте и размерах, ошибка построения. */ keychain?: KeychainInfo; /** Детали уже стоят на листе печати: экспорт сохраняет их взаимное положение, а не раскладывает заново. */ sheetLayout?: boolean; /** Только у keychain в режиме половин: матрицы 4×4 (по столбцам) для собранного вида по подписям деталей. */ assembly?: Assembly }
+export interface ModelResult { parts: PartMesh[]; tools?: ToolMesh[]; /** Только у rackPanel: ключ ошибки (модели нет) и замечания о тонком. */ rack?: { error?: string; /** Только rackCase при rack.error.tooWide: на сколько мм корпус шире окна между рейками. */ excess?: number; warnings: Issue[] }; /** Только у keychain: сведения о силуэте и размерах, ошибка построения. */ keychain?: KeychainInfo; /** Детали уже стоят на листе печати: экспорт сохраняет их взаимное положение, а не раскладывает заново. */ sheetLayout?: boolean; /** Только у keychain в режиме половин: матрицы 4×4 (по столбцам) для собранного вида по подписям деталей. */ assembly?: Assembly }
 
 /** Габариты всей модели в собранных координатах. */
 export function modelBounds(r: ModelResult): { min: [number, number, number]; max: [number, number, number] } {
@@ -74,6 +75,11 @@ export async function generate<M extends ModeId>(mode: M, params: ModeParams[M],
         if (built.back) parts.push({ label: 'back', col: 1, row: 0, oversize: false, mesh: meshOf(built.back) })
         return { parts, rack }
       } finally { built.panel?.delete(); built.back?.delete() }
+    }
+    case 'rackCase': {
+      const built = await buildRackCase(params as RackCaseParams, wasmUrl)
+      const rack = { ...(built.error ? { error: built.error } : {}), ...(built.excess ? { excess: built.excess } : {}), warnings: built.warnings }
+      try { return { parts: built.solid ? [{ label: 'case', col: 0, row: 0, oversize: false, mesh: meshOf(built.solid) }] : [], rack } } finally { built.solid?.delete() }
     }
     default:
       throw new Error(`Unknown mode: ${String(mode)}`)
