@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DONATION_ADDRESS, GITHUB_URL, METRIKA_ID, SITE_NAME } from './site'
+import { APP_VERSION, DONATION_ADDRESS, GITHUB_URL, METRIKA_ID, SITE_NAME } from './site'
 
 const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
 const sha256 = async (b: Uint8Array) => new Uint8Array(await crypto.subtle.digest('SHA-256', b as BufferSource))
@@ -30,5 +30,21 @@ describe('сведения о сайте (1.1)', () => {
     expect(Number.isInteger(METRIKA_ID) && METRIKA_ID > 0).toBe(true)
     expect(GITHUB_URL).toMatch(/^https:\/\/github\.com\/[\w.-]+\/[\w.-]+$/)
     expect(SITE_NAME).toBe('PrintKit')
+  })
+})
+
+type NodeFs = { readFileSync(path: URL, encoding: 'utf8'): string }
+const fs = (globalThis as unknown as { process: { getBuiltinModule(id: 'node:fs'): NodeFs } }).process.getBuiltinModule('node:fs')
+const read = (rel: string) => fs.readFileSync(new URL(rel, import.meta.url), 'utf8')
+
+describe('версия сайта (29)', () => {
+  it('APP_VERSION равна версии из package.json и имеет вид MAJOR.MINOR.PATCH', () => {
+    const pkg = JSON.parse(read('../../package.json')) as { version: string }
+    expect(APP_VERSION).toBe(pkg.version)
+    expect(APP_VERSION).toMatch(/^\d+\.\d+\.\d+$/)
+  })
+  it('верхний заголовок CHANGELOG.md несёт текущую версию', () => {
+    const first = read('../../CHANGELOG.md').split('\n').find((l) => l.startsWith('## '))
+    expect(first).toMatch(new RegExp(`^## ${APP_VERSION.replace(/\./g, '\\.')} — `))
   })
 })

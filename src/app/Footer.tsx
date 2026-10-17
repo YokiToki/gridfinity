@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { IconBrandGithub, IconCheck, IconCopy } from '@tabler/icons-react'
 import { reopenConsent } from './analytics'
-import { DONATION_ADDRESS, GITHUB_URL } from './site'
+import { APP_VERSION, DONATION_ADDRESS, GITHUB_URL } from './site'
 
 /** Подвал стартовых страниц: ссылка на исходники и адрес для пожертвований (USDT, TRC20) с кнопкой копирования. В режимах его нет. */
 export function Footer() {
@@ -26,6 +26,7 @@ export function Footer() {
 
   return (
     <footer aria-label={t('site.footer.label')} className="relative flex w-full max-w-[760px] flex-col items-center gap-2 border-t border-border pt-4 text-center text-xs text-text-muted">
+      <p data-testid="footer-beta" className="m-0 max-w-[560px]">{t('site.beta.text')}</p>
       <div className="font-medium text-text">{t('site.footer.support')}</div>
       <p className="m-0 max-w-[560px]">{t('site.footer.donate')}</p>
       <div className="flex max-w-full items-center gap-2">
@@ -41,6 +42,7 @@ export function Footer() {
           <IconBrandGithub size={14} stroke={1.75} />{t('site.footer.source')}
         </a>
         <button type="button" onClick={reopenConsent} className="cursor-pointer border-0 bg-transparent p-0 text-xs text-text-muted underline hover:text-text">{t('site.footer.analytics')}</button>
+        <span data-testid="footer-version" className="font-mono text-text-subtle">{t('site.version', { version: APP_VERSION })}</span>
       </div>
     </footer>
   )

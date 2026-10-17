@@ -954,6 +954,13 @@
     "cancel": "Cancel"
   },
   "site": {
+    "beta": {
+      "badge": "beta",
+      "label": "beta, show details",
+      "title": "Beta version",
+      "text": "PrintKit is in beta. Dimensions, fit and print settings may be wrong. Check the model and test-print a small part before you rely on it. No warranty."
+    },
+    "version": "v{{version}}",
     "github": "PrintKit on GitHub",
     "motivation": "Gridfinity is an open standard, and I believe the tools for it should be free too: no accounts, no paywalls, nothing to install. Everything runs in your browser. The other tools here (keychains, rack parts, photo cutouts) are things I make for myself and use myself, and I am simply sharing them.",
     "footer": {

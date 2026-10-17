@@ -4,6 +4,7 @@ import { IconBrandGithub, IconChevronDown } from '@tabler/icons-react'
 import { GITHUB_URL } from './site'
 import { PRODUCTS, productOf, type Product } from './products'
 import { Logo } from './Logo'
+import { BetaBadge } from './BetaBadge'
 import { SegmentedControl } from '../ui/SegmentedControl'
 import { useUnit } from '../ui/units'
 import { LANGUAGES, type Language } from '../i18n'
@@ -22,6 +23,7 @@ export function Header() {
           ? <span className="hidden whitespace-nowrap lg:inline">{t(`products.${product.id}.name`)}</span>
           : <span data-testid="site-name" className="hidden whitespace-nowrap min-[440px]:inline">{t('app.title')}</span>}
       </Link>
+      <BetaBadge />
       {product && <ProductSwitcher active={product} />}
       {product?.modes && (
         <>

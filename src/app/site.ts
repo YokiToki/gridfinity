@@ -5,3 +5,5 @@ export const GITHUB_URL = 'https://github.com/YokiToki/printkit'
 export const DONATION_ADDRESS = 'TBjti2PPTiKg7BbnEKGYhWNjZLMBypfe8h'
 /** Номер счётчика Яндекс Метрики. */
 export const METRIKA_ID = 113657472
+/** Версия сайта (семвер) из package.json: единственный источник. Поднимается с каждым изменением, см. CHANGELOG.md. */
+export const APP_VERSION: string = __APP_VERSION__
