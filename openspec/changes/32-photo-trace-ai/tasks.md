@@ -2,7 +2,7 @@
 
 ## 1. Spike: do the models beat the baseline? (gate)
 
-- [x] 1.0 PoC page `poc/ai/` (`npm run poc:ai`): candidates run in the owner's browser on both photos; results in `poc/ai/FINDINGS.md`. BiRefNet-lite 1024 dropped (bad_alloc).
+- [x] 1.0 PoC page `poc/ai/` (`npm run poc:ai`): candidates run in the owner's browser on both photos; results in `poc/ai/FINDINGS.md`. BiRefNet-lite 1024 dropped (bad_alloc); round 2 dropped MVANet and BEN2 (mark the whole sheet).
 - [ ] 1.1 Evaluation harness `scripts/eval-photo-ai.ts` (not shipped, not run by CI): for each fixture in `geometry/photo/fixtures` and for the owner's originals in `tmp/ai/photo_cutout_*.jpeg`, rectify, run the classic `segment` and each candidate model (BiRefNet-lite fp16, ISNet general, U²-Net-P; Node with `onnxruntime-node`), and print per silhouette: size in mm, IoU against the classic result, "network larger" and "network smaller" area, and time. Write each model's alpha for the fixtures to `geometry/photo/fixtures/ai/<model>-<fixture>.png`. Verify: the script prints the table for both fixtures.
 - [ ] 1.2 Record the table and the decision in `design.md` (Decisions → Model choice): the default AI model, the lighter model, the pinned revisions and licences, the measured sizes of the files. Verify against the targets in `design.md`. If no model reaches the raw targets (3 tools, ≤ 1 mm) stop here, update the artifacts with `/opsx:update` and close the change as a negative result.
 
@@ -19,6 +19,7 @@
 
 - [ ] 4.1 `src/ml/models.ts` registry (id, URL with commit hash, bytes, SHA-256, input size, normalisation, SPDX, `licenseClass` permissive | noncommercial | copyleft, purpose, source) and a test that refuses entries without SPDX, class or pinned revision and a non-permissive default. Verify: test green.
 - [ ] 4.2 `src/ml/runtime.ts` and `ml.worker.ts`: lazy session creation by dynamic import, WebGPU then WASM single-thread, `matte(rgb, w, h) → Float32Array`, resize to the model input and back. `mlClient.ts`: latest request wins, stale replies dropped, progress and cancel. Tests with a fake worker for ordering and cancel; pre/post-processing tested on a tiny fixed array. Verify in the browser that a classic-only session loads no ML chunk (network panel and build output).
+- [ ] 4.2a Capability detection (`src/ml/capabilities.ts`): WebGPU adapter and `shader-f16`, used by the manager to mark models as unavailable with a reason. Tests with a mocked `navigator.gpu`: no WebGPU hides WebGPU-only models, no `shader-f16` hides fp16 ones.
 - [ ] 4.3 `src/ml/modelStore.ts`: download with progress and cancel, SHA-256 check, Cache API storage under the revision key, list, delete, `persistent` flag with memory fallback. Tests with a mocked `fetch` and cache, several models side by side: checksum mismatch rejects, delete removes, interrupted download leaves nothing, no storage falls back to memory.
 
 ## 5. UI
