@@ -49,6 +49,39 @@ describe('Hicks: кольца ячейки', () => {
   })
 })
 
+describe('Hicks: краевые ячейки', () => {
+  const region = { x0: -100, x1: 100, y0: 0, y1: 80 }
+  it('без краевых — только целые ячейки; с краевыми добавляются задевающие область, целые те же', async () => {
+    const { hicksCells } = await import('./hicks')
+    const box = { width: 200, height: 80 }
+    const off = hicksCells(box, { ...H, edgeCells: false }), on = hicksCells(box, { ...H, edgeCells: true })
+    expect(off.edge).toEqual([]); expect(off.complete.length).toBeGreaterThan(5)
+    expect(on.complete).toEqual(off.complete); expect(on.edge.length).toBeGreaterThan(4)
+    const R = H.width / Math.sqrt(3)
+    for (const c of on.complete) { expect(Math.abs(c.x) + R).toBeLessThanOrEqual(100 + 1e-6); expect(Math.abs(c.y) + H.width / 2).toBeLessThanOrEqual(40 + 1e-6) }
+    for (const c of on.edge) { const whole = Math.abs(c.x) + R <= 100 + 1e-6 && Math.abs(c.y) + H.width / 2 <= 40 + 1e-6; expect(whole).toBe(false) }
+  })
+  it('с краевыми вырез доходит до границы области, но не выходит за неё', async () => {
+    const w = await getWasm()
+    const off = cutPattern(w, pat({ edgeCells: false }), region)!.bounds(), on = cutPattern(w, pat({ edgeCells: true }), region)!.bounds()
+    expect(on.max[1] - on.min[1]).toBeGreaterThan(off.max[1] - off.min[1])
+    expect(on.min[0]).toBeGreaterThanOrEqual(-100 - 1e-6); expect(on.max[0]).toBeLessThanOrEqual(100 + 1e-6); expect(on.min[1]).toBeGreaterThanOrEqual(-1e-6); expect(on.max[1]).toBeLessThanOrEqual(80 + 1e-6)
+    expect(cutPattern(w, pat({ edgeCells: true }), region)!.area()).toBeGreaterThan(cutPattern(w, pat({ edgeCells: false }), region)!.area())
+  })
+  it('область меньше одной ячейки: без краевых пусто, с краевыми режется обрезок', async () => {
+    const w = await getWasm()
+    const small = { x0: -8, x1: 8, y0: 0, y1: 14 }
+    expect(cutPattern(w, pat({ edgeCells: false }), small)).toBeNull()
+    expect(cutPattern(w, pat({ edgeCells: true }), small)).not.toBeNull()
+  })
+  it.each([[{}], [{ stroke: 0.8, gap: 0.8 }], [{ width: 12, stroke: 0.8, gap: 0.8 }], [{ width: 40, stroke: 2, gap: 3 }], [{ width: 16, stroke: 3, gap: 0.8 }], [{ width: 31, stroke: 1.5, gap: 1 }]])('с краевыми панель одним куском при %j (и с поворотом)', async (o) => {
+    for (const rotate of [false, true]) {
+      const r = await buildRackPanel({ ...defaultRackPanel, units: 2, pattern: pat({ ...o, edgeCells: true }, rotate) })
+      expect(r.error).toBeUndefined(); expect(r.panel!.decompose()).toHaveLength(1)
+    }
+  })
+})
+
 describe('Hicks: панель', () => {
   const panel = (o: Partial<HicksParams> = {}, rotate = false, units = 2) => ({ ...defaultRackPanel, units, pattern: pat(o, rotate) })
   it.each([
@@ -65,7 +98,7 @@ describe('Hicks: панель', () => {
   })
   it('узор в области: вырез целиком внутри и с центровкой', async () => {
     const w = await getWasm()
-    const c = cutPattern(w, pat(), { x0: -100, x1: 100, y0: 0, y1: 80 }).through!.bounds()
+    const c = cutPattern(w, pat(), { x0: -100, x1: 100, y0: 0, y1: 80 })!.bounds()
     expect(c.min[0]).toBeGreaterThanOrEqual(-100 - 1e-6); expect(c.max[0]).toBeLessThanOrEqual(100 + 1e-6); expect(c.min[1]).toBeGreaterThanOrEqual(-1e-6); expect(c.max[1]).toBeLessThanOrEqual(80 + 1e-6)
     expect(Math.abs((c.min[0] + c.max[0]) / 2)).toBeLessThan(0.5) // перемычки на вершинах 0, 2, 4 чуть сдвигают габарит
   })

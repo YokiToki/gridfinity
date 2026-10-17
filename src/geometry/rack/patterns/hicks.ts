@@ -34,11 +34,35 @@ export function hicksCell(w: ManifoldToplevel, p: HicksParams): CrossSection | n
   return CrossSection.union(parts)
 }
 
-/** Hicks hexagon: соты из ячеек (стык в стык), в каждой вложенные шестиугольные кольца. Выреза насквозь по ширине gap, штрихи — материал. */
+/**
+ * Центры ячеек Hicks (ширина ячейки width, без зазора между ячейками). complete — ячейки целиком в области; с edgeCells добавляются
+ * ещё те, что область только задевает (их потом обрезают по области). Решётка у обоих наборов одна: её начало — первая целая ячейка.
+ */
+export function hicksCells(box: Box, p: HicksParams): { complete: { x: number; y: number }[]; edge: { x: number; y: number }[] } {
+  const whole = hexCells(box, { width: p.width, wall: 0 })
+  if (!whole.length && !p.edgeCells) return { complete: [], edge: [] }
+  const R = p.width / SQRT3, colStep = 1.5 * R, d = p.width
+  const o = whole[0] ?? { x: 0, y: 0 }
+  const hx = box.width / 2, hy = box.height / 2, eps = 1e-6
+  const complete: { x: number; y: number }[] = [], edge: { x: number; y: number }[] = []
+  const nx = Math.ceil((hx + R) / colStep) + 2, ny = Math.ceil((hy + d) / d) + 2
+  for (let i = -nx - 4; i <= nx + 4; i++) for (let j = -ny - 2; j <= ny + 2; j++) {
+    const x = o.x + i * colStep, y = o.y + j * d + (Math.abs(i) % 2 === 1 ? d / 2 : 0)
+    const inside = Math.abs(x) + R <= hx + eps && Math.abs(y) + d / 2 <= hy + eps
+    if (inside) complete.push({ x, y })
+    else if (p.edgeCells && Math.abs(x) - R < hx - eps && Math.abs(y) - d / 2 < hy - eps) edge.push({ x, y })
+  }
+  return { complete, edge }
+}
+
+/** Hicks hexagon: соты из ячеек (стык в стык), в каждой вложенные шестиугольные кольца. Вырезы насквозь шириной gap, штрихи — материал. */
 export function hicksCut(w: ManifoldToplevel, box: Box, p: HicksParams): CrossSection | null {
   const cell = hicksCell(w, p)
   if (!cell) return null
-  const cells = hexCells(box, { width: p.width, wall: 0 })
-  if (!cells.length) return null
-  return w.CrossSection.compose(cells.map((c) => cell.translate([c.x, c.y])))
+  const { complete, edge } = hicksCells(box, p)
+  const whole = complete.map((c) => cell.translate([c.x, c.y]))
+  const clip = w.CrossSection.square([box.width, box.height], true)
+  const partial = edge.length ? [w.CrossSection.compose(edge.map((c) => cell.translate([c.x, c.y]))).intersect(clip)] : []
+  const all = [...whole, ...partial]
+  return all.length ? w.CrossSection.compose(all) : null
 }

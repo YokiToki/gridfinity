@@ -1,5 +1,5 @@
 import type { CrossSection, ManifoldToplevel } from 'manifold-3d'
-import type { Box, PatternCut } from './region'
+import type { Box } from './region'
 import type { AsanohaParams } from './types'
 
 export interface Seg { x0: number; y0: number; x1: number; y1: number }
@@ -43,18 +43,19 @@ function stroke(w: ManifoldToplevel, s: Seg, sw: number): CrossSection {
   return w.CrossSection.square([len + sw, sw], true).rotate((Math.atan2(dy, dx) * 180) / Math.PI).translate([(s.x0 + s.x1) / 2, (s.y0 + s.y1) / 2])
 }
 
-function strokes(w: ManifoldToplevel, segs: Seg[], sw: number, box: Box): CrossSection | null {
-  if (!segs.length || !(sw > 0)) return null
-  const clipped = w.CrossSection.union(segs.map((s) => stroke(w, s, sw))).intersect(w.CrossSection.square([box.width, box.height], true))
-  return clipped.isEmpty() ? null : clipped
-}
-
-/** Асаноха: гравировка, главные штрихи и детальные со своей шириной и глубиной; глубина 0 выключает набор. Через панель ничего не режется. */
-export function asanohaCut(w: ManifoldToplevel, box: Box, p: AsanohaParams): PatternCut {
-  if (box.width < 1 || box.height < 1) return {}
+/**
+ * Асаноха: штрихи (главные и детальные) остаются материалом, отверстия — промежутки между ними. Все штрихи связаны в одну сеть и
+ * упираются в рамку, поэтому панель остаётся одним куском. Режутся только целые отверстия (не задевающие край области).
+ */
+export function asanohaCut(w: ManifoldToplevel, box: Box, p: AsanohaParams): CrossSection | null {
+  if (box.width < 1 || box.height < 1 || !(p.mainWidth > 0)) return null
   const { main, detail } = asanohaSegments(box, p.width)
-  const engrave: PatternCut['engrave'] = []
-  if (p.detailDepth > 0) { const s = strokes(w, detail, p.detailWidth, box); if (s) engrave.push({ shape: s, depth: p.detailDepth }) }
-  if (p.mainDepth > 0) { const s = strokes(w, main, p.mainWidth, box); if (s) engrave.push({ shape: s, depth: p.mainDepth }) }
-  return { engrave }
+  if (!main.length) return null
+  const strokes = w.CrossSection.union([...main.map((s) => stroke(w, s, p.mainWidth)), ...(p.detailWidth > 0 ? detail.map((s) => stroke(w, s, p.detailWidth)) : [])])
+  const open = w.CrossSection.square([box.width, box.height], true).subtract(strokes)
+  const eps = 1e-4, keep = open.decompose().filter((c) => {
+    const b = c.bounds()
+    return b.min[0] > -box.width / 2 + eps && b.max[0] < box.width / 2 - eps && b.min[1] > -box.height / 2 + eps && b.max[1] < box.height / 2 - eps && c.area() > 0.05
+  })
+  return keep.length ? w.CrossSection.compose(keep) : null
 }

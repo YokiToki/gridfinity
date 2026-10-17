@@ -1,13 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { getWasm } from '../../wasm'
 import { buildRackPanel, defaultRackPanel, type RackPanelParams } from '../panel'
-import { cutPattern as cutAll } from '.'
+import { cutPattern } from '.'
 import { hexCells, hexRadius } from './hex'
 import { skadisCut, skadisSlots } from './skadis'
 import { defaultPattern, type PatternParams } from './types'
 
-/** Сквозной вырез узора (у узоров 26 гравировок нет). */
-const cutPattern = (...a: Parameters<typeof cutAll>) => cutAll(...a).through ?? null
 const SK = defaultPattern.skadis
 const pat = (o: Partial<PatternParams>): PatternParams => ({ ...defaultPattern, ...o })
 

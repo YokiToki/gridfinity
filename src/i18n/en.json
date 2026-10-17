@@ -986,8 +986,7 @@
       "invalid": "Some values are out of range, the model is not updated."
     },
     "warning": {
-      "thin": "{{setting}} is below the minimum printable width of 0.8 mm.",
-      "depth": "{{setting}} is limited to {{value}} (panel thickness minus 0.8 mm)."
+      "thin": "{{setting}} is below the minimum printable width of 0.8 mm."
     },
     "field": {
       "slotWidth": "Slot width",
@@ -1005,11 +1004,10 @@
       "radius": "Opening corner radius",
       "length": "Length",
       "mainWidth": "Main stroke width",
-      "mainDepth": "Main stroke depth",
       "detailWidth": "Detail stroke width",
-      "detailDepth": "Detail stroke depth",
       "stroke": "Stroke",
-      "gap": "Whitespace"
+      "gap": "Whitespace",
+      "edgeCells": "Edge cells"
     },
     "size": {
       "title": "Size",
@@ -1052,8 +1050,8 @@
       "rotate": "Rotate 90°",
       "help": "Only whole elements that fit the window between the ears are cut, centred.",
       "slotted": "Pattern settings",
-      "engraveHelp": "Asanoha is engraved into the front face, the panel stays solid. A depth of 0 switches that set of strokes off.",
-      "hicksHelp": "Nested hexagon outlines: strokes stay as material, whitespace is cut through. Bridges keep it in one piece."
+      "hicksHelp": "Nested hexagon outlines: strokes stay as material, whitespace is cut through. Bridges keep it in one piece.",
+      "asanohaHelp": "Asanoha is cut through: the strokes stay as material and the openings between them are cut. Only whole openings are cut. A detail stroke width of 0 leaves plain triangles."
     },
     "back": {
       "title": "Back wall",

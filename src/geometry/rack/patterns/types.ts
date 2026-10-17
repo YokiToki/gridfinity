@@ -7,10 +7,11 @@ export interface HexParams { width: number; wall: number }
 /** width — размер поперёк (по Y), length — вдоль (по X). */
 export interface PillsParams { width: number; length: number; wall: number; edgePills: boolean }
 export interface LinesParams { height: number; wall: number }
-/** Асаноха: width — ширина шестиугольника между гранями; штрихи гравируются, глубина 0 выключает набор. */
-export interface AsanohaParams { width: number; mainWidth: number; mainDepth: number; detailWidth: number; detailDepth: number }
+/** Асаноха: width — ширина шестиугольника между гранями; штрихи (рёбра решётки и «ёлочки» внутри треугольников) остаются материалом, между ними вырезаются отверстия. detailWidth 0 убирает детальные штрихи. */
+export interface AsanohaParams { width: number; mainWidth: number; detailWidth: number }
 /** Hicks hexagon: width — ячейка между гранями, stroke — материал между вырезами, gap — вырез (пустота). */
-export interface HicksParams { width: number; stroke: number; gap: number }
+/** edgeCells — достраивать неполные ячейки у границы области, обрезанные по ней. */
+export interface HicksParams { width: number; stroke: number; gap: number; edgeCells: boolean }
 export interface PassthroughParams { borderX: number; borderY: number; radius: number }
 
 export interface PatternParams {
@@ -29,11 +30,11 @@ export const defaultPattern: PatternParams = {
   pills: { width: 6, length: 20, wall: 2, edgePills: true },
   lines: { height: 3, wall: 2 },
   passthrough: { borderX: 0, borderY: 0, radius: 3 },
-  hicks: { width: 24, stroke: 1.2, gap: 1.2 },
-  asanoha: { width: 24, mainWidth: 1.2, mainDepth: 1.2, detailWidth: 1, detailDepth: 0.8 },
+  hicks: { width: 24, stroke: 1.2, gap: 1.2, edgeCells: true },
+  asanoha: { width: 30, mainWidth: 1.6, detailWidth: 1.2 },
 }
 
 /** Замечание о печатаемости: ключ перевода и имя настройки (ключ rack.field.*), которая слишком мала. */
-export interface Issue { key: string; setting?: string; /** Число для текста (предел глубины, мм). */ value?: number }
+export interface Issue { key: string; setting?: string }
 /** Минимальная печатаемая ширина: два периметра сопла 0.4 мм. */
 export const MIN_FEATURE = 0.8
