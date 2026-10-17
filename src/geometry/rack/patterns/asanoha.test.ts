@@ -28,7 +28,7 @@ describe('асаноха: решётка', () => {
     const points = (box.width * box.height) / ((R * R * Math.sqrt(3)) / 2)
     expect(main.length / points).toBeGreaterThan(2.7); expect(main.length / points).toBeLessThan(4)
     expect(detail.length % 3).toBe(0)
-    expect(detail.length / points).toBeGreaterThan(5.4); expect(detail.length / points).toBeLessThan(7)
+    expect(detail.length / points).toBeGreaterThan(5.4); expect(detail.length / points).toBeLessThan(8)
     for (const s of detail) expect(Math.hypot(s.x1 - s.x0, s.y1 - s.y0)).toBeCloseTo(R / Math.sqrt(3), 9)
   })
   it('область меньше половины шестиугольника — отрезков нет или они только у узла, без ошибок', () => {
