@@ -2,7 +2,7 @@ import { useRef, useState, type Dispatch, type DragEvent, type SetStateAction } 
 import { useTranslation } from 'react-i18next'
 import { IconArrowDown, IconArrowUp, IconCopy, IconEye, IconEyeOff, IconPlus, IconTrash, IconUpload } from '@tabler/icons-react'
 import {
-  addCutout, cutoutBounds, cutoutLayout, cutoutNotices, duplicateCutout, moveCutout, rectCutout, removeCutout, toggleCutout, updateCutout, validateCutout, MIN_MARGIN,
+  addCutout, cutoutBounds, cutoutLayout, cutoutNotices, duplicateCutout, moveCutout, circleCutout, rectCutout, removeCutout, toggleCutout, updateCutout, validateCutout, MIN_MARGIN,
   type Cutout, type CutoutParams, type MeshSource,
 } from '../../geometry/cutout'
 import { alignEdge, centerCutout, distribute, fitFootprint, type Side } from '../../geometry/cutout-placement'
@@ -61,6 +61,11 @@ export function CutoutPanel({ params, onChange, selectedId, onSelect, meshes, on
     setList((l_) => addCutout(l_, c))
     onSelect(c.id)
   }
+  const addCircle = () => {
+    const c = circleCutout({ name: t('cutout.list.defaultCircle'), depth: Math.min(10, l.maxDepth) })
+    setList((l_) => addCutout(l_, c))
+    onSelect(c.id)
+  }
   const onDrop = (e: DragEvent) => {
     e.preventDefault(); setOver(false)
     const f = e.dataTransfer.files[0]
@@ -99,9 +104,10 @@ export function CutoutPanel({ params, onChange, selectedId, onSelect, meshes, on
       <Section title={t('cutout.list.title')} summary={summary}>
         <div onDragOver={(e) => { e.preventDefault(); setOver(true) }} onDragLeave={() => setOver(false)} onDrop={onDrop}
           className={`flex flex-col gap-3 rounded-control ${over ? 'outline-2 outline-dashed outline-accent' : ''}`}>
-          <div className="flex gap-2">
-            <button type="button" onClick={add} className="inline-flex h-9 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-control border border-border-strong bg-surface-2 px-3 font-medium text-text hover:bg-surface-3"><IconPlus size={16} stroke={1.75} />{t('cutout.list.add')}</button>
-            <button type="button" onClick={() => file.current?.click()} className="inline-flex h-9 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-control border border-accent bg-accent-muted px-3 font-medium text-white hover:brightness-110"><IconUpload size={16} stroke={1.75} />{t('cutout.list.import')}</button>
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" onClick={add} aria-label={t('cutout.list.add')} className="inline-flex h-9 min-w-0 cursor-pointer items-center justify-center gap-1.5 rounded-control border border-border-strong bg-surface-2 px-2 font-medium text-text hover:bg-surface-3"><IconPlus size={16} stroke={1.75} className="flex-none" /><span className="truncate">{t('cutout.list.rectangle')}</span></button>
+            <button type="button" onClick={addCircle} aria-label={t('cutout.list.addCircle')} className="inline-flex h-9 min-w-0 cursor-pointer items-center justify-center gap-1.5 rounded-control border border-border-strong bg-surface-2 px-2 font-medium text-text hover:bg-surface-3"><IconPlus size={16} stroke={1.75} className="flex-none" /><span className="truncate">{t('cutout.list.circle')}</span></button>
+            <button type="button" onClick={() => file.current?.click()} className="col-span-2 inline-flex h-9 cursor-pointer items-center justify-center gap-1.5 rounded-control border border-accent bg-accent-muted px-3 font-medium text-white hover:brightness-110"><IconUpload size={16} stroke={1.75} />{t('cutout.list.import')}</button>
             <input ref={file} type="file" accept=".stl,model/stl,application/sla" hidden data-testid="stl-input" onChange={(e) => { const f = e.target.files?.[0]; if (f) onImport(f); e.target.value = '' }} />
           </div>
           <span className="text-xs text-text-subtle">{t('cutout.list.drop')}</span>
@@ -142,6 +148,8 @@ export function CutoutPanel({ params, onChange, selectedId, onSelect, meshes, on
               </div>
               <LengthField label={t('cutout.props.radius')} value={sel.source.radius} min={0} max={100} step={0.5} onChange={(v) => patch(sel.id, { source: { ...sel.source, radius: v } as Cutout['source'] })} />
             </>
+          ) : sel.source.kind === 'circle' ? (
+            <LengthField label={t('cutout.props.diameter')} value={sel.source.diameter} min={1} max={300} onChange={(v) => patch(sel.id, { source: { ...sel.source, diameter: v } as Cutout['source'] })} />
           ) : (
             <MeshProps c={sel as Cutout & { source: MeshSource }} hasMesh={meshes.has(sel.source.meshId)} faces={faces(sel)} setSource={(s) => setSource(sel.id, s)} rotateStep={(a) => rotateStep(sel as Cutout & { source: MeshSource }, a)} fmt={fmt} />
           )}

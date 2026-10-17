@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { getWasm } from './wasm'
 import {
-  addCutout, baseOutline, buildCutout, cutoutBounds, cutoutLayout, cutoutNotices, defaultCutout, duplicateCutout, effectiveDepth, moveCutout, rectCutout,
+  addCutout, baseOutline, buildCutout, buildCutoutTools, circleCutout, cutoutBounds, cutoutLayout, cutoutNotices, defaultCutout, duplicateCutout, effectiveDepth, moveCutout, rectCutout,
   removeCutout, renameCutout, toggleCutout, updateCutout, validateCutout, MIN_MARGIN, type Cutout, type CutoutParams, type MeshRegistry, type MeshSource,
 } from './cutout'
 import { alignEdge, centerCutout, distribute, fitFootprint, snapAxis, snapMove, snapTargets } from './cutout-placement'
@@ -427,5 +427,112 @@ describe('привязка при перетаскивании', () => {
     const far = snapMove(c({ x: 12.4, y: 7.3 }), [], cavity, 42, 0.1)
     expect([far.x, far.y]).toEqual([12.4, 7.3])
     expect([far.guideX, far.guideY]).toEqual([null, null])
+  })
+})
+
+describe('круглый вырез (23)', () => {
+  const circ = (o: Omit<Partial<Cutout>, 'source'> & { source?: Partial<{ diameter: number }> } = {}) => circleCutout({ id: 'k', depth: 10, clearance: 0, ...o })
+  const cavity = { x: 81.6, y: 81.6 }
+
+  it('фабрика: имя Circle, диаметр 20, в списке как остальные', () => {
+    const c = circleCutout()
+    expect(c).toMatchObject({ name: 'Circle', x: 0, y: 0, rotation: 0, visible: true, source: { kind: 'circle', diameter: 20 } })
+    expect(addCutout([], c)).toEqual([c])
+  })
+
+  it('габарит: центр ± (d/2 + зазор), поворот на него не влияет', () => {
+    for (const rotation of [0, 30, 90, 137]) {
+      const b = cutoutBounds(circ({ source: { diameter: 20 }, clearance: 0.5, x: 7, y: -3, rotation }))
+      expect([b.minX, b.maxX, b.minY, b.maxY]).toEqual([7 - 10.5, 7 + 10.5, -3 - 10.5, -3 + 10.5])
+    }
+  })
+
+  it('контур: 96 точек на окружности радиуса d/2, обход против часовой стрелки', () => {
+    const pts = baseOutline(circ({ source: { diameter: 30 } }))
+    expect(pts).toHaveLength(96)
+    for (const [x, y] of pts) expect(Math.hypot(x, y)).toBeCloseTo(15, 9)
+    const area = pts.reduce((a, [x, y], i) => { const [x2, y2] = pts[(i + 1) % pts.length]; return a + (x * y2 - x2 * y) / 2 }, 0)
+    expect(area).toBeGreaterThan(0)
+  })
+
+  it('помощники размещения обращаются с кругом как с квадратом того же размера (зазор входит в габарит)', () => {
+    const square = rect({ id: 'q', source: { width: 20, length: 20, radius: 0 }, clearance: 0.5 })
+    const circle = circ({ source: { diameter: 20 }, clearance: 0.5 })
+    expect(cutoutBounds(circle)).toEqual(cutoutBounds(square))
+    const same = (f: (c: Cutout) => Cutout) => expect(cutoutBounds(f(circle))).toEqual(cutoutBounds(f(square)))
+    same((c) => centerCutout({ ...c, x: 13, y: -7 }))
+    same((c) => alignEdge({ ...c, x: 3 }, 'left', 5, cavity))
+    same((c) => alignEdge({ ...c, x: 3 }, 'back', 2, cavity))
+    const list = (mk: Cutout) => [{ ...mk, id: 'a', x: 30 }, { ...mk, id: 'b', x: -30 }, { ...mk, id: 'c', x: 5 }]
+    expect(distribute(list(circle), 'x', cavity).map((c) => c.x)).toEqual(distribute(list(square), 'x', cavity).map((c) => c.x))
+    const fc = fitFootprint(params({ cutouts: [{ ...circle, x: 9, y: 4 }] }))!, fs = fitFootprint(params({ cutouts: [{ ...square, x: 9, y: 4 }] }))!
+    expect([fc.sizeX, fc.sizeY]).toEqual([fs.sizeX, fs.sizeY])
+  })
+
+  it('ножки и привязка при перетаскивании работают с кругом', () => {
+    const r = snapMove(circ({ source: { diameter: 10 }, x: 1.1, y: -0.9 }), [], cavity, 42, 1.5)
+    expect(r.x).toBeCloseTo(0, 9)
+    expect(r.y).toBeCloseTo(0, 9)
+  })
+
+  it('диаметр 20 с зазором 0.5, глубина 10: карман ⌀21 × 10, габарит блока не меняется', async () => {
+    const solid = await buildCutout(params())
+    const m = await buildCutout(params({ cutouts: [circ({ source: { diameter: 20 }, clearance: 0.5, depth: 10 })] }))
+    expectValidSolid(m)
+    const removed = solid.volume() - m.volume()
+    // 96-угольник вписан в окружность: площадь меньше круга на доли процента
+    expect(Math.abs(removed - Math.PI * 10.5 ** 2 * 10) / (Math.PI * 10.5 ** 2 * 10)).toBeLessThan(0.005)
+    const hole = solid.slice(16).area() - m.slice(16).area()
+    expect(Math.abs(hole - Math.PI * 10.5 ** 2) / (Math.PI * 10.5 ** 2)).toBeLessThan(0.005)
+    expect(m.boundingBox().max[0] - m.boundingBox().min[0]).toBeCloseTo(83.5, 3)
+  })
+
+  it('положение (x, y) задаёт центр кармана; поворот не меняет объём', async () => {
+    const a = await buildCutout(params({ cutouts: [circ({ x: 12, y: -9 })] }))
+    const b = await buildCutout(params({ cutouts: [circ({ x: 12, y: -9, rotation: 47 })] }))
+    expect(b.volume()).toBeCloseTo(a.volume(), 3)
+    const solid = await buildCutout(params())
+    const cs = solid.slice(16).area() - a.slice(16).area()
+    expect(cs).toBeGreaterThan(300)
+  })
+
+  it('круг, прямоугольник и деталь в одном блоке: тело валидно; скрытый круг ничего не меняет', async () => {
+    const solid = await buildCutout(params())
+    const hidden = await buildCutout(params({ cutouts: [{ ...circ(), visible: false }] }))
+    expect(hidden.volume()).toBeCloseTo(solid.volume(), 6)
+    const mesh = repairMesh(boxSoup(10, 10, 10)).mesh
+    const info = describeMesh(mesh.vertProperties, 'mm', defaultOrientation)
+    const reg: MeshRegistry = new Map([['m', mesh]])
+    const src: MeshSource = { kind: 'mesh', meshId: 'm', filename: 'b.stl', unit: 'mm', orientation: defaultOrientation, mode: 'projected', size: info.size, hull: info.hull }
+    const mix = await buildCutout(params({ cutouts: [circ({ id: 'c', x: -25 }), rect({ id: 'r', x: 0 }), { ...rect({ id: 'p', x: 25, y: 25 }), source: src }] }), reg)
+    expectValidSolid(mix)
+    expect(mix.volume()).toBeLessThan(solid.volume())
+  })
+
+  it('превью-инструмент: цилиндр диаметром d, высотой в глубину, с центром выреза', async () => {
+    const w = await getWasm()
+    const tools = buildCutoutTools(w, params({ cutouts: [circ({ source: { diameter: 20 }, clearance: 0.5, x: 6, y: -4, depth: 8 })] }))
+    expect(tools).toHaveLength(1)
+    const m = tools[0].mesh
+    expect(m.max[0] - m.min[0]).toBeCloseTo(20, 2) // инструмент без зазора: сама деталь
+    expect(m.max[1] - m.min[1]).toBeCloseTo(20, 2)
+    expect(m.max[2] - m.min[2]).toBeCloseTo(8, 3)
+    expect((m.min[0] + m.max[0]) / 2).toBeCloseTo(6, 3)
+    expect((m.min[1] + m.max[1]) / 2).toBeCloseTo(-4, 3)
+    expect(buildCutoutTools(w, params({ cutouts: [{ ...circ(), visible: false }] }))).toHaveLength(0)
+  })
+
+  it('диаметр ноль или меньше — ошибка размера, положительный — нет', () => {
+    for (const d of [0, -5, NaN]) {
+      const v = validateCutout(params({ cutouts: [circ({ source: { diameter: d } })] }))
+      expect(v.ok).toBe(false)
+      expect(v.errors).toContainEqual({ field: 'cutout.k.size', key: 'cutout.error.size' })
+    }
+    expect(validateCutout(params({ cutouts: [circ()] })).ok).toBe(true)
+  })
+
+  it('круг ниже пола: глубина ограничена так же, как у прямоугольника', () => {
+    const l = cutoutLayout(params())
+    expect(effectiveDepth(circ({ depth: 100 }), l)).toBeCloseTo(l.maxDepth, 9)
   })
 })

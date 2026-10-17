@@ -5,7 +5,7 @@ import { fireEvent, screen, within } from '@testing-library/react'
 import { openSection, renderOpen as render } from '../../ui/renderOpen'
 import userEvent from '@testing-library/user-event'
 import i18n from '../../i18n'
-import { defaultCutout, rectCutout, type Cutout, type CutoutParams, type MeshSource, cutoutBounds } from '../../geometry/cutout'
+import { circleCutout, defaultCutout, rectCutout, type Cutout, type CutoutParams, type MeshSource, cutoutBounds } from '../../geometry/cutout'
 import { defaultOrientation, describeMesh, repairMesh, type IndexedMesh } from '../../geometry/stl-import'
 import { boxSoup } from '../../geometry/stl-fixtures'
 import { UnitContext } from '../../ui/units'
@@ -41,7 +41,7 @@ const rect = (w = 96, h = 96) => () => ({ left: 0, top: 0, width: w, height: h, 
 describe('CutoutPanel: список', () => {
   beforeEach(async () => { await i18n.changeLanguage('en'); latest = defaultCutout; selection = null; onImport.mockClear() })
 
-  it('пусто: подсказка; «Добавить прямоугольник» ставит вырез по центру и выбирает его', async () => {
+  it('пусто: подсказка; «Прямоугольник» ставит вырез по центру и выбирает его', async () => {
     render(<Harness />)
     expect(screen.getByText(/No cutouts yet/)).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Add rectangle' }))
@@ -262,5 +262,81 @@ describe('кнопки +/−', () => {
     await i18n.changeLanguage('en')
     render(<Harness start={withCuts(r())} />)
     await expectAllNumericSteppers()
+  })
+})
+
+describe('круглый вырез: вид сверху (23)', () => {
+  beforeEach(async () => { await i18n.changeLanguage('en'); latest = defaultCutout })
+
+  it('круг рисуется как <circle> радиуса d/2 + зазор, с теми же обработчиками, что у прямоугольника', () => {
+    render(<Harness start={withCuts(circleCutout({ id: 'k', clearance: 0.5, source: { diameter: 30 } }))} />)
+    const shape = screen.getByTestId('cutout-shape')
+    expect(shape.tagName.toLowerCase()).toBe('circle')
+    expect(shape.getAttribute('r')).toBe('15.5')
+    expect(shape).toHaveAttribute('data-id', 'k')
+    expect(shape).toHaveAccessibleName('Circle')
+  })
+
+  it('перетаскивание двигает круг, X/Y обновляются, параметры фиксируются при отпускании', () => {
+    render(<Harness start={withCuts(circleCutout({ id: 'k', x: 5.3, y: 3.3 }))} />)
+    const svg = screen.getByTestId('top-view')
+    svg.getBoundingClientRect = rect(93.6, 93.6) // 1 px = 1 мм
+    fireEvent.pointerDown(screen.getByTestId('cutout-shape'), { clientX: 50, clientY: 50 })
+    fireEvent.pointerMove(svg, { clientX: 63.7, clientY: 40.5, altKey: true })
+    expect(screen.getByLabelText('X from the centre')).toHaveValue('19')
+    expect(latest.cutouts[0].x).toBe(5.3)
+    fireEvent.pointerUp(svg)
+    expect(latest.cutouts[0].x).toBeCloseTo(19, 6)
+    expect(latest.cutouts[0].y).toBeCloseTo(12.8, 6)
+  })
+
+  it('выбранный круг получает пунктирный габарит по точному размеру с зазором', () => {
+    render(<Harness start={withCuts(circleCutout({ id: 'k', clearance: 1, source: { diameter: 20 } }))} />)
+    const box = [...screen.getByTestId('top-view').querySelectorAll('rect')].find((n) => n.getAttribute('stroke-dasharray'))!
+    expect(Number(box.getAttribute('width'))).toBe(22)
+    expect(Number(box.getAttribute('height'))).toBe(22)
+  })
+})
+
+describe('круглый вырез в панели (23)', () => {
+  beforeEach(async () => { await i18n.changeLanguage('en'); latest = defaultCutout; selection = null })
+
+  it('«Круг» добавляет выбранный вырез Circle по центру с диаметром 20; прямоугольник по-прежнему добавляется отдельной кнопкой', async () => {
+    render(<Harness />)
+    await userEvent.click(screen.getByRole('button', { name: 'Add circle' }))
+    expect(latest.cutouts).toHaveLength(1)
+    expect(latest.cutouts[0]).toMatchObject({ name: 'Circle', x: 0, y: 0, rotation: 0, source: { kind: 'circle', diameter: 20 } })
+    expect(selection).toBe(latest.cutouts[0].id)
+    await userEvent.click(screen.getByRole('button', { name: 'Add rectangle' }))
+    expect(latest.cutouts.map((c) => c.source.kind)).toEqual(['circle', 'rect'])
+  })
+
+  it('свойства круга: одно поле диаметра вместо ширины, длины и радиуса; правка меняет параметры', async () => {
+    render(<Harness start={withCuts(circleCutout({ id: 'k' }))} />)
+    await openSection('Selected cutout')
+    expect(screen.getByLabelText('Diameter')).toHaveValue('20')
+    expect(screen.queryByLabelText('Width')).toBeNull()
+    expect(screen.queryByLabelText('Corner radius')).toBeNull()
+    await type('Diameter', '34')
+    expect(latest.cutouts[0].source).toEqual({ kind: 'circle', diameter: 34 })
+  })
+
+  it('на русском кнопки и поле подписаны', async () => {
+    await i18n.changeLanguage('ru')
+    render(<Harness start={withCuts(circleCutout({ id: 'k' }))} />)
+    expect(screen.getByRole('button', { name: 'Добавить круг' })).toBeInTheDocument()
+    await openSection('Выбранный вырез')
+    expect(screen.getByLabelText('Диаметр')).toBeInTheDocument()
+  })
+
+  it('у поля диаметра есть обе кнопки +/−', async () => {
+    render(<Harness start={withCuts(circleCutout({ id: 'k' }))} />)
+    await expectAllNumericSteppers()
+  })
+
+  it('зазор входит в габарит круга, который видят выравнивание и подгонка', () => {
+    const c = circleCutout({ id: 'k', clearance: 1 })
+    const b = cutoutBounds(c)
+    expect(b.maxX - b.minX).toBe(22)
   })
 })

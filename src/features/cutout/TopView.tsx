@@ -77,6 +77,10 @@ export function TopView({ params: p, selectedId, snap, onSelect, onDrag, onCommi
           const sel = c.id === selectedId
           const common = { fill: sel ? 'var(--color-accent)' : 'var(--color-surface-3)', fillOpacity: sel ? 0.45 : 0.9, stroke: sel ? 'var(--color-accent)' : 'var(--color-text-subtle)', strokeWidth: sel ? 0.8 : 0.5, className: 'cursor-move' }
           const transform = `translate(${c.x} ${-c.y}) rotate(${-c.rotation})`
+          if (c.source.kind === 'circle') {
+            return <circle key={c.id} data-testid="cutout-shape" data-id={c.id} role="button" aria-label={c.name} transform={transform} r={c.source.diameter / 2 + c.clearance}
+              {...common} onPointerDown={(e) => down(e, c)} />
+          }
           return c.source.kind === 'rect'
             ? <rect key={c.id} data-testid="cutout-shape" data-id={c.id} role="button" aria-label={c.name} transform={transform} x={-(c.source.width + 2 * c.clearance) / 2} y={-(c.source.length + 2 * c.clearance) / 2}
                 width={c.source.width + 2 * c.clearance} height={c.source.length + 2 * c.clearance} rx={c.source.radius + c.clearance} {...common} onPointerDown={(e) => down(e, c)} />

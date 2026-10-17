@@ -10,6 +10,8 @@ import { meshOf, type MeshData } from './mesh'
 import { defaultOrientation, fillHoles, orientVertices, toManifold, type IndexedMesh, type Orientation } from './stl-import'
 
 export interface RectSource { kind: 'rect'; width: number; length: number; radius: number }
+/** Круглый карман: диаметр детали (без зазора). Поворот на форму не влияет. */
+export interface CircleSource { kind: 'circle'; diameter: number }
 export type CutMode = 'projected' | '3d'
 export interface MeshSource {
   kind: 'mesh'
@@ -22,7 +24,7 @@ export interface MeshSource {
   size: [number, number, number]
   hull: [number, number][]
 }
-export type CutoutSource = RectSource | MeshSource
+export type CutoutSource = RectSource | CircleSource | MeshSource
 
 export interface Cutout {
   id: string
@@ -65,6 +67,15 @@ export function rectCutout(over: Omit<Partial<Cutout>, 'source'> & { source?: Pa
   return { id: newCutoutId(), name: 'Rectangle', x: 0, y: 0, rotation: 0, depth: 10, clearance: 0.5, visible: true, ...rest, source: { kind: 'rect', width: 40, length: 20, radius: 3, ...source } }
 }
 
+export const DEFAULT_CIRCLE_DIAMETER = 20
+/** Сегментов окружности: отклонение от настоящей окружности диаметром 21 мм не больше сотых долей мм. */
+export const CIRCLE_SEGMENTS = 96
+
+export function circleCutout(over: Omit<Partial<Cutout>, 'source'> & { source?: Partial<CircleSource> } = {}): Cutout {
+  const { source, ...rest } = over
+  return { id: newCutoutId(), name: 'Circle', x: 0, y: 0, rotation: 0, depth: 10, clearance: 0.5, visible: true, ...rest, source: { kind: 'circle', diameter: DEFAULT_CIRCLE_DIAMETER, ...source } }
+}
+
 export const addCutout = (list: Cutout[], c: Cutout): Cutout[] => [...list, c]
 
 /** Копия справа сверху от оригинала (чтобы не слилась с ним), вставляется следом. */
@@ -99,6 +110,10 @@ export function baseOutline(c: Cutout): Pt[] {
     const hw = c.source.width / 2, hl = c.source.length / 2
     return [[-hw, -hl], [hw, -hl], [hw, hl], [-hw, hl]]
   }
+  if (c.source.kind === 'circle') {
+    const r = c.source.diameter / 2
+    return Array.from({ length: CIRCLE_SEGMENTS }, (_, i) => { const a = (2 * Math.PI * i) / CIRCLE_SEGMENTS; return [r * Math.cos(a), r * Math.sin(a)] as Pt })
+  }
   return c.source.hull
 }
 
@@ -106,6 +121,11 @@ export interface Box { minX: number; maxX: number; minY: number; maxY: number }
 
 /** Габарит выреза в координатах коробки: поворот, сдвиг и зазор (карман шире детали на clearance со всех сторон). */
 export function cutoutBounds(c: Cutout): Box {
+  if (c.source.kind === 'circle') {
+    // окружность не зависит от поворота: габарит точный, а не по вершинам многоугольника
+    const r = c.source.diameter / 2 + c.clearance
+    return { minX: c.x - r, maxX: c.x + r, minY: c.y - r, maxY: c.y + r }
+  }
   const a = (c.rotation * Math.PI) / 180, cs = Math.cos(a), sn = Math.sin(a)
   const box: Box = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity }
   for (const [px, py] of baseOutline(c)) {
@@ -172,6 +192,7 @@ export function validateCutout(p: CutoutParams): { ok: boolean; errors: CutoutEr
     if (!(c.depth > 0)) bad(`cutout.${c.id}.depth`, 'cutout.error.depth')
     if (!(c.clearance >= 0)) bad(`cutout.${c.id}.clearance`, 'baseplate.error.negative')
     if (c.source.kind === 'rect' && !(c.source.width > 0 && c.source.length > 0 && c.source.radius >= 0)) bad(`cutout.${c.id}.size`, 'cutout.error.size')
+    if (c.source.kind === 'circle' && !(c.source.diameter > 0)) bad(`cutout.${c.id}.size`, 'cutout.error.size')
   }
   return { ok: errors.length === 0, errors }
 }
@@ -202,6 +223,7 @@ function orientedManifold(w: ManifoldToplevel, s: MeshSource, mesh: IndexedMesh)
 }
 
 const placeCS = (cs: CrossSection, c: Cutout) => cs.rotate(c.rotation).translate([c.x, c.y])
+const circleCS = (w: ManifoldToplevel, diameter: number) => w.CrossSection.circle(diameter / 2, CIRCLE_SEGMENTS)
 const grow = (cs: CrossSection, clearance: number) => (clearance > 0 ? cs.offset(clearance, 'Round', 2, 24) : cs)
 
 /** Тело кармана одного выреза (то, что вычитается из блока), или null, если деталь недоступна. */
@@ -215,6 +237,7 @@ export function pocketSolid(w: ManifoldToplevel, c: Cutout, l: CutoutLayout, reg
     const cs = roundedRectCS(w, c.source.width, c.source.length, c.source.radius)
     return extrude(placeCS(grow(cs, c.clearance), c))
   }
+  if (c.source.kind === 'circle') return extrude(placeCS(grow(circleCS(w, c.source.diameter), c.clearance), c))
   const mesh = registry.get(c.source.meshId)
   if (!mesh) return null
   const src = c.source
@@ -295,6 +318,11 @@ export function buildCutoutTools(w: ManifoldToplevel, p: CutoutParams, registry:
     const floorZ = l.wallTop - depth
     if (c.source.kind === 'rect') {
       const solid = w.Manifold.extrude(placeCS(roundedRectCS(w, c.source.width, c.source.length, c.source.radius), c), depth).translate([0, 0, floorZ])
+      try { out.push({ id: c.id, name: c.name, mesh: meshOf(solid) }) } finally { solid.delete() }
+      continue
+    }
+    if (c.source.kind === 'circle') {
+      const solid = w.Manifold.extrude(placeCS(circleCS(w, c.source.diameter), c), depth).translate([0, 0, floorZ])
       try { out.push({ id: c.id, name: c.name, mesh: meshOf(solid) }) } finally { solid.delete() }
       continue
     }
