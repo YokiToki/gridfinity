@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
+import { dropDegenerate } from './degenerate'
 import { toCreasedNormals } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import type { ModelResult } from '../../geometry/model'
@@ -276,7 +277,8 @@ export function Viewport({ model, plate, gap = 0, view = 'sheet', openGap = 0, s
             for (let k = 0; k < 3; k++) pos[i * 3 + k] = mm.vertProperties[i * mm.numProp + k]
           const indexed = new THREE.BufferGeometry()
           indexed.setAttribute('position', new THREE.BufferAttribute(pos, 3))
-          indexed.setIndex(new THREE.BufferAttribute(mm.triVerts, 1))
+          // вырожденные треугольники (коллинеарные вершины) дают случайную нормаль и линию-«трещину» на грани
+          indexed.setIndex(new THREE.BufferAttribute(dropDegenerate(pos, mm.triVerts), 1))
           // плоское затенение — чёткие грани
           const g = indexed.toNonIndexed()
           g.computeVertexNormals()
