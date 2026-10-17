@@ -60,9 +60,9 @@ function toInput(rect: Rectified, c: Candidate, s: number): Float32Array {
 
 /** Выход модели s × s → альфа w × h (билинейно), 0…1. Модели с несколькими выходами: берётся первый. */
 function toAlpha(o: Float32Array, s: number, w: number, h: number, sigmoid: boolean): Float32Array {
-  let v = o
-  if (sigmoid) v = o.map((x) => 1 / (1 + Math.exp(-x)))
-  else { let lo = Infinity, hi = -Infinity; for (const x of o) { if (x < lo) lo = x; if (x > hi) hi = x }; if (lo < 0 || hi > 1.0001) { const r = hi - lo || 1; v = o.map((x) => (x - lo) / r) } }
+  // значения вне 0…1 — логиты: sigmoid (признак из реестра подстраховывается самим диапазоном выхода)
+  let lo = Infinity, hi = -Infinity; for (const x of o) { if (x < lo) lo = x; if (x > hi) hi = x }
+  const v = sigmoid || lo < -0.001 || hi > 1.001 ? o.map((x) => 1 / (1 + Math.exp(-x))) : o
   const out = new Float32Array(w * h)
   for (let j = 0; j < h; j++) {
     const fy = Math.min(s - 1.001, Math.max(0, (j + 0.5) * s / h - 0.5)), y0 = Math.floor(fy), ty = fy - y0
