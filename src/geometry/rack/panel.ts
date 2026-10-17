@@ -7,7 +7,7 @@ import { HEIGHT_TOLERANCE, MAX_UNITS, MIN_UNITS, RACK_WIDTH, rackLayout } from '
 
 export type EarPositions = 'all' | 'outer' | 'none'
 export type EarShape = 'round' | 'slot'
-export interface EarParams { positions: EarPositions; shape: EarShape; /** Диаметр круга или ширина паза. */ size: number; /** Длина паза по вертикали. */ slotLength: number }
+export interface EarParams { positions: EarPositions; shape: EarShape; /** Диаметр круга или ширина паза. */ size: number; /** Длина паза по горизонтали (как на стандартных панелях). */ slotLength: number }
 export interface BackParams { enabled: boolean; thickness: number }
 
 export interface RackPanelParams {
@@ -59,7 +59,7 @@ function earCut(w: Awaited<ReturnType<typeof getWasm>>, p: RackPanelParams, hole
   const { CrossSection } = w
   const used = holes.filter((h) => p.ears.positions === 'all' || (p.ears.positions === 'outer' && h.slot !== 1))
   if (!used.length || p.ears.positions === 'none') return null
-  const one = p.ears.shape === 'round' ? CrossSection.circle(p.ears.size / 2, 48) : roundedRectCS(w, p.ears.size, Math.max(p.ears.slotLength, p.ears.size), p.ears.size / 2, 24)
+  const one = p.ears.shape === 'round' ? CrossSection.circle(p.ears.size / 2, 48) : roundedRectCS(w, Math.max(p.ears.slotLength, p.ears.size), p.ears.size, p.ears.size / 2, 24)
   return CrossSection.compose(used.flatMap((h) => [one.translate([h.x, h.y]), one.translate([-h.x, h.y])]))
 }
 

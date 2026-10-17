@@ -59,7 +59,14 @@ describe('панель стойки: отверстия в ушах', () => {
     expect(await holesAt(P({ units: 3, ears: e('outer') }), 118.2625)).toHaveLength(6)
     expect(await holesAt(P({ units: 3, ears: e('none') }), 118.2625)).toHaveLength(0)
   })
-  it('паз: вертикальный, нужной ширины и длины, по центру стандартной позиции', async () => {
+  it('паз лежит горизонтально: 10 мм по X и 6.5 мм по Y', async () => {
+    const m = await build(P({ units: 1, ears: { positions: 'outer', shape: 'slot', size: 6.5, slotLength: 10 } }))
+    const slice = m.slice(1.5), polys = slice.toPolygons(); slice.delete()
+    const holes = polys.map((q) => ({ w: Math.max(...q.map((v) => v[0])) - Math.min(...q.map((v) => v[0])), h: Math.max(...q.map((v) => v[1])) - Math.min(...q.map((v) => v[1])) })).filter((b) => b.w < 20)
+    expect(holes).toHaveLength(4)
+    holes.forEach((b) => { expect(b.w).toBeCloseTo(10, 1); expect(b.h).toBeCloseTo(6.5, 1) })
+  })
+  it('паз: по центру стандартной позиции', async () => {
     const h = await holesAt(P({ units: 1, ears: { positions: 'all', shape: 'slot', size: 6.5, slotLength: 10 } }), 118.2625)
     expect(h).toHaveLength(3)
     h.forEach((q, i) => expect(q.cy).toBeCloseTo(HOLE_OFFSETS[i], 1))
