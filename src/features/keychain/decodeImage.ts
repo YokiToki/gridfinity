@@ -39,11 +39,23 @@ export function toGrayImage(rgba: Uint8ClampedArray, width: number, height: numb
   return { width, height, gray, alpha: any ? alpha : null }
 }
 
-/**
- * Файл → изображение для обработки. Растровые (PNG, JPEG, WebP) и SVG; локально, ничего не отправляется.
- * Неподдерживаемый тип и недекодируемый файл дают ImageError; слишком большая картинка уменьшается до MAX_SIDE.
- */
-export async function decodeImage(file: Blob & { name?: string }, backend: DecodeBackend = browserBackend): Promise<DecodedImage> {
+/** Цветное изображение: каналы R, G, B подряд (по три байта на пиксель), строки сверху вниз. */
+export interface ColorImage { width: number; height: number; rgb: Uint8Array }
+
+export interface DecodedColorImage extends DecodedImage {
+  /** Тот же снимок в цвете: размеры равны размерам `image`. */
+  color: ColorImage
+}
+
+/** RGBA → цвет без прозрачности (прозрачные пиксели берутся как есть: для фото прозрачности нет). */
+export function toColorImage(rgba: Uint8ClampedArray, width: number, height: number): ColorImage {
+  const n = width * height, rgb = new Uint8Array(n * 3)
+  for (let i = 0; i < n; i++) { rgb[i * 3] = rgba[i * 4]; rgb[i * 3 + 1] = rgba[i * 4 + 1]; rgb[i * 3 + 2] = rgba[i * 4 + 2] }
+  return { width, height, rgb }
+}
+
+/** Общая часть: проверка типа, чтение, ограничение размера. Возвращает пиксели RGBA рабочего размера. */
+async function decodeRgba(file: Blob & { name?: string }, backend: DecodeBackend) {
   const svg = isSvg(file)
   if (!svg && !RASTER.test(file.type)) throw new ImageError('unsupported', `Unsupported image type: ${file.type || 'unknown'}`)
   let src: RasterSource
@@ -54,8 +66,22 @@ export async function decodeImage(file: Blob & { name?: string }, backend: Decod
   // SVG растеризуется до рабочего размера; растровый уменьшается только при превышении предела
   const k = svg ? target / long : Math.min(1, target / long)
   const width = Math.max(1, Math.round(src.width * k)), height = Math.max(1, Math.round(src.height * k))
-  const rgba = src.rgba(width, height)
-  return { image: toGrayImage(rgba, width, height), original: { width: src.width, height: src.height }, downscaled: !svg && k < 1 }
+  return { rgba: src.rgba(width, height), width, height, original: { width: src.width, height: src.height }, downscaled: !svg && k < 1 }
+}
+
+/**
+ * Файл → изображение для обработки. Растровые (PNG, JPEG, WebP) и SVG; локально, ничего не отправляется.
+ * Неподдерживаемый тип и недекодируемый файл дают ImageError; слишком большая картинка уменьшается до MAX_SIDE.
+ */
+export async function decodeImage(file: Blob & { name?: string }, backend: DecodeBackend = browserBackend): Promise<DecodedImage> {
+  const d = await decodeRgba(file, backend)
+  return { image: toGrayImage(d.rgba, d.width, d.height), original: d.original, downscaled: d.downscaled }
+}
+
+/** То же, что decodeImage, но с цветом (для фото: цвет отличает тень от предмета). */
+export async function decodeColorImage(file: Blob & { name?: string }, backend: DecodeBackend = browserBackend): Promise<DecodedColorImage> {
+  const d = await decodeRgba(file, backend)
+  return { image: toGrayImage(d.rgba, d.width, d.height), color: toColorImage(d.rgba, d.width, d.height), original: d.original, downscaled: d.downscaled }
 }
 
 // ---------- браузерная реализация ----------

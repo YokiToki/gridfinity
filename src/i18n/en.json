@@ -463,7 +463,6 @@
       "paperWidth": "Paper width",
       "paperLength": "Paper length",
       "paperSize": "Paper: {{w}} × {{h}}",
-      "help": "Lay the tools on a flat sheet of paper and shoot straight down from a distance. Dark tools on light paper work best; soft shadows are covered by the clearance. The photo stays on your device.",
       "corner": "Corner {{n}}: {{where}}",
       "where": {
         "topLeft": "top left",
@@ -471,7 +470,7 @@
         "bottomRight": "bottom right",
         "bottomLeft": "bottom left"
       },
-      "alignHelp": "Drag the four numbered handles onto the corners of the paper in the photo (or use the arrow keys, Shift for bigger steps). The straightened sheet is shown on the right.",
+      "alignHelp": "Drag a corner by the area next to it, inside the sheet: the magnifier shows the exact spot. The arrow keys move a selected corner (Shift for bigger steps). The straightened sheet is shown on the right.",
       "quad": {
         "notConvex": "The corners must form a convex quadrilateral without crossings.",
         "mirrored": "The corners are in the wrong order: go clockwise starting from the top left.",
@@ -491,7 +490,23 @@
       "back": "Back",
       "next": "Next",
       "create": "Create {{count}} cutouts",
-      "itemName": "Tool {{n}}"
+      "itemName": "Tool {{n}}",
+      "tipsTitle": "How to take a good photo",
+      "tipsButton": "Tips",
+      "tips": {
+        "1": "Use a plain white sheet of paper (A4 or Letter) lying flat.",
+        "2": "Put it on a contrasting surface: a dark or coloured table, not a white one, so the sheet is easy to find.",
+        "3": "Keep the tools apart from each other and from the edge of the paper; nothing should touch.",
+        "4": "Shoot straight from above, with the camera parallel to the table and the whole sheet in the frame.",
+        "5": "Shoot from a distance and zoom in rather than coming close: it reduces perspective and the apparent growth of tall tools.",
+        "6": "Use the flash or bright, even light. Soft shadows are handled, but a flash gives the cleanest outline; avoid strong light from the side.",
+        "7": "Dark or coloured tools work best; white or chrome parts on white paper may be missed."
+      },
+      "detected": "The sheet was found automatically: {{paper}}, {{orientation}}. Check the corners and the paper size.",
+      "detectedUnknown": "unknown size",
+      "notFound": "The sheet could not be found automatically. Drag the corners onto the corners of the paper.",
+      "chooseFirst": "Choose a photo to continue.",
+      "finding": "Finding silhouettes…"
     }
   },
   "export": {

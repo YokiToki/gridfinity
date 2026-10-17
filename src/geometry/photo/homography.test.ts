@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { applyH, checkQuad, homography, invertH, rectify, type Pt } from './homography'
 import { paperSize, rectifiedScale, PAPER_PRESETS } from './paper'
-import { discObject, lObject, rectObject, syntheticPhoto, tiltedQuad } from './synthetic'
+import { discObject, grayOfRgb, lObject, rectObject, syntheticColorPhoto, syntheticPhoto, tiltedQuad } from './synthetic'
 
 const A4 = paperSize('a4', 'landscape')
 
@@ -95,5 +95,39 @@ describe('выпрямление снимка (1.1)', () => {
     const q = tiltedQuad(W, H)
     expect(rectify(photo(), [q[0], q[3], q[2], q[1]], A4)).toBeNull()
     expect(rectify(photo(), [q[0], q[2], q[1], q[3]], A4)).toBeNull()
+  })
+})
+
+describe('цветное выпрямление (25a 1.1)', () => {
+  const W = 1600, H = 1200
+  const red: [number, number, number] = [200, 30, 30]
+  const objects = [{ ...rectObject(40, 30, 40, 20), rgb: red }, { ...discObject(200, 150, 15), rgb: [30, 160, 40] as [number, number, number] }]
+  const color = () => syntheticColorPhoto({ paper: A4, quad: tiltedQuad(W, H), width: W, height: H, objects, paperRgb: [235, 235, 230] })
+
+  it('цвет выпрямляется тем же отображением: размеры как у серого результата, красная планка остаётся красной на своём месте', () => {
+    const c = color(), gray = grayOfRgb(c.rgb, W, H)
+    const r = rectify(gray, tiltedQuad(W, H), A4, c.rgb)!
+    expect(r.rgb).toBeDefined()
+    expect(r.rgb!.length).toBe(r.image.width * r.image.height * 3)
+    const px = (mmX: number, mmY: number) => { const k = (Math.round(mmY * 4) * r.image.width + Math.round(mmX * 4)) * 3; return [r.rgb![k], r.rgb![k + 1], r.rgb![k + 2]] }
+    const bar = px(60, 40), disc = px(200, 150), paper = px(150, 20)
+    expect(bar[0]).toBeGreaterThan(170); expect(bar[1]).toBeLessThan(60)
+    expect(disc[1]).toBeGreaterThan(130); expect(disc[0]).toBeLessThan(60)
+    expect(paper.every((v) => v > 215)).toBe(true)
+  })
+
+  it('яркость и цвет согласованы: серый растр выпрямленного цвета равен выпрямленному серому в пределах 2 уровней', () => {
+    const c = color(), gray = grayOfRgb(c.rgb, W, H)
+    const r = rectify(gray, tiltedQuad(W, H), A4, c.rgb)!
+    const back = grayOfRgb(r.rgb!, r.image.width, r.image.height)
+    let worst = 0
+    for (let i = 0; i < back.gray.length; i += 7) worst = Math.max(worst, Math.abs(back.gray[i] - r.image.gray[i]))
+    expect(worst).toBeLessThanOrEqual(2)
+  })
+
+  it('без цвета результат прежний (rgb не создаётся), цвет неподходящего размера игнорируется', () => {
+    const gray = syntheticPhoto({ paper: A4, quad: tiltedQuad(W, H), width: W, height: H, objects: [rectObject(40, 30, 40, 20)] })
+    expect(rectify(gray, tiltedQuad(W, H), A4)!.rgb).toBeUndefined()
+    expect(rectify(gray, tiltedQuad(W, H), A4, new Uint8Array(10))!.rgb).toBeUndefined()
   })
 })

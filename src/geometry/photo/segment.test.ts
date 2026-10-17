@@ -117,7 +117,7 @@ describe('выделение силуэтов (1.2)', () => {
     expect(r.labels.every((v) => v === 0)).toBe(true)
   })
 
-  it('параметры по умолчанию: поле 3 мм, склейка 0.8, пятна 2 мм², минимум 3 мм', () => {
-    expect(defaultSegmentParams).toEqual({ margin: 3, close: 0.8, minSpeck: 2, minSize: 3 })
+  it('параметры по умолчанию: поле 3 мм, склейка 0.8, пятна 2 мм², минимум 3 мм и 60 мм², тени учитываются', () => {
+    expect(defaultSegmentParams).toEqual({ margin: 3, close: 0.8, minSpeck: 2, minSize: 3, minArea: 60, shadows: true, shadowEdge: 0.3, open: 0 })
   })
 })

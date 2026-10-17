@@ -14,14 +14,19 @@ export function RectifiedView({ rectified, segmentation, selected, onToggle }: {
   const { width: w, height: h } = rectified.image
 
   useEffect(() => {
-    const tint = segmentation
-      ? (x: number, y: number, v: number): [number, number, number] => {
-          const id = segmentation.labels[y * w + x]
-          if (!id) return [v, v, v]
-          return selected?.includes(id) ? [Math.round(v * 0.4 + 124 * 0.6), Math.round(v * 0.4 + 156 * 0.6), Math.round(v * 0.4 + 255 * 0.6)] : [Math.round(v * 0.5 + 60), Math.round(v * 0.5 + 60), Math.round(v * 0.5 + 60)]
-        }
-      : undefined
-    drawGray(canvas.current, rectified.image, 1400, tint)
+    // цвет, если он есть (так лист выглядит как на фото), иначе яркость; силуэты подкрашиваются: выбранные акцентом, снятые серым
+    const labels = segmentation?.labels
+    const tintOf = (x: number, y: number, r: number, g: number, b: number): [number, number, number] => {
+      const id = labels ? labels[y * w + x] : 0
+      if (!id) return [r, g, b]
+      return selected?.includes(id)
+        ? [Math.round(r * 0.45 + 124 * 0.55), Math.round(g * 0.45 + 156 * 0.55), Math.round(b * 0.45 + 255 * 0.55)]
+        : [Math.round((r + g + b) / 6 + 60), Math.round((r + g + b) / 6 + 60), Math.round((r + g + b) / 6 + 60)]
+    }
+    const rgb = rectified.rgb
+    drawGray(canvas.current, rectified.image, 1400, labels
+      ? (x, y, v) => { const k = (y * w + x) * 3; return rgb ? tintOf(x, y, rgb[k], rgb[k + 1], rgb[k + 2]) : tintOf(x, y, v, v, v) }
+      : rgb ? (x, y) => { const k = (y * w + x) * 3; return [rgb[k], rgb[k + 1], rgb[k + 2]] } : undefined)
   }, [rectified, segmentation, selected, w])
 
   const onClick = (e: MouseEvent<HTMLCanvasElement>) => {

@@ -65,40 +65,56 @@ export function checkQuad(q: Pt[], minEdge = 8): QuadCheck {
 export interface Rectified {
   /** Растр листа в яркости; пиксель (i, j) — точка листа (i + 0,5, j + 0,5) / scale мм от левого верхнего угла. */
   image: GrayImage
+  /** Тот же лист в цвете (R, G, B подряд), если снимок цветной: цвет отличает тень от предмета. */
+  rgb?: Uint8Array
   /** Пикселей на мм. */
   scale: number
   paper: Paper
 }
 
-/** Билинейная выборка яркости; за пределами снимка берётся ближайший край. */
-function sample(img: GrayImage, x: number, y: number): number {
-  const w = img.width, h = img.height
-  const fx = Math.min(w - 1, Math.max(0, x - 0.5)), fy = Math.min(h - 1, Math.max(0, y - 0.5))
-  const x0 = Math.floor(fx), y0 = Math.floor(fy), x1 = Math.min(w - 1, x0 + 1), y1 = Math.min(h - 1, y0 + 1)
-  const tx = fx - x0, ty = fy - y0, g = img.gray
-  const top = g[y0 * w + x0] * (1 - tx) + g[y0 * w + x1] * tx
-  const bot = g[y1 * w + x0] * (1 - tx) + g[y1 * w + x1] * tx
-  return top * (1 - ty) + bot * ty
-}
-
 /**
  * Выпрямление: для каждого пикселя листа берётся точка снимка по гомографии лист → снимок (так в результате нет дыр).
- * corners — углы листа на снимке (пиксели): левый верхний, правый верхний, правый нижний, левый нижний.
+ * corners — углы листа на снимке (пиксели): левый верхний, правый верхний, правый нижний, левый нижний. rgb — цвет снимка
+ * (R, G, B подряд, размеры как у photo): если задан, цвет выпрямляется так же. pxPerMm — меньший масштаб для быстрого превью
+ * (по умолчанию 4 пикселя на мм, как нужно для силуэтов).
  * Возвращает null, если углы не образуют допустимый четырёхугольник.
  */
-export function rectify(photo: GrayImage, corners: Pt[], paper: Paper): Rectified | null {
+export function rectify(photo: GrayImage, corners: Pt[], paper: Paper, rgb?: Uint8Array, pxPerMm?: number): Rectified | null {
   if (checkQuad(corners) !== 'ok') return null
   const rect: Pt[] = [[0, 0], [paper.width, 0], [paper.width, paper.height], [0, paper.height]]
-  const h = homography(rect, corners)
-  if (!h) return null
-  const scale = rectifiedScale(paper)
+  const hm = homography(rect, corners)
+  if (!hm) return null
+  const scale = pxPerMm ? Math.min(pxPerMm, rectifiedScale(paper)) : rectifiedScale(paper)
   const w = Math.max(1, Math.round(paper.width * scale)), hh = Math.max(1, Math.round(paper.height * scale))
   const gray = new Uint8Array(w * hh)
+  const colour = rgb && rgb.length === photo.width * photo.height * 3 ? new Uint8Array(w * hh * 3) : undefined
+  const g = photo.gray, pw = photo.width, ph = photo.height
+  const [h0, h1, h2, h3, h4, h5, h6, h7, h8] = hm
+  const inv = 1 / scale
+  // горячий цикл: без выделения памяти на пиксель (ни массивов, ни объектов), отсюда скорость при перетаскивании угла
   for (let j = 0; j < hh; j++) {
+    const y = (j + 0.5) * inv
+    const rx = h1 * y + h2, ry = h4 * y + h5, rw = h7 * y + h8
     for (let i = 0; i < w; i++) {
-      const [x, y] = applyH(h, [(i + 0.5) / scale, (j + 0.5) / scale])
-      gray[j * w + i] = Math.round(sample(photo, x, y))
+      const x = (i + 0.5) * inv
+      const iw = 1 / (h6 * x + rw)
+      let fx = (h0 * x + rx) * iw - 0.5, fy = (h3 * x + ry) * iw - 0.5
+      fx = fx < 0 ? 0 : fx > pw - 1 ? pw - 1 : fx
+      fy = fy < 0 ? 0 : fy > ph - 1 ? ph - 1 : fy
+      const x0 = fx | 0, y0 = fy | 0
+      const x1 = x0 + 1 < pw ? x0 + 1 : x0, y1 = y0 + 1 < ph ? y0 + 1 : y0
+      const tx = fx - x0, ty = fy - y0
+      const i00 = y0 * pw + x0, i10 = y0 * pw + x1, i01 = y1 * pw + x0, i11 = y1 * pw + x1
+      const w00 = (1 - tx) * (1 - ty), w10 = tx * (1 - ty), w01 = (1 - tx) * ty, w11 = tx * ty
+      const k = j * w + i
+      gray[k] = Math.round(g[i00] * w00 + g[i10] * w10 + g[i01] * w01 + g[i11] * w11)
+      if (colour && rgb) {
+        const o = k * 3, a = i00 * 3, b = i10 * 3, c = i01 * 3, d = i11 * 3
+        colour[o] = Math.round(rgb[a] * w00 + rgb[b] * w10 + rgb[c] * w01 + rgb[d] * w11)
+        colour[o + 1] = Math.round(rgb[a + 1] * w00 + rgb[b + 1] * w10 + rgb[c + 1] * w01 + rgb[d + 1] * w11)
+        colour[o + 2] = Math.round(rgb[a + 2] * w00 + rgb[b + 2] * w10 + rgb[c + 2] * w01 + rgb[d + 2] * w11)
+      }
     }
   }
-  return { image: { width: w, height: hh, gray, alpha: null }, scale, paper }
+  return { image: { width: w, height: hh, gray, alpha: null }, ...(colour ? { rgb: colour } : {}), scale, paper }
 }

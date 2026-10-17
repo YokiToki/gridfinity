@@ -1,6 +1,7 @@
-import { close } from '../raster/morphology'
+import { close, dilate, erode } from '../raster/morphology'
 import { fillHoles, labelComponents, removeSpecks } from '../raster/components'
 import { otsu } from '../raster/threshold'
+import { colourMask } from './colour'
 import type { Rectified } from './homography'
 
 /** Настройки выделения силуэтов. Длины в мм. */
@@ -15,9 +16,19 @@ export interface SegmentParams {
   minSpeck: number
   /** Силуэты меньше этого размера по любой стороне отбрасываются, мм. */
   minSize: number
+  /** Силуэты площадью меньше этой отбрасываются (остатки теней и блики), мм². */
+  minArea: number
+  /** Учитывать цвет и отличать мягкие тени от предметов (нужен цветной растр, иначе только яркость). */
+  shadows: boolean
+  /** Наибольшая крутизна перехода (1/мм), которую ещё считают мягкой тенью: выше — край предмета. */
+  shadowEdge: number
+  /** Радиус размыкания маски при учёте теней, мм: убирает тонкие полоски тени вдоль контура (уже 2·радиус). */
+  open: number
 }
 
-export const defaultSegmentParams: SegmentParams = { margin: 3, close: 0.8, minSpeck: 2, minSize: 3 }
+export const defaultSegmentParams: SegmentParams = { margin: 3, close: 0.8, minSpeck: 2, minSize: 3, minArea: 60, shadows: true, shadowEdge: 0.3, open: 0 }
+/** Автоматическая чувствительность при цветной сегментации: тень отсекается отдельно (shadowEdge), гистограмма яркости не нужна. */
+export const COLOUR_DEFAULT_SENSITIVITY = 0.4
 
 /** Падение яркости относительно листа, нужное для «предмет»: от 50 % (чувствительность 0) до 8 % (чувствительность 1). */
 const DROP_MAX = 0.5, DROP_MIN = 0.08
@@ -126,19 +137,28 @@ export function segment(r: Rectified, params: Partial<SegmentParams> = {}): Segm
   for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (i < marginPx || j < marginPx || i >= w - marginPx || j >= h - marginPx) edge[j * w + i] = 1
 
   const surface = paperSurface(gray, w, h, edge)
-  const ratio = new Uint8Array(w * h) // яркость относительно листа, 0…255 (255 = как у листа или ярче)
-  const inner: number[] = []
-  for (let k = 0; k < ratio.length; k++) {
-    ratio[k] = Math.max(0, Math.min(255, Math.round((gray[k] / surface[k]) * 255)))
-    if (!edge[k]) inner.push(ratio[k])
+  const colour = !!r.rgb && p.shadows
+  let defaultSensitivity = COLOUR_DEFAULT_SENSITIVITY
+  let ratio: Uint8Array<ArrayBuffer> | null = null // яркость относительно листа, 0…255 (255 = как у листа или ярче)
+  if (!colour) {
+    ratio = new Uint8Array(w * h)
+    const inner: number[] = []
+    for (let k = 0; k < ratio.length; k++) {
+      ratio[k] = Math.max(0, Math.min(255, Math.round((gray[k] / surface[k]) * 255)))
+      if (!edge[k]) inner.push(ratio[k])
+    }
+    const t = inner.length ? otsu(Uint8Array.from(inner)) : 128
+    defaultSensitivity = sensitivityFor(1 - t / 255)
   }
-  const t = inner.length ? otsu(Uint8Array.from(inner)) : 128
-  const defaultSensitivity = sensitivityFor(1 - t / 255)
   const sensitivity = params.sensitivity !== undefined && Number.isFinite(params.sensitivity) ? Math.min(1, Math.max(0, params.sensitivity)) : defaultSensitivity
   const cut = Math.round((1 - dropFor(sensitivity)) * 255)
 
   let mask: Uint8Array<ArrayBuffer> = new Uint8Array(w * h)
-  for (let k = 0; k < mask.length; k++) mask[k] = !edge[k] && ratio[k] < cut ? 1 : 0
+  if (colour && r.rgb) mask = colourMask(r.rgb, gray, w, h, edge, { sensitivity, drop: dropFor(sensitivity), softEdge: p.shadowEdge, scale: s }, surface)
+  else for (let k = 0; k < mask.length; k++) mask[k] = !edge[k] && ratio![k] < cut ? 1 : 0
+  // при учёте теней остатки полутени вдоль контура — тонкие полоски: размыкание их убирает, а острия инструментов (шире 2 мм) остаются
+  const openR = colour && p.shadowEdge > 0 ? Math.round(p.open * s) : 0
+  if (openR > 0) mask = new Uint8Array(dilate(erode(mask, w, h, openR), w, h, openR))
   const cleaned = fillHoles(removeSpecks(close(mask, w, h, Math.round(p.close * s)), w, h, Math.max(1, Math.round(p.minSpeck * s * s))), w, h).mask
   mask = new Uint8Array(cleaned)
   for (let k = 0; k < mask.length; k++) if (edge[k]) mask[k] = 0 // заливка и склейка не должны залезть в поле
@@ -155,7 +175,7 @@ export function segment(r: Rectified, params: Partial<SegmentParams> = {}): Segm
   const map = new Int32Array(comps.count + 1)
   for (let l = 1; l <= comps.count; l++) {
     const wm = (x1[l] - x0[l] + 1) / s, hm = (y1[l] - y0[l] + 1) / s
-    if (wm < p.minSize || hm < p.minSize) continue
+    if (wm < p.minSize || hm < p.minSize || comps.sizes[l] / (s * s) < p.minArea) continue
     const id = silhouettes.length + 1
     map[l] = id
     silhouettes.push({ id, areaMm2: comps.sizes[l] / (s * s), widthMm: wm, heightMm: hm, bbox: [x0[l], y0[l], x1[l], y1[l]] })

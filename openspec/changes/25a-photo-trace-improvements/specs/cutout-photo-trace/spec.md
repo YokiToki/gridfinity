@@ -94,3 +94,20 @@ Objects SHALL be found in the straightened view by their difference from the pap
 #### Scenario: No objects
 - **WHEN** no silhouette is found
 - **THEN** a message suggests changing the sensitivity and the Create button is disabled
+
+## ADDED Requirements
+
+### Requirement: Shooting guidance
+Before a photo is chosen the dialog SHALL explain how to take a good photo, as a short list: put the tools on a plain sheet of paper that lies on a contrasting surface (a dark or coloured table, not a white one), keep the tools apart from each other and from the paper's edge, shoot straight from above with the camera parallel to the table and the whole sheet in the frame, from a distance rather than close up, and use the flash or bright even light so that shadows are weak. The guidance SHALL be available in every language of the app and SHALL stay reachable after a photo has been chosen.
+
+#### Scenario: Shown with the photo choice
+- **WHEN** the dialog opens on the first step
+- **THEN** the shooting guidance is visible next to the Choose photo button
+
+#### Scenario: Still reachable later
+- **WHEN** the user is on the alignment or silhouette step
+- **THEN** a Tips control opens the same guidance without losing the current photo and settings
+
+#### Scenario: Language
+- **WHEN** the interface language is Russian
+- **THEN** the guidance is in Russian
