@@ -26,7 +26,7 @@ export type ModeId = keyof ModeParams
 /** Одна часть модели: сетка и описание для превью. Без разделения часть одна (A1). */
 export interface PartMesh { label: string; col: number; row: number; oversize: boolean; mesh: MeshData }
 /** Вырезающий инструмент: только для превью, не часть модели (габариты, объём и экспорт его не учитывают). */
-export interface ToolMesh { id: string; name: string; mesh: MeshData }
+export interface ToolMesh { id: string; name: string; /** Индекс цвета выреза в палитре (одинаков в списке, виде сверху и 3D). */ color: number; mesh: MeshData }
 export interface ModelResult { parts: PartMesh[]; tools?: ToolMesh[]; /** Только у keychain: сведения о силуэте и размерах, ошибка построения. */ keychain?: KeychainInfo; /** Детали уже стоят на листе печати: экспорт сохраняет их взаимное положение, а не раскладывает заново. */ sheetLayout?: boolean; /** Только у keychain в режиме половин: матрицы 4×4 (по столбцам) для собранного вида по подписям деталей. */ assembly?: Assembly }
 
 /** Габариты всей модели в собранных координатах. */
@@ -54,7 +54,7 @@ export async function generate<M extends ModeId>(mode: M, params: ModeParams[M],
       const m = await buildCutout(params as CutoutParams, meshRegistry, wasmUrl)
       const tools = buildCutoutTools(await getWasm(wasmUrl), params as CutoutParams, meshRegistry)
       try {
-        return { parts: [{ label: 'A1', col: 0, row: 0, oversize: false, mesh: meshOf(m) }], tools: tools.map((t) => ({ id: t.id, name: t.name, mesh: t.mesh })) }
+        return { parts: [{ label: 'A1', col: 0, row: 0, oversize: false, mesh: meshOf(m) }], tools: tools.map((t) => ({ id: t.id, name: t.name, color: t.color, mesh: t.mesh })) }
       } finally { m.delete() }
     }
     case 'keychain': {

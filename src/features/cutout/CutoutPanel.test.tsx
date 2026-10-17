@@ -340,3 +340,54 @@ describe('круглый вырез в панели (23)', () => {
     expect(b.maxX - b.minX).toBe(22)
   })
 })
+
+describe('цвета вырезов в панели и виде сверху (24)', () => {
+  beforeEach(async () => { await i18n.changeLanguage('en'); latest = defaultCutout; selection = null })
+  const three = () => withCuts(r({ id: 'a', x: -20 }), circleCutout({ id: 'b', x: 0 }), r({ id: 'c', x: 20 }))
+
+  it('добавленные кнопками вырезы получают разные цвета, плашки в списке им соответствуют', async () => {
+    render(<Harness />)
+    await userEvent.click(screen.getByRole('button', { name: 'Add rectangle' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Add circle' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Add rectangle' }))
+    expect(latest.cutouts.map((c) => c.color)).toEqual([0, 1, 2])
+    const swatches = screen.getAllByTestId('cutout-swatch')
+    expect(swatches.map((n) => n.getAttribute('data-color'))).toEqual(['0', '1', '2'])
+    expect(swatches.map((n) => (n as HTMLElement).style.background)).toEqual(['var(--color-cutout-0)', 'var(--color-cutout-1)', 'var(--color-cutout-2)'])
+  })
+
+  it('плашка декоративна (aria-hidden), вырез назван по имени: новых элементов управления нет', () => {
+    render(<Harness start={withCuts({ ...r({ id: 'a' }), color: 4 })} />)
+    const sw = screen.getByTestId('cutout-swatch')
+    expect(sw).toHaveAttribute('aria-hidden', 'true')
+    expect(sw.tagName.toLowerCase()).toBe('span')
+    expect(screen.getAllByRole('button', { name: 'Select Rectangle' })).toHaveLength(1)
+  })
+
+  it('перестановка и удаление не перекрашивают: плашки идут за вырезами', async () => {
+    render(<Harness />)
+    for (const name of ['Add rectangle', 'Add circle', 'Add rectangle']) await userEvent.click(screen.getByRole('button', { name }))
+    const order = () => screen.getAllByTestId('cutout-swatch').map((n) => n.getAttribute('data-color'))
+    expect(order()).toEqual(['0', '1', '2'])
+    const up = screen.getAllByRole('button', { name: 'Move up' })
+    await userEvent.click(up[2])
+    expect(order()).toEqual(['0', '2', '1'])
+    await userEvent.click(screen.getAllByRole('button', { name: 'Delete' })[0])
+    expect(order()).toEqual(['2', '1'])
+    await userEvent.click(screen.getByRole('button', { name: 'Add circle' }))
+    expect(order()).toEqual(['2', '1', '0']) // освободившийся цвет берёт следующий новый вырез
+  })
+
+  it('вид сверху: заливка и контур цвета выреза, выбранный плотнее и толще, пунктирный габарит остаётся', () => {
+    const list = withCuts({ ...r({ id: 'a', x: -20 }), color: 3 }, { ...circleCutout({ id: 'b', x: 20 }), color: 5 })
+    render(<Harness start={list} />)
+    const [a, b] = screen.getAllByTestId('cutout-shape')
+    expect(a.getAttribute('fill')).toBe('var(--color-cutout-3)')
+    expect(a.getAttribute('stroke')).toBe('var(--color-cutout-3)')
+    expect(b.getAttribute('fill')).toBe('var(--color-cutout-5)')
+    // выбран первый (по умолчанию в Harness): плотнее и толще второго
+    expect(Number(a.getAttribute('fill-opacity'))).toBeGreaterThan(Number(b.getAttribute('fill-opacity')))
+    expect(Number(a.getAttribute('stroke-width'))).toBeGreaterThan(Number(b.getAttribute('stroke-width')))
+    expect([...screen.getByTestId('top-view').querySelectorAll('rect')].some((n) => n.getAttribute('stroke-dasharray'))).toBe(true)
+  })
+})

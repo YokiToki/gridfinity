@@ -38,6 +38,8 @@ export interface Cutout {
   depth: number
   clearance: number
   visible: boolean
+  /** Цвет в палитре (0…CUTOUT_COLORS−1): назначается при добавлении и не меняется; нужен только для превью. */
+  color?: number
 }
 
 export interface CutoutParams extends BinParams { cutouts: Cutout[] }
@@ -76,14 +78,32 @@ export function circleCutout(over: Omit<Partial<Cutout>, 'source'> & { source?: 
   return { id: newCutoutId(), name: 'Circle', x: 0, y: 0, rotation: 0, depth: 10, clearance: 0.5, visible: true, ...rest, source: { kind: 'circle', diameter: DEFAULT_CIRCLE_DIAMETER, ...source } }
 }
 
-export const addCutout = (list: Cutout[], c: Cutout): Cutout[] => [...list, c]
+/** Число цветов палитры вырезов (токены `--color-cutout-0…6` в theme.css). */
+export const CUTOUT_COLORS = 7
+const validColor = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v < CUTOUT_COLORS
+
+/** Первый цвет палитры, не занятый вырезами списка; если заняты все — по кругу по числу вырезов. */
+export function nextCutoutColor(list: readonly Cutout[]): number {
+  const used = new Set(list.map((c) => c.color).filter(validColor))
+  for (let i = 0; i < CUTOUT_COLORS; i++) if (!used.has(i)) return i
+  return list.length % CUTOUT_COLORS
+}
+
+/** Донаполняет недостающие или битые цвета по порядку списка (старые сессии); корректные цвета не трогает. */
+export function fillCutoutColors(list: Cutout[]): Cutout[] {
+  const out = list.map((c) => ({ ...c }))
+  out.forEach((c, i) => { if (!validColor(c.color)) c.color = nextCutoutColor(out.filter((o, j) => j !== i && (validColor(o.color) || j < i))) })
+  return out
+}
+
+export const addCutout = (list: Cutout[], c: Cutout): Cutout[] => [...list, { ...c, color: validColor(c.color) ? c.color : nextCutoutColor(list) }]
 
 /** Копия справа сверху от оригинала (чтобы не слилась с ним), вставляется следом. */
 export function duplicateCutout(list: Cutout[], id: string, offset = 6): Cutout[] {
   const i = list.findIndex((c) => c.id === id)
   if (i < 0) return list
   const src = list[i]
-  const copy: Cutout = { ...src, id: newCutoutId(), name: `${src.name} copy`, x: src.x + offset, y: src.y + offset, source: { ...src.source } as CutoutSource }
+  const copy: Cutout = { ...src, id: newCutoutId(), color: nextCutoutColor(list), name: `${src.name} copy`, x: src.x + offset, y: src.y + offset, source: { ...src.source } as CutoutSource }
   return [...list.slice(0, i + 1), copy, ...list.slice(i + 1)]
 }
 
@@ -308,9 +328,9 @@ function meshTool(c: Cutout, s: MeshSource, mesh: IndexedMesh, floorZ: number): 
 }
 
 /** Вырезающий инструмент для превью: сама фигура без зазора, стоящая на дне кармана (деталь — исходной сеткой). */
-export function buildCutoutTools(w: ManifoldToplevel, p: CutoutParams, registry: MeshRegistry = new Map()): { id: string; name: string; mesh: MeshData }[] {
+export function buildCutoutTools(w: ManifoldToplevel, p: CutoutParams, registry: MeshRegistry = new Map()): { id: string; name: string; color: number; mesh: MeshData }[] {
   const l = cutoutLayout(p)
-  const out: { id: string; name: string; mesh: MeshData }[] = []
+  const out: { id: string; name: string; color: number; mesh: MeshData }[] = []
   for (const c of p.cutouts) {
     if (!c.visible) continue
     const depth = effectiveDepth(c, l)
@@ -318,16 +338,16 @@ export function buildCutoutTools(w: ManifoldToplevel, p: CutoutParams, registry:
     const floorZ = l.wallTop - depth
     if (c.source.kind === 'rect') {
       const solid = w.Manifold.extrude(placeCS(roundedRectCS(w, c.source.width, c.source.length, c.source.radius), c), depth).translate([0, 0, floorZ])
-      try { out.push({ id: c.id, name: c.name, mesh: meshOf(solid) }) } finally { solid.delete() }
+      try { out.push({ id: c.id, name: c.name, color: c.color ?? 0, mesh: meshOf(solid) }) } finally { solid.delete() }
       continue
     }
     if (c.source.kind === 'circle') {
       const solid = w.Manifold.extrude(placeCS(circleCS(w, c.source.diameter), c), depth).translate([0, 0, floorZ])
-      try { out.push({ id: c.id, name: c.name, mesh: meshOf(solid) }) } finally { solid.delete() }
+      try { out.push({ id: c.id, name: c.name, color: c.color ?? 0, mesh: meshOf(solid) }) } finally { solid.delete() }
       continue
     }
     const mesh = registry.get(c.source.meshId)
-    if (mesh) out.push({ id: c.id, name: c.name, mesh: meshTool(c, c.source, mesh, floorZ) })
+    if (mesh) out.push({ id: c.id, name: c.name, color: c.color ?? 0, mesh: meshTool(c, c.source, mesh, floorZ) })
   }
   return out
 }

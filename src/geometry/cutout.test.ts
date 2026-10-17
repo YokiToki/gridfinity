@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { getWasm } from './wasm'
 import {
-  addCutout, baseOutline, buildCutout, buildCutoutTools, circleCutout, cutoutBounds, cutoutLayout, cutoutNotices, defaultCutout, duplicateCutout, effectiveDepth, moveCutout, rectCutout,
+  addCutout, baseOutline, buildCutout, buildCutoutTools, circleCutout, CUTOUT_COLORS, cutoutBounds, fillCutoutColors, nextCutoutColor, cutoutLayout, cutoutNotices, defaultCutout, duplicateCutout, effectiveDepth, moveCutout, rectCutout,
   removeCutout, renameCutout, toggleCutout, updateCutout, validateCutout, MIN_MARGIN, type Cutout, type CutoutParams, type MeshRegistry, type MeshSource,
 } from './cutout'
 import { alignEdge, centerCutout, distribute, fitFootprint, snapAxis, snapMove, snapTargets } from './cutout-placement'
@@ -437,7 +437,7 @@ describe('круглый вырез (23)', () => {
   it('фабрика: имя Circle, диаметр 20, в списке как остальные', () => {
     const c = circleCutout()
     expect(c).toMatchObject({ name: 'Circle', x: 0, y: 0, rotation: 0, visible: true, source: { kind: 'circle', diameter: 20 } })
-    expect(addCutout([], c)).toEqual([c])
+    expect(addCutout([], c)).toEqual([{ ...c, color: 0 }])
   })
 
   it('габарит: центр ± (d/2 + зазор), поворот на него не влияет', () => {
@@ -534,5 +534,72 @@ describe('круглый вырез (23)', () => {
   it('круг ниже пола: глубина ограничена так же, как у прямоугольника', () => {
     const l = cutoutLayout(params())
     expect(effectiveDepth(circ({ depth: 100 }), l)).toBeCloseTo(l.maxDepth, 9)
+  })
+})
+
+describe('цвета вырезов (24)', () => {
+  const add = (list: Cutout[], id: string) => addCutout(list, rectCutout({ id }))
+  const colors = (list: Cutout[]) => list.map((c) => c.color)
+
+  it('три добавленных выреза получают разные цвета по порядку палитры', () => {
+    let l: Cutout[] = []
+    for (const id of ['a', 'b', 'c']) l = add(l, id)
+    expect(colors(l)).toEqual([0, 1, 2])
+  })
+
+  it('перестановка и удаление другого выреза цвет не меняют', () => {
+    let l: Cutout[] = []
+    for (const id of ['a', 'b', 'c']) l = add(l, id)
+    const moved = moveCutout(l, 'c', -1)
+    expect(moved.map((c) => [c.id, c.color])).toEqual([['a', 0], ['c', 2], ['b', 1]])
+    expect(removeCutout(l, 'a').map((c) => [c.id, c.color])).toEqual([['b', 1], ['c', 2]])
+    expect(updateCutout(l, 'b', { x: 5 }).map((c) => c.color)).toEqual([0, 1, 2])
+  })
+
+  it('освободившийся цвет берёт следующий новый вырез', () => {
+    let l: Cutout[] = []
+    for (const id of ['a', 'b', 'c']) l = add(l, id)
+    l = add(removeCutout(l, 'b'), 'd')
+    expect(l.map((c) => [c.id, c.color])).toEqual([['a', 0], ['c', 2], ['d', 1]])
+  })
+
+  it('копия получает свой цвет, отличный от оригинала, пока есть свободный', () => {
+    let l: Cutout[] = []
+    for (const id of ['a', 'b']) l = add(l, id)
+    const out = duplicateCutout(l, 'a')
+    expect(out.map((c) => c.id).slice(0, 1)).toEqual(['a'])
+    expect(out[1].color).toBe(2)
+    expect(out[1].color).not.toBe(out[0].color)
+  })
+
+  it('палитра исчерпана: цвета повторяются по кругу, у каждого выреза цвет есть', () => {
+    let l: Cutout[] = []
+    for (let i = 0; i < CUTOUT_COLORS + 3; i++) l = add(l, `c${i}`)
+    expect(colors(l)).toEqual([0, 1, 2, 3, 4, 5, 6, 0, 1, 2])
+    expect(l.every((c) => Number.isInteger(c.color))).toBe(true)
+    expect(nextCutoutColor(l)).toBe(l.length % CUTOUT_COLORS)
+  })
+
+  it('явно заданный допустимый цвет сохраняется, недопустимый заменяется', () => {
+    expect(addCutout([], rectCutout({ id: 'a', color: 4 }))[0].color).toBe(4)
+    expect(addCutout([], rectCutout({ id: 'a', color: 99 }))[0].color).toBe(0)
+    expect(addCutout([], rectCutout({ id: 'a', color: -1 }))[0].color).toBe(0)
+    expect(addCutout([], rectCutout({ id: 'a', color: 1.5 }))[0].color).toBe(0)
+  })
+
+  it('fillCutoutColors: старые вырезы без цвета получают цвета по порядку, корректные не трогаются', () => {
+    const l = [rectCutout({ id: 'a' }), rectCutout({ id: 'b' }), rectCutout({ id: 'c' })]
+    expect(colors(fillCutoutColors(l))).toEqual([0, 1, 2])
+    const mixed = [rectCutout({ id: 'a' }), rectCutout({ id: 'b', color: 0 }), rectCutout({ id: 'c', color: 99 })]
+    expect(colors(fillCutoutColors(mixed))).toEqual([1, 0, 2])
+    expect(l[0].color).toBeUndefined() // вход не изменяется
+  })
+
+  it('инструменты превью несут цвет своего выреза', async () => {
+    const w = await getWasm()
+    let l: Cutout[] = []
+    l = addCutout(l, rectCutout({ id: 'a', depth: 5 })); l = addCutout(l, circleCutout({ id: 'b', depth: 5 })); l = addCutout(l, rectCutout({ id: 'c', depth: 5, visible: false }))
+    const tools = buildCutoutTools(w, params({ cutouts: l }))
+    expect(tools.map((t) => [t.id, t.color])).toEqual([['a', 0], ['b', 1]])
   })
 })

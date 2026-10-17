@@ -21,6 +21,7 @@ import { formatLength, useUnit } from '../../ui/units'
 import { BoxSizeSection } from '../box/BoxSizeSection'
 import { FastenerSection } from '../fasteners/FastenerSection'
 import { TopView } from './TopView'
+import { cutoutColorVar } from './palette'
 
 export interface CutoutPanelProps {
   params: CutoutParams
@@ -117,6 +118,7 @@ export function CutoutPanel({ params, onChange, selectedId, onSelect, meshes, on
             {params.cutouts.map((c, i) => (
               <li key={c.id} data-selected={c.id === selectedId || undefined}
                 className={`flex items-center gap-1 rounded-control border px-1.5 py-1 ${c.id === selectedId ? 'border-accent bg-accent-muted/40' : 'border-border bg-bg'} ${c.visible ? '' : 'opacity-60'}`}>
+                <span aria-hidden data-testid="cutout-swatch" data-color={c.color ?? 0} className="ml-0.5 h-3 w-3 flex-none rounded-xs" style={{ background: cutoutColorVar(c.color) }} />
                 <button type="button" aria-label={t('cutout.list.select', { name: c.name })} aria-pressed={c.id === selectedId} onClick={() => onSelect(c.id)} className="min-w-0 flex-1 cursor-pointer truncate border-0 bg-transparent px-1 text-left text-text">{c.name}</button>
                 <IconBtn label={c.visible ? t('cutout.list.hide') : t('cutout.list.show')} onClick={() => setList((l_) => toggleCutout(l_, c.id))}>{c.visible ? <IconEye size={16} stroke={1.75} /> : <IconEyeOff size={16} stroke={1.75} />}</IconBtn>
                 <IconBtn label={t('cutout.list.moveUp')} disabled={i === 0} onClick={() => setList((l_) => moveCutout(l_, c.id, -1))}><IconArrowUp size={16} stroke={1.75} /></IconBtn>

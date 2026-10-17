@@ -1,4 +1,4 @@
-import { defaultCutout, type Cutout } from '../../geometry/cutout'
+import { defaultCutout, fillCutoutColors, type Cutout } from '../../geometry/cutout'
 import { normalizeFasteners } from '../fasteners/normalize'
 
 const CUTOUT_DEFAULTS = { x: 0, y: 0, rotation: 0, depth: 10, clearance: 0.5, visible: true, name: 'Cutout' }
@@ -11,11 +11,12 @@ export function migrateCutout(raw: Record<string, unknown>): Record<string, unkn
         .filter((c) => { const o = obj(c), s = obj(o.source); return typeof o.id === 'string' && (s.kind === 'rect' || s.kind === 'mesh' || (s.kind === 'circle' && typeof s.diameter === 'number' && s.diameter > 0)) })
         .map((c) => ({ ...CUTOUT_DEFAULTS, ...obj(c) }) as unknown as Cutout)
     : []
+  const colored = fillCutoutColors(cutouts) // старые сессии без цветов: цвета по порядку списка
   return {
     ...raw,
     height: { ...defaultCutout.height, ...obj(raw.height) },
     thickness: { ...defaultCutout.thickness, ...obj(raw.thickness) },
     fasteners: normalizeFasteners(raw.fasteners),
-    cutouts,
+    cutouts: colored,
   }
 }

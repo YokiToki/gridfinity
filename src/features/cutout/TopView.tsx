@@ -1,6 +1,7 @@
 import { useRef, useState, type PointerEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { baseOutline, cutoutBounds, cutoutLayout, type Cutout, type CutoutParams } from '../../geometry/cutout'
+import { cutoutColorVar } from './palette'
 import { snapMove } from '../../geometry/cutout-placement'
 
 /**
@@ -75,7 +76,9 @@ export function TopView({ params: p, selectedId, snap, onSelect, onDrag, onCommi
         <line x1={-W / 2} y1={0} x2={W / 2} y2={0} stroke="var(--color-border-strong)" strokeWidth={0.3} strokeDasharray="2 2" />
         {p.cutouts.filter((c) => c.visible).map((c) => {
           const sel = c.id === selectedId
-          const common = { fill: sel ? 'var(--color-accent)' : 'var(--color-surface-3)', fillOpacity: sel ? 0.45 : 0.9, stroke: sel ? 'var(--color-accent)' : 'var(--color-text-subtle)', strokeWidth: sel ? 0.8 : 0.5, className: 'cursor-move' }
+          // цвет выреза: заливка и контур; выбранный — плотнее и толще (плюс пунктирный габарит акцентного цвета)
+          const color = cutoutColorVar(c.color)
+          const common = { fill: color, fillOpacity: sel ? 0.6 : 0.35, stroke: color, strokeWidth: sel ? 0.9 : 0.5, className: 'cursor-move', 'data-color': c.color ?? 0 }
           const transform = `translate(${c.x} ${-c.y}) rotate(${-c.rotation})`
           if (c.source.kind === 'circle') {
             return <circle key={c.id} data-testid="cutout-shape" data-id={c.id} role="button" aria-label={c.name} transform={transform} r={c.source.diameter / 2 + c.clearance}

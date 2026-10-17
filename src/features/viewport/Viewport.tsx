@@ -4,6 +4,7 @@ import { toCreasedNormals } from 'three/examples/jsm/utils/BufferGeometryUtils.j
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import type { ModelResult } from '../../geometry/model'
 import { groundOpacity } from './ground'
+import { readRootVar, toolColor } from './toolColor'
 import { assembledMatrix, layoutBounds, type KeychainView } from './layout'
 
 export interface BuildPlate { x: number; y: number; /** Поле по краю: пунктирный контур рабочей области. */ margin?: number }
@@ -21,7 +22,6 @@ const GIZMO_SIZE = 120
 /** Отступ гизмо от низа: над нижней строкой измерений (h-9 = 36 px) плюс зазор. */
 const GIZMO_BOTTOM = 44
 const GIZMO_AXIS_R = 0.05 // радиус оси гизмо в его единицах (±1.5 на 120 px)
-const TOOL_COLOR = 0x35c9e8 // вырезающий инструмент: бирюзовый, отличается от модели
 const AXES = [
   { label: 'X', dir: [1, 0, 0], color: 0xe5484d },
   { label: 'Y', dir: [0, 1, 0], color: 0x46c35f },
@@ -250,7 +250,7 @@ export function Viewport({ model, plate, gap = 0, view = 'sheet', openGap = 0, s
           // деталь «как есть»: гладкая поверхность, острые рёбра (угол > 30°) остаются резкими
           const smooth = toCreasedNormals(g, Math.PI / 6)
           g.dispose()
-          const mesh = new THREE.Mesh(smooth, new THREE.MeshStandardMaterial({ color: TOOL_COLOR, transparent: true, opacity: 0.45, depthWrite: false, roughness: 0.4, metalness: 0 }))
+          const mesh = new THREE.Mesh(smooth, new THREE.MeshStandardMaterial({ color: toolColor(tool.color, readRootVar), transparent: true, opacity: 0.45, depthWrite: false, roughness: 0.4, metalness: 0 }))
           mesh.renderOrder = 2
           toolGroup.add(mesh)
         }

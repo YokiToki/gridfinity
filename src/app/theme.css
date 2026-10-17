@@ -37,6 +37,15 @@
   --color-error-bg: #2c1719;
   --color-error-border: #7a3037;
   /* иллюстрации карточек (src/app/art): тона от тени к свету, цвета подставляются классами .art-t0…6 */
+  /* цвета вырезов (Okabe–Ito, различимы при дальтонизме); каждый не ниже 3:1 к --color-surface-1 */
+  --color-cutout-0: #e69f00;
+  --color-cutout-1: #56b4e9;
+  --color-cutout-2: #009e73;
+  --color-cutout-3: #f0e442;
+  --color-cutout-4: #0072b2;
+  --color-cutout-5: #d55e00;
+  --color-cutout-6: #cc79a7;
+
   --color-art-0: #1b2230;
   --color-art-1: #283250;
   --color-art-2: #37446a;
