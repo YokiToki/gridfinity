@@ -10,7 +10,7 @@
 
 ## 2. UI
 
-- [ ] 2.1 `CaseMode` with sections Device, Shell, Front, Ears and Vents, persistence under `rack.case`, units shown, Start over, route `/rack/case`, a second card on the Rack chooser with art `rackCase` (`npm run art`, other pictures unchanged), en and ru strings. Component tests: collapsed by default, one highlight per change, steppers on every numeric input, error banner for a too-wide device, key parity, chooser shows two cards with hotkeys 1 and 2. No artboard: built from `ui/` and tokens, said in the commit.
+- [x] 2.1 `CaseMode` with sections Device, Shell, Front, Ears and Vents, persistence under `rack.case`, units shown, Start over, route `/rack/case`, a second card on the Rack chooser with art `rackCase` (`npm run art`, other pictures unchanged), en and ru strings. Component tests: collapsed by default, one highlight per change, steppers on every numeric input, error banner for a too-wide device, key parity, chooser shows two cards with hotkeys 1 and 2. No artboard: built from `ui/` and tokens, said in the commit.
 
 ## 3. Verification
 

@@ -69,6 +69,11 @@
       "desc": "A flat 10-inch rack panel of 1 to 10 U with standard mounting holes and an optional through pattern.",
       "tag1": "1–10 U",
       "tag2": "patterns"
+    },
+    "rackCase": {
+      "desc": "Front plate with rack ears and a shell around your device: mini PC, switch or router. Window, keystones, cable holes and vents.",
+      "tag1": "device → shell",
+      "tag2": "keystones"
     }
   },
   "baseplate": {
@@ -971,7 +976,8 @@
   },
   "rack": {
     "modes": {
-      "panel": "Panel"
+      "panel": "Panel",
+      "case": "Enclosure"
     },
     "error": {
       "units": "Choose 1 to 10 whole rack units.",
@@ -986,7 +992,8 @@
       "invalid": "Some values are out of range, the model is not updated."
     },
     "warning": {
-      "thin": "{{setting}} is below the minimum printable width of 0.8 mm."
+      "thin": "{{setting}} is below the minimum printable width of 0.8 mm.",
+      "fit": "{{setting}} do not fit on the front plate and are not cut."
     },
     "field": {
       "slotWidth": "Slot width",
@@ -1007,7 +1014,10 @@
       "detailWidth": "Detail stroke width",
       "stroke": "Stroke",
       "gap": "Whitespace",
-      "edgeCells": "Edge cells"
+      "edgeCells": "Edge cells",
+      "keystones": "Keystone openings",
+      "cable": "Cable holes",
+      "ventWall": "Vent wall"
     },
     "size": {
       "title": "Size",
@@ -1060,6 +1070,71 @@
       "enabled": "Add a back wall",
       "thickness": "Back wall thickness",
       "help": "A separate thin part behind the panel, so the pattern shows another colour. It is exported as a separate object."
+    },
+    "case": {
+      "error": {
+        "device": "Device size is out of range.",
+        "gap": "Gap must be between 0 and 5 mm.",
+        "wall": "Wall must be between 0.8 and 10 mm.",
+        "lip": "The lip is too large for the device front.",
+        "vents": "Vent size is out of range.",
+        "keystones": "Choose 0 to 6 keystone jacks.",
+        "cable": "Cable hole diameter must be between 2 and 30 mm.",
+        "tooWide": "The device is {{excess}} too wide for the 222.25 mm window between the rails.",
+        "tooTall": "The device needs more than 10 rack units.",
+        "invalid": "Some values are out of range, the model is not updated."
+      },
+      "device": {
+        "title": "Device",
+        "summary": "{{w}} × {{d}} × {{h}}",
+        "width": "Device width",
+        "depth": "Device depth",
+        "height": "Device height",
+        "gap": "Gap to the shell",
+        "help": "The shell is the device plus the gap and the wall on every side, open at the back."
+      },
+      "shell": {
+        "title": "Shell",
+        "summary": "{{u}} U · wall {{w}}",
+        "wall": "Shell wall",
+        "plate": "Front plate thickness",
+        "cornerRadius": "Plate corner radius",
+        "tolerance": "Height tolerance (−0.45 mm)",
+        "unitsAuto": "Automatic rack units",
+        "units": "Rack units",
+        "info": "{{u}} U, plate {{h}} high",
+        "raised": "Raised to {{u}} U: the device needs it.",
+        "help": "Printed front plate down, the shell roof bridges over the device width."
+      },
+      "front": {
+        "title": "Front plate",
+        "summary": "{{window}}",
+        "windowOn": "window, lip {{lip}}",
+        "windowOff": "closed",
+        "window": "Window on the device front",
+        "lip": "Front lip",
+        "keystones": "Keystone jacks",
+        "side": "Keystone position",
+        "left": "Left",
+        "right": "Right",
+        "below": "Below",
+        "cable": "Cable holes",
+        "cable0": "None",
+        "cable1": "One",
+        "cable2": "Two",
+        "diameter": "Cable hole diameter",
+        "help": "Openings go beside the shell (or below it) and stay clear of the ears."
+      },
+      "vents": {
+        "title": "Vents",
+        "summaryOn": "hexagons {{w}}",
+        "summaryOff": "off",
+        "enabled": "Hexagonal vents on the top and sides",
+        "width": "Vent width",
+        "wall": "Vent wall",
+        "margin": "Vent margin",
+        "help": "Cut through the wall only, away from the edges and the plate."
+      }
     }
   }
 }

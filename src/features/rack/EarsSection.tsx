@@ -1,21 +1,19 @@
 import { useTranslation } from 'react-i18next'
-import { PANEL_LIMITS, type EarParams, type RackPanelParams } from '../../geometry/rack/panel'
+import { PANEL_LIMITS, type EarParams } from '../../geometry/rack/panel'
 import { Section } from '../../ui/Section'
 import { isChanged } from '../../ui/isChanged'
 import { LengthField } from '../../ui/LengthField'
 import { SegmentedControl } from '../../ui/SegmentedControl'
 import { Banner } from '../../ui/Banner'
-import type { PanelPatch } from './RackPanel'
 
-/** Отверстия в ушах: положения, форма и размер. */
-export function EarsSection({ params: p, defaults, errors, update }: { params: RackPanelParams; defaults: RackPanelParams; errors: string[]; update: PanelPatch }) {
+/** Отверстия в ушах: положения, форма и размер. Общая для панели и корпуса: работает с EarParams, а не с параметрами режима. */
+export function EarsSection({ ears: e, defaults, errors, onChange }: { ears: EarParams; defaults: EarParams; errors: string[]; onChange: (e: EarParams) => void }) {
   const { t } = useTranslation()
-  const e = p.ears
-  const set = (patch: Partial<EarParams>) => update((o) => ({ ...o, ears: { ...o.ears, ...patch } }))
+  const set = (patch: Partial<EarParams>) => onChange({ ...e, ...patch })
   const err = (key: string) => (errors.includes(key) ? t(key) : undefined)
   const summary = t('rack.ears.summary', { shape: t(`rack.ears.${e.shape}`), positions: t(`rack.ears.${e.positions}`) })
   return (
-    <Section title={t('rack.ears.title')} summary={summary} modified={isChanged(e, defaults.ears)} onReset={() => update((o) => ({ ...o, ears: defaults.ears }))}>
+    <Section title={t('rack.ears.title')} summary={summary} modified={isChanged(e, defaults)} onReset={() => onChange(defaults)}>
       <SegmentedControl fill ariaLabel={t('rack.ears.positions')} value={e.positions} onChange={(v) => set({ positions: v })}
         options={(['all', 'outer', 'edges'] as const).map((v) => ({ value: v, label: t(`rack.ears.${v}`) }))} />
       <SegmentedControl fill ariaLabel={t('rack.ears.shape')} value={e.shape} onChange={(v) => set({ shape: v })}

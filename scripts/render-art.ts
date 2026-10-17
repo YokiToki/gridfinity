@@ -16,6 +16,7 @@ import { defaultFasteners } from '../src/geometry/fasteners'
 import { defaultKeychain, defaultMount } from '../src/geometry/keychain'
 import { defaultShape } from '../src/geometry/shapes'
 import { defaultRackPanel } from '../src/geometry/rack/panel'
+import { defaultRackCase } from '../src/geometry/rack/case'
 import { defaultPattern } from '../src/geometry/rack/patterns/types'
 import { defaultShapeState, shapeParams } from '../src/features/keychain/shapeState'
 import { pawBitmap } from '../src/geometry/art/paw'
@@ -91,6 +92,18 @@ async function rackModels(): Promise<Record<string, TriMesh>> {
   return { rackPanel: meshOf(panel) }
 }
 
+/** Rack: корпус 2 U с окном, двумя keystone и сотами; перевёрнут (z → −z), чтобы открытая задняя сторона оболочки смотрела на зрителя. */
+async function rackCaseModels(): Promise<Record<string, TriMesh>> {
+  const r = await generate('rackCase', {
+    ...defaultRackCase, device: { width: 120, depth: 90, height: 60 }, keystones: { count: 2, side: 'right' },
+    vents: { enabled: true, width: 14, wall: 2.4, margin: 8 }, ears: { ...defaultRackCase.ears, positions: 'outer' },
+  })
+  const m = meshOf(r)
+  const positions = new Float32Array(m.positions)
+  for (let i = 0; i < positions.length; i += 3) { positions[i + 1] = -positions[i + 1]; positions[i + 2] = -positions[i + 2] }
+  return { rackCase: { positions, triangles: m.triangles } }
+}
+
 /**
  * Рендерит группу и пишет SVG. Без `heightOf` у группы один общий масштаб (картинки одной группы одного размера). С `heightOf`
  * (имя детали → высота рисунка в единицах viewBox) эта деталь получает масштаб, при котором стоит в карточке той же высоты, что
@@ -115,6 +128,7 @@ function writeGroup(all: Record<string, TriMesh>, heightOf?: { name: string; hei
 writeGroup(await keychainModels(), { name: 'keychainImage', height: BOX_ART_HEIGHT }, { ...defaultArtOptions, smooth: KEYCHAIN_SMOOTH })
 // Rack: своя группа с одной деталью, чтобы остальные картинки не менялись
 writeGroup(await rackModels())
+writeGroup(await rackCaseModels())
 if (!existsSync(SAMPLE)) {
   console.error(`Группа Gridfinity пропущена: нужен образец выреза ${SAMPLE} (STL, любая закрытая деталь). Картинки брелков записаны.`)
   process.exit(1)

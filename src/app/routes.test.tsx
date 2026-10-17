@@ -46,10 +46,12 @@ describe('маршруты', () => {
     const a = at('/rack')
     expect(screen.getByRole('heading', { name: 'Choose a rack part' })).toBeInTheDocument()
     expect(screen.getByTestId('card-panel')).toHaveAttribute('href', '/rack/panel')
+    expect(screen.getByTestId('card-case')).toHaveAttribute('href', '/rack/case')
     expect(a.state.location.pathname).toBe('/rack')
   })
   it('/rack/panel открывает режим по прямой ссылке, /rack/zzz возвращает к выбору', () => {
     expect(at('/rack/panel').state.location.pathname).toBe('/rack/panel')
+    expect(at('/rack/case').state.location.pathname).toBe('/rack/case')
     expect(at('/rack/zzz').state.location.pathname).toBe('/rack')
   })
   it('/keychain — выбор режима, режимы открываются по прямым ссылкам', async () => {

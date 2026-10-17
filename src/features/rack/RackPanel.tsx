@@ -17,7 +17,7 @@ export function RackPanel({ params: p, onChange, buildError = null }: { params: 
   return (
     <>
       <SizeSection params={p} defaults={d} errors={errors} update={onChange} />
-      <EarsSection params={p} defaults={d} errors={errors} update={onChange} />
+      <EarsSection ears={p.ears} defaults={d.ears} errors={errors} onChange={(ears) => onChange((o) => ({ ...o, ears }))} />
       <PatternSection params={p} defaults={d} errors={errors} warnings={warnings} buildError={buildError} update={onChange} />
       <BackSection params={p} defaults={d} errors={errors} update={onChange} />
       {errors.length > 0 && <Banner kind="warn">{t('rack.error.invalid')}</Banner>}

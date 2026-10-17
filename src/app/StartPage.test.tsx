@@ -74,6 +74,19 @@ describe('StartPage (выбор продукта)', () => {
   })
 })
 
+describe('ModeChooser (/rack)', () => {
+  beforeEach(async () => { localStorage.clear(); await i18n.changeLanguage('en') })
+  it('две карточки Panel и Enclosure, клавиши 1 и 2', async () => {
+    renderAt('/rack')
+    expect(screen.getByTestId('card-panel')).toHaveAttribute('href', '/rack/panel')
+    expect(screen.getByTestId('card-case')).toHaveAttribute('href', '/rack/case')
+    expect(screen.getByTestId('card-case')).toHaveTextContent('Enclosure')
+    await userEvent.keyboard('2')
+    expect(await screen.findByLabelText('Parameters')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Expand: Device/ })).toBeInTheDocument()
+  })
+})
+
 describe('ModeChooser (/gridfinity)', () => {
   beforeEach(async () => { localStorage.clear(); await i18n.changeLanguage('en') })
 
