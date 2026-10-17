@@ -10,7 +10,11 @@
 
 - [ ] 2.1 `ShelfMode` with sections Plate, Shelf and Ears (shared), persistence under `rack.shelf`, Start over, route `/rack/shelf`, third card on the Rack chooser with art `rackShelf` (`npm run art`, other pictures unchanged), en and ru strings. Component tests: collapsed by default, one highlight per change, steppers on every numeric input, error banners, key parity, three cards with hotkeys 1–3. No artboard: built from `ui/` and tokens, said in the commit.
 
-## 3. Verification
+## 3. Version
 
-- [ ] 3.1 `npm test` and `npm run build` are green, no console errors.
-- [ ] 3.2 In the browser, en and ru and at 390 px: the default 2 U shelf stands on the ground plane with the plate at the front, lips on three sides appear and disappear with the height, the clearance changes the width, the model is one part, the STL exports with the expected bounding box without flipping.
+- [ ] 3.1 Bump to 1.2.0: `package.json` and a `CHANGELOG.md` entry `1.2.0 — 31-rack-shelf`. Test: the existing version test passes with the new number.
+
+## 4. Verification
+
+- [ ] 4.1 `npm test` and `npm run build` are green, no console errors.
+- [ ] 4.2 In the browser, en and ru and at 390 px: the default 2 U shelf stands on the ground plane with the plate at the front, lips on three sides appear and disappear with the height, the clearance changes the width, the model is one part, the STL exports with the expected bounding box without flipping.

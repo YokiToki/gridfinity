@@ -11,7 +11,11 @@
 
 - [ ] 2.1 Front plate section with three headed blocks (Window, Keystones and holes, no wording about cables): the group list with add and remove, kind, count, per row, zone, hole diameter, the window switch and lip. en and ru strings, key parity, `cable` strings removed. Component tests: default window on, adding a group shows its fields, per-row changes the layout summary, group warnings, steppers on every numeric input, the old names are gone.
 
-## 3. Verification
+## 3. Version
 
-- [ ] 3.1 `npm test` and `npm run build` are green, no console errors.
-- [ ] 3.2 In the browser, en and ru and at 390 px: a socket group of three in a column, in a row and as a grid, holes in another zone, the collars behind the plate, a test export of one socket checked against the sample's dimensions; the render of the Enclosure card still reads (regenerate with `npm run art` if it changed).
+- [ ] 3.1 Bump to 1.1.0: `package.json` and a `CHANGELOG.md` entry `1.1.0 — 30-rack-front-plate`. Test: the existing version test passes with the new number.
+
+## 4. Verification
+
+- [ ] 4.1 `npm test` and `npm run build` are green, no console errors.
+- [ ] 4.2 In the browser, en and ru and at 390 px: a socket group of three in a column, in a row and as a grid, holes in another zone, the collars behind the plate, a test export of one socket checked against the sample's dimensions; the render of the Enclosure card still reads (regenerate with `npm run art` if it changed).

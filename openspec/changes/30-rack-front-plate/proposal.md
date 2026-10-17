@@ -10,6 +10,7 @@ The front plate of the enclosure (change 28) cuts a bare rectangle for each keys
 - **Window by default.** The window on the device front stays the default; the closed plate remains an option (a switch), as before.
 - **Flexible placement.** The front plate gets a list of opening groups instead of the single keystone setting and the cable-hole setting. A group is a kind (keystone socket or round hole), a count, how many per row (one gives a column, all gives a row, anything between a grid), and a zone (left or right of the shell, above or below it). Several groups can be added, so keystones and holes can sit one above another, in a row or in a grid, on any side.
 - **Naming.** The "cable holes" are renamed "holes" (they can be for a cable, a button, a screw or anything else) and the block gets its own heading, like the window and keystone blocks.
+- **Version 1.1.0** (minor: a new keystone mount and new placement options).
 - **References.** The two MakerWorld models and the sample drawing the design is based on are listed in the README references.
 
 ## Capabilities
@@ -23,4 +24,4 @@ The front plate of the enclosure (change 28) cuts a bare rectangle for each keys
 
 - `geometry/rack/case.ts` (the opening groups replace `keystones` and `cable`, with a migration from the old fields), a new `geometry/rack/keystone.ts` (socket profile and collar from the measured sample), `spec.ts` constants, `features/rack/CaseFrontSection` and strings in en and ru, art if the card render changes, tests.
 - Out of scope: keystone modules themselves and blanks as printable parts (the models are reference, not assets), other jack standards, labels, a keystone mount for the panel mode, bin-style stacking of whole racks.
-- Depends on: `28-rack-enclosures`.
+- Depends on: `28-rack-enclosures`, `29-beta-label` (the versioning rule).

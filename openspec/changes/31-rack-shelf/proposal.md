@@ -22,4 +22,5 @@ A 10-inch rack often needs a plain shelf: something to stand a router, a power b
 
 - New `geometry/rack/shelf.ts` reusing the plate outline and ear holes of `26-rack-panels` (`plateBase`), `geometry/model.ts` (`rackShelf`), `features/rack/` (ShelfMode, sections, migration; the Ears section is shared), `app/modes.tsx` (a Rack mode), a Rack chooser card with art `rackShelf` (`npm run art`), strings in en and ru, tests.
 - Out of scope: any Gridfinity baseplate or bins (this replaces the earlier rack-gridfinity-tray idea), gussets and ribs, shelf perforation or ventilation, a shelf above the plate's lower edge, drawers and rails, splitting a deep shelf for small printers.
-- Depends on: `26-rack-panels`.
+- Version 1.2.0 (minor: a new mode).
+- Depends on: `26-rack-panels`, `29-beta-label` (the versioning rule).

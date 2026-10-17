@@ -13,9 +13,11 @@ rules:
     - Change folders are numbered NN-name in implementation order; the NN prefix is the build order.
     - "End the Impact section with a \"Depends on:\" line listing the numbered changes it requires (e.g. `03-geometry-core`), or \"Depends on: none\". Only depend on lower numbers."
     - State what is out of scope.
+    - "State the target version and the semantic-versioning level (major for an incompatible change, minor for a new feature, mode, pattern or option, patch for a fix or rework). The version follows the numeric order of changes; 1.0.0 is the release of 29-beta-label."
   tasks:
     - Number tasks as `<section>.<n>` and keep each task independently committable, with its test or verification named in the task.
     - UI tasks cite the matching artboard in `design/artboards/` (map in `design/README.md`) and are done only when the result is compared with it in the browser, in en and ru. If no artboard exists, say so in the task and build from the component library (`Components.dc.html`).
+    - "Before the verification section add a version section with a task that bumps `package.json` to the change's target version and adds its `CHANGELOG.md` entry (one line per version, naming the change)."
     - Mark the last section of every change as verification (npm test, npm run build, check in the browser).
 
 operations:
@@ -26,3 +28,4 @@ operations:
   archive:
     guidance:
       - Archive changes in numeric order so the main specs stay consistent.
+      - Before archiving check that `package.json` has the change's target version and `CHANGELOG.md` has its entry; the version never goes backward.

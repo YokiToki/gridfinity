@@ -24,7 +24,8 @@ Work is planned as numbered OpenSpec changes in `openspec/changes/NN-name/` (ord
    - Geometry stays React-free in `geometry/`; add or update a vitest test with the task (geometry: validity and bounding box; UI: component test).
    - Verify what the task names (browser check, STL bbox/volume), not only that tests pass.
 5. **Before closing a task section.** `npm test` and `npm run build` are green; the dev server starts and the console has no errors. Commit after each completed task section with a message that names the change, for example `04-fastener-placement: add FastenerSection`.
-6. **Finish.** When all tasks are `[x]`, run `/opsx:archive NN-name` (sync specs, then archive) and commit. Archive in numeric order so the main specs stay consistent. Update the Architecture section below if the structure or conventions changed.
+6. **Version.** Every change raises the semantic version (`package.json` is the single source, shown on the site as `v<version>`; the footer and the beta notice read it through `APP_VERSION` in `app/site.ts`): minor for a new feature, mode, pattern or option, patch for a fix or rework without a new capability, major for an incompatible change (stored settings that cannot be migrated, removed or moved routes). The target version is stated in the proposal; the bump (`package.json` plus a line in `CHANGELOG.md` naming the change) is the last implementation task, before verification. 1.0.0 is the release of `29-beta-label`; changes before it do not bump.
+7. **Finish.** When all tasks are `[x]`, run `/opsx:archive NN-name` (sync specs, then archive) and commit. Archive in numeric order so the main specs stay consistent. Update the Architecture section below if the structure or conventions changed.
 
 Changing the plan itself (new requirement, reorder, split a change) goes through `/opsx:update` or `/opsx:propose`, not by editing code first. Keep `openspec/ROADMAP.md` and the "Depends on" lines in sync when numbers change.
 
