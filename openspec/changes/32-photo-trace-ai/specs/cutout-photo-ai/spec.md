@@ -35,31 +35,54 @@ On the silhouette step the user SHALL be able to choose the detection engine, Cl
 - **WHEN** the AI engine is active
 - **THEN** the sensitivity control, which belongs to the classic detector, is not offered for it, and the margin still applies
 
+### Requirement: Model manager
+The app SHALL have a model manager window, reachable from the engine switch and from the footer, that lists the available models with their name, purpose, size, licence class and status, and lets the user download, cancel, delete and choose the model used by the AI engine. Several models SHALL be downloadable and stored side by side. The models SHALL be kept in the browser's storage on the device; the window SHALL show the space they use and offer to delete all of them.
+
+#### Scenario: List
+- **WHEN** the manager is opened
+- **THEN** every model is listed with its size, licence class and status
+
+#### Scenario: Download and delete
+- **WHEN** the user downloads a model and later deletes it
+- **THEN** progress is shown while downloading, the model is then ready for use, and after deleting its stored data is removed and it shows as not downloaded
+
+#### Scenario: Choice
+- **WHEN** two models are downloaded
+- **THEN** the user picks which one the AI engine uses
+
+#### Scenario: No model yet
+- **WHEN** the user chooses the AI engine and no model is ready
+- **THEN** the manager opens, and nothing is downloaded until the user starts a download
+
 ### Requirement: Model download and consent
-The AI engine SHALL need a neural model that is downloaded on demand. Before the first download the app SHALL show the model's name, size, source host and licence and SHALL download only after the user confirms. It SHALL show progress, allow cancelling, keep the model in the browser's storage for later sessions when storage is available, and let the user see its size and delete it. If the download or the model fails, the classic engine SHALL stay usable and the failure SHALL be shown.
+A model SHALL be downloaded only after the user confirms. Before the first download of a model the app SHALL show its name, size, source host and licence. For a model whose licence restricts use to non-commercial purposes, the app SHALL additionally require the user to confirm that the model is used for non-commercial purposes and that its licence is accepted, and SHALL NOT start the download without it. Such models, and models under copyleft licences, SHALL never be the default, SHALL NOT be bundled with or hosted by the app, SHALL be fetched from the rights holder's repository at a fixed revision, and SHALL be listed on the References page as third-party models outside the app's own licence. Downloads SHALL show progress and be cancellable. If the download or the model fails, or the file's checksum does not match, the classic engine SHALL stay usable and the failure SHALL be shown.
 
 #### Scenario: Consent first
-- **WHEN** the user chooses AI for the first time
-- **THEN** a dialog states the download size and that the source host sees the user's address, and nothing is downloaded until the user confirms
+- **WHEN** the user starts the first download of a model
+- **THEN** a dialog states the size and that the source host sees the user's address, and nothing is downloaded until the user confirms
+
+#### Scenario: Non-commercial model
+- **WHEN** the user starts the download of a model with a non-commercial licence
+- **THEN** the Download button stays disabled until the user ticks the non-commercial-use and licence confirmation, and the dialog links the licence
+
+#### Scenario: Third-party label
+- **WHEN** the References page is opened
+- **THEN** models that are not under a permissive licence appear in a separate section as optional third-party models not covered by the app's licence
 
 #### Scenario: Cached
 - **WHEN** the model was downloaded earlier and the storage is intact
-- **THEN** choosing AI starts at once without a new download
-
-#### Scenario: Delete
-- **WHEN** the user deletes the model in the model dialog
-- **THEN** its stored data is removed and choosing AI asks for consent again
+- **THEN** choosing it starts at once without a new download
 
 #### Scenario: Failure
 - **WHEN** the download is interrupted or the checksum of the file does not match
-- **THEN** an error says so, the file is not used, and the dialog stays on the classic engine
+- **THEN** an error says so, the file is not used, and the app stays on the classic engine
 
 #### Scenario: Storage unavailable
 - **WHEN** the browser refuses persistent storage
 - **THEN** the model works for the session and a notice says it will be downloaded again next time
 
 ### Requirement: Privacy
-The photo, the straightened image and the masks SHALL be processed in the browser only and SHALL NOT be sent anywhere by the AI engine. The only network traffic added by the AI engine SHALL be the download of the model files, from a fixed, versioned location, after consent. The user interface and the References page SHALL say so, and SHALL list every model with its licence and source. Only models under MIT, Apache-2.0, BSD or CC0 licences SHALL be used.
+The photo, the straightened image and the masks SHALL be processed in the browser only and SHALL NOT be sent anywhere by the AI engine. The only network traffic added by the AI engine SHALL be the download of the model files, from a fixed, versioned location, after consent. The user interface and the References page SHALL say so, and SHALL list every model with its licence and source. The default AI model SHALL be under a permissive licence (MIT, Apache-2.0, BSD or CC0).
 
 #### Scenario: No image upload
 - **WHEN** a photo is processed by the AI engine
