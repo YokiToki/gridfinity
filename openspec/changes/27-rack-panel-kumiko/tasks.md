@@ -9,5 +9,5 @@
 
 ## 2. Verification
 
-- [ ] 2.1 `npm test` and `npm run build` are green, no console errors; triangle count of a 10 U asanoha and a 10 U Hicks panel is recorded in the task note and generation stays under about 2 s.
-- [ ] 2.2 In the browser, en and ru and at 390 px: both patterns on a 2 U panel look like the reference thumbnail (carpet-like nested hexagons; star lattice), rotation works, depth 0 switches stroke sets off, the Hicks panel is a single piece in the exported STL (checked by loading it back or by the model's component count), thin settings show warnings.
+- [x] 2.1 `npm test` and `npm run build` are green, no console errors; triangle count of a 10 U asanoha and a 10 U Hicks panel is recorded in the task note and generation stays under about 2 s. Recorded: 10 U asanoha 0.8 s and 65 404 triangles, 10 U Hicks 0.26 s and 82 764 triangles (Node, one run).
+- [x] 2.2 In the browser, en and ru and at 390 px: both patterns on a 2 U panel look like the reference thumbnail (carpet-like nested hexagons; star lattice), rotation works, depth 0 switches stroke sets off, the Hicks panel is a single piece in the exported STL (checked by loading it back or by the model's component count), thin settings show warnings.

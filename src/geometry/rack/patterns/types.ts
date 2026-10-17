@@ -30,7 +30,7 @@ export const defaultPattern: PatternParams = {
   lines: { height: 3, wall: 2 },
   passthrough: { borderX: 0, borderY: 0, radius: 3 },
   hicks: { width: 24, stroke: 1.2, gap: 1.2 },
-  asanoha: { width: 20, mainWidth: 1.2, mainDepth: 1.2, detailWidth: 1, detailDepth: 0.8 },
+  asanoha: { width: 24, mainWidth: 1.2, mainDepth: 1.2, detailWidth: 1, detailDepth: 0.8 },
 }
 
 /** Замечание о печатаемости: ключ перевода и имя настройки (ключ rack.field.*), которая слишком мала. */
