@@ -17,5 +17,5 @@
 
 ## 4. Verification
 
-- [ ] 4.1 `npm test` and `npm run build` are green, no console errors.
-- [ ] 4.2 In the browser, en and ru and at 390 px: a socket group of three in a column, in a row and as a grid, holes in another zone, the collars behind the plate, a test export of one socket checked against the sample's dimensions; the render of the Enclosure card still reads (regenerate with `npm run art` if it changed).
+- [x] 4.1 `npm test` and `npm run build` are green, no console errors.
+- [x] 4.2 In the browser, en and ru and at 390 px: a socket group of three in a column, in a row and as a grid, holes in another zone, the collars behind the plate, a test export of one socket checked against the sample's dimensions; the render of the Enclosure card still reads (regenerate with `npm run art` if it changed).
