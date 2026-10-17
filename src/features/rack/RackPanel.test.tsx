@@ -97,15 +97,15 @@ describe('RackPanel: поля зависят от выбора', () => {
     await userEvent.click(screen.getByRole('switch', { name: 'Rotate 90°' }))
     expect(latest.pattern.rotate).toBe(true)
   })
-  it('паз показывает длину, круг её скрывает; позиции «нет» прячут форму', async () => {
+  it('паз показывает длину, круг её скрывает; «только по краям» оставляет форму и размер', async () => {
     render(<Harness />)
     await openSection('Ears')
     expect(screen.getByLabelText('Ear slot length')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Round' }))
     expect(screen.queryByLabelText('Ear slot length')).toBeNull(); expect(screen.getByLabelText('Diameter')).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'None' }))
-    expect(screen.queryByLabelText('Diameter')).toBeNull()
-    expect(latest.ears.positions).toBe('none')
+    await userEvent.click(screen.getByRole('button', { name: 'Edges only' }))
+    expect(screen.getByLabelText('Diameter')).toBeInTheDocument()
+    expect(latest.ears.positions).toBe('edges')
   })
   it('задняя стенка: поле толщины появляется только при включении', async () => {
     render(<Harness />)
@@ -144,6 +144,10 @@ describe('сохранение параметров', () => {
   it('старое поле pills.height читается как length', () => {
     localStorage.setItem('rack.panel', JSON.stringify({ pattern: { kind: 'pills', pills: { height: 25 } } }))
     expect(loadPersisted('rack.panel', defaultRackPanel, migrateRackPanel).pattern.pills).toMatchObject({ length: 25, width: 6 })
+  })
+  it('старое положение «нет» читается как «только по краям»', () => {
+    localStorage.setItem('rack.panel', JSON.stringify({ ears: { positions: 'none' } }))
+    expect(loadPersisted('rack.panel', defaultRackPanel, migrateRackPanel).ears.positions).toBe('edges')
   })
   it('частичные и испорченные данные нормализуются, режим не падает', () => {
     localStorage.setItem('rack.panel', JSON.stringify({ units: 'x', pattern: { kind: 'zzz', hex: { width: 'a', wall: 2 }, skadis: null }, ears: { positions: 5 }, back: [] }))

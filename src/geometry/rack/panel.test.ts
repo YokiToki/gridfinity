@@ -22,8 +22,8 @@ describe('панель стойки: размеры', () => {
     expect(Math.abs(m.volume() - expected) / expected).toBeLessThan(0.005)
   })
   it('скругление углов уменьшает площадь на (4 − π) r² (четыре угла вместе)', async () => {
-    const sharp = await build(P({ units: 1, cornerRadius: 0, ears: { ...defaultRackPanel.ears, positions: 'none' } }))
-    const round = await build(P({ units: 1, cornerRadius: 3, ears: { ...defaultRackPanel.ears, positions: 'none' } }))
+    const sharp = await build(P({ units: 1, cornerRadius: 0, ears: { ...defaultRackPanel.ears, positions: 'edges' } }))
+    const round = await build(P({ units: 1, cornerRadius: 3, ears: { ...defaultRackPanel.ears, positions: 'edges' } }))
     expect((sharp.volume() - round.volume()) / 3).toBeCloseTo((4 - Math.PI) * 9, 0)
   })
 })
@@ -54,10 +54,11 @@ describe('панель стойки: отверстия в ушах', () => {
     expect(right[0].cx - left[0].cx).toBeCloseTo(236.525, 1)
   })
   it('3 U: девять отверстий на ухо, количество по вариантам', async () => {
-    const e = (positions: 'all' | 'outer' | 'none') => ({ positions, shape: 'round' as const, size: 6.5, slotLength: 10 })
+    const e = (positions: 'all' | 'outer' | 'edges') => ({ positions, shape: 'round' as const, size: 6.5, slotLength: 10 })
     expect(await holesAt(P({ units: 3, ears: e('all') }), 118.2625)).toHaveLength(9)
     expect(await holesAt(P({ units: 3, ears: e('outer') }), 118.2625)).toHaveLength(6)
-    expect(await holesAt(P({ units: 3, ears: e('none') }), 118.2625)).toHaveLength(0)
+    expect(await holesAt(P({ units: 3, ears: e('edges') }), 118.2625)).toHaveLength(2)
+    expect(await holesAt(P({ units: 10, ears: e('edges') }), 118.2625)).toHaveLength(2)
   })
   it('паз лежит горизонтально: 10 мм по X и 6.5 мм по Y', async () => {
     const m = await build(P({ units: 1, ears: { positions: 'outer', shape: 'slot', size: 6.5, slotLength: 10 } }))

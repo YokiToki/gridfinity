@@ -21,7 +21,7 @@ The Panel mode SHALL generate a flat panel for a 10-inch rack, 254 mm wide and n
 - **THEN** the export panel says it does not fit, as for other modes
 
 ### Requirement: Rack mounting holes
-The panel SHALL have mounting holes in both ears at the standard 10-inch rack positions: 236.525 mm apart centre to centre, and in every rack unit at 6.35 mm, 22.225 mm and 38.1 mm from the unit's lower edge. The user SHALL be able to choose the hole shape (round or slot), its size, and which positions are used (all three per unit, the outer two, or none).
+The panel SHALL have mounting holes in both ears at the standard 10-inch rack positions: 236.525 mm apart centre to centre, and in every rack unit at 6.35 mm, 22.225 mm and 38.1 mm from the unit's lower edge. The user SHALL be able to choose the hole shape (round or slot), its size, and which positions are used (all three per unit, the outer two per unit, or edges only: the lowest and the highest hole of each ear, four in all, whatever the number of units).
 
 #### Scenario: Standard positions
 - **WHEN** the panel is 1 U with all positions
@@ -31,9 +31,9 @@ The panel SHALL have mounting holes in both ears at the standard 10-inch rack po
 - **WHEN** the shape is slot
 - **THEN** the holes are slots with the chosen width and length, centred on the standard positions
 
-#### Scenario: No holes
-- **WHEN** the positions are set to none
-- **THEN** the ears are solid
+#### Scenario: Edges only
+- **WHEN** the positions are set to edges only on a panel of any height
+- **THEN** each ear has two holes, the lowest 6.35 mm above the lower edge of the first unit and the highest 38.1 mm above the lower edge of the last unit
 
 ### Requirement: Through patterns
 The panel SHALL offer a through pattern cut in the window between the ears (the 222.25 mm opening between the mounting rails), inset by a margin: IKEA Skadis, hexagons, pills, lines or a plain pass-through opening, or none. Each pattern has its own settings, and the pattern SHALL be turnable by 90°. Only complete pattern elements that fit inside the region SHALL be cut, and the panel SHALL remain one connected piece.

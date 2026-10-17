@@ -17,7 +17,7 @@ export function migrateRackPanel(raw: Record<string, unknown>): Record<string, u
     cornerRadius: num(raw.cornerRadius, d.cornerRadius),
     tolerance: bool(raw.tolerance, d.tolerance),
     ears: {
-      positions: oneOf(e.positions, ['all', 'outer', 'none'], d.ears.positions),
+      positions: oneOf(e.positions === 'none' ? 'edges' : e.positions, ['all', 'outer', 'edges'], d.ears.positions),
       shape: oneOf(e.shape, ['round', 'slot'], d.ears.shape),
       size: num(e.size, d.ears.size), slotLength: num(e.slotLength, d.ears.slotLength),
     },

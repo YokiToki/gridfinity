@@ -5,7 +5,7 @@ import { cutPattern, patternIssues } from './patterns'
 import { defaultPattern, type Issue, type PatternParams } from './patterns/types'
 import { HEIGHT_TOLERANCE, MAX_UNITS, MIN_UNITS, RACK_WIDTH, rackLayout } from './spec'
 
-export type EarPositions = 'all' | 'outer' | 'none'
+export type EarPositions = 'all' | 'outer' | 'edges'
 export type EarShape = 'round' | 'slot'
 export interface EarParams { positions: EarPositions; shape: EarShape; /** Диаметр круга или ширина паза. */ size: number; /** Длина паза по горизонтали (как на стандартных панелях). */ slotLength: number }
 export interface BackParams { enabled: boolean; thickness: number }
@@ -38,10 +38,8 @@ export function validateRackPanel(p: RackPanelParams): { errors: string[]; warni
   if (!Number.isInteger(p.units) || p.units < MIN_UNITS || p.units > MAX_UNITS) errors.push('rack.error.units')
   if (!between(p.thickness, PANEL_LIMITS.thickness)) errors.push('rack.error.thickness')
   if (!between(p.cornerRadius, PANEL_LIMITS.cornerRadius)) errors.push('rack.error.cornerRadius')
-  if (p.ears.positions !== 'none') {
-    if (!between(p.ears.size, PANEL_LIMITS.earSize)) errors.push('rack.error.earSize')
-    else if (p.ears.shape === 'slot' && p.ears.slotLength < p.ears.size) errors.push('rack.error.slotLength')
-  }
+  if (!between(p.ears.size, PANEL_LIMITS.earSize)) errors.push('rack.error.earSize')
+  else if (p.ears.shape === 'slot' && p.ears.slotLength < p.ears.size) errors.push('rack.error.slotLength')
   if (p.back.enabled && !between(p.back.thickness, PANEL_LIMITS.backThickness)) errors.push('rack.error.backThickness')
   if (!between(p.pattern.margin, PANEL_LIMITS.margin)) errors.push('rack.error.margin')
   if (errors.length) return { errors, warnings: [] }
@@ -57,8 +55,9 @@ export function validateRackPanel(p: RackPanelParams): { errors: string[]; warni
 /** Вырез отверстий ушей: оба уха, по юнитам, в осях панели (X от середины, Y от нижней кромки). */
 function earCut(w: Awaited<ReturnType<typeof getWasm>>, p: RackPanelParams, holes: ReturnType<typeof rackLayout>['holes']) {
   const { CrossSection } = w
-  const used = holes.filter((h) => p.ears.positions === 'all' || (p.ears.positions === 'outer' && h.slot !== 1))
-  if (!used.length || p.ears.positions === 'none') return null
+  // edges: только нижнее отверстие первого юнита и верхнее последнего (4 на панель при любом числе юнитов)
+  const used = holes.filter((h, i) => p.ears.positions === 'all' || (p.ears.positions === 'outer' && h.slot !== 1) || (p.ears.positions === 'edges' && (i === 0 || i === holes.length - 1)))
+  if (!used.length) return null
   const one = p.ears.shape === 'round' ? CrossSection.circle(p.ears.size / 2, 48) : roundedRectCS(w, Math.max(p.ears.slotLength, p.ears.size), p.ears.size, p.ears.size / 2, 24)
   return CrossSection.compose(used.flatMap((h) => [one.translate([h.x, h.y]), one.translate([-h.x, h.y])]))
 }

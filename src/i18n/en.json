@@ -1019,14 +1019,14 @@
       "positions": "Positions",
       "all": "All three",
       "outer": "Outer two",
-      "none": "None",
       "shape": "Shape",
       "round": "Round",
       "slot": "Slot",
       "diameter": "Diameter",
       "width": "Ear slot width",
       "slotLength": "Ear slot length",
-      "help": "Holes sit 236.525 mm apart, at 6.35, 22.225 and 38.1 mm in every unit."
+      "help": "Holes sit 236.525 mm apart. All three: 6.35, 22.225 and 38.1 mm in every unit; outer two: the first and last in every unit; edges only: four holes, the lowest and the highest, whatever the number of units.",
+      "edges": "Edges only"
     },
     "pattern": {
       "title": "Pattern",
