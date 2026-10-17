@@ -33,7 +33,7 @@ export function patternIssues(pat: PatternParams, region: RackRegion): Issue[] {
       break
     }
     case 'hex': checks.push(['width', pat.hex.width], ['wall', pat.hex.wall]); break
-    case 'pills': checks.push(['width', pat.pills.width], ['height', pat.pills.height], ['wall', pat.pills.wall]); break
+    case 'pills': checks.push(['width', pat.pills.width], ['length', pat.pills.length], ['wall', pat.pills.wall]); break
     case 'lines': checks.push(['height', pat.lines.height], ['wall', pat.lines.wall]); break
     default: break
   }

@@ -1001,7 +1001,8 @@
       "edgePills": "Edge pills",
       "borderX": "Side border",
       "borderY": "Top and bottom border",
-      "radius": "Opening corner radius"
+      "radius": "Opening corner radius",
+      "length": "Length"
     },
     "size": {
       "title": "Size",

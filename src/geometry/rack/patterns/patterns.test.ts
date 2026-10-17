@@ -96,26 +96,25 @@ describe('панель с узором остаётся одним куском'
 
 describe('таблетки, линии, проём', () => {
   const box = { width: 100, height: 60 }
-  it('таблетки: сетка с шагом width + wall, без краевых', async () => {
+  it('таблетки лежат горизонтально кирпичной кладкой: 7 рядов, чётные по 3, нечётные по 4 со сдвигом на полшага', async () => {
     const { pillsLayout } = await import('./pills')
-    const p = { ...defaultPattern.pills, edgePills: false }
-    const cells = pillsLayout(box, p)
-    // по X: floor((100 − 6) / 8) + 1 = 12, по Y: floor((60 − 20) / 22) + 1 = 2
+    const cells = pillsLayout(box, { ...defaultPattern.pills, edgePills: false })
     expect(cells).toHaveLength(24)
-    expect(new Set(cells.map((c) => c.height))).toEqual(new Set([20]))
+    cells.forEach((c) => { expect(c.length).toBe(20); expect(c.width).toBe(6) })
+    const row = (y: number) => cells.filter((c) => Math.abs(c.y - y) < 1e-9).map((c) => c.x).sort((a, b) => a - b)
+    expect(row(-24)).toEqual([-22, 0, 22]); expect(row(-16)).toEqual([-33, -11, 11, 33])
+    // шаг рядов width + wall
+    expect(new Set(cells.map((c) => Math.round(c.y * 1000))).size).toBe(7)
   })
-  it('краевые таблетки занимают остаток, не короче своей ширины', async () => {
+  it('краевые таблетки занимают остаток ряда, не короче своей ширины', async () => {
     const { pillsLayout } = await import('./pills')
-    // две строки по 20 и стенка 2: занято 42, остаток (60 − 42) / 2 = 9 минус стенка 2 = 7 мм ≥ ширины 6
     const p = { ...defaultPattern.pills, edgePills: true }
     const cells = pillsLayout(box, p)
-    const edge = cells.filter((c) => c.height < 20)
-    expect(edge).toHaveLength(24)
-    edge.forEach((c) => expect(c.height).toBeCloseTo(7, 9))
-    // остаток слишком мал для ширины 10: краевых нет
-    expect(pillsLayout(box, { ...p, width: 10 }).filter((c) => c.height < 20)).toHaveLength(0)
-    // все таблетки внутри области
-    cells.forEach((c) => { expect(Math.abs(c.y) + c.height / 2).toBeLessThanOrEqual(30 + 1e-9); expect(Math.abs(c.x) + c.width / 2).toBeLessThanOrEqual(50 + 1e-9) })
+    const edge = cells.filter((c) => c.length < 20)
+    // чётные ряды: остаток 16 мм с каждой стороны; нечётные: 5 мм меньше ширины 6 — краевых нет
+    expect(edge).toHaveLength(8); edge.forEach((c) => expect(c.length).toBeCloseTo(16, 9))
+    expect(pillsLayout(box, { ...p, width: 6, length: 30 }).filter((c) => c.length < 30).every((c) => c.length >= 6)).toBe(true)
+    cells.forEach((c) => { expect(Math.abs(c.y) + c.width / 2).toBeLessThanOrEqual(30 + 1e-9); expect(Math.abs(c.x) + c.length / 2).toBeLessThanOrEqual(50 + 1e-9) })
   })
   it('линии: ряды height + wall на всю ширину', async () => {
     const w = await getWasm()

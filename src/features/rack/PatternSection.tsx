@@ -14,7 +14,7 @@ import type { PanelPatch } from './RackPanel'
 const FIELDS: Record<Exclude<PatternKind, 'none'>, { key: string; min: number; max: number; step: number }[]> = {
   skadis: [{ key: 'slotWidth', min: 1, max: 30, step: 0.5 }, { key: 'slotLength', min: 1, max: 60, step: 0.5 }, { key: 'pitch', min: 5, max: 120, step: 1 }, { key: 'rowStep', min: 2, max: 60, step: 1 }, { key: 'shift', min: 0, max: 120, step: 1 }],
   hex: [{ key: 'width', min: 2, max: 40, step: 0.5 }, { key: 'wall', min: 0.2, max: 10, step: 0.1 }],
-  pills: [{ key: 'width', min: 2, max: 40, step: 0.5 }, { key: 'height', min: 2, max: 80, step: 0.5 }, { key: 'wall', min: 0.2, max: 10, step: 0.1 }],
+  pills: [{ key: 'width', min: 2, max: 40, step: 0.5 }, { key: 'length', min: 2, max: 80, step: 0.5 }, { key: 'wall', min: 0.2, max: 10, step: 0.1 }],
   lines: [{ key: 'height', min: 1, max: 30, step: 0.5 }, { key: 'wall', min: 0.2, max: 10, step: 0.1 }],
   passthrough: [{ key: 'borderX', min: 0, max: 100, step: 0.5 }, { key: 'borderY', min: 0, max: 40, step: 0.5 }, { key: 'radius', min: 0, max: 20, step: 0.5 }],
 }

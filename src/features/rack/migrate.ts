@@ -25,7 +25,7 @@ export function migrateRackPanel(raw: Record<string, unknown>): Record<string, u
       kind: oneOf(pt.kind, PATTERN_KINDS, dp.kind), margin: num(pt.margin, dp.margin), rotate: bool(pt.rotate, dp.rotate),
       skadis: { slotWidth: num(sk.slotWidth, dp.skadis.slotWidth), slotLength: num(sk.slotLength, dp.skadis.slotLength), pitch: num(sk.pitch, dp.skadis.pitch), rowStep: num(sk.rowStep, dp.skadis.rowStep), shift: num(sk.shift, dp.skadis.shift) },
       hex: { width: num(hx.width, dp.hex.width), wall: num(hx.wall, dp.hex.wall) },
-      pills: { width: num(pl.width, dp.pills.width), height: num(pl.height, dp.pills.height), wall: num(pl.wall, dp.pills.wall), edgePills: bool(pl.edgePills, dp.pills.edgePills) },
+      pills: { width: num(pl.width, dp.pills.width), length: num(pl.length, num(pl.height, dp.pills.length)), wall: num(pl.wall, dp.pills.wall), edgePills: bool(pl.edgePills, dp.pills.edgePills) },
       lines: { height: num(ln.height, dp.lines.height), wall: num(ln.wall, dp.lines.wall) },
       passthrough: { borderX: num(pa.borderX, dp.passthrough.borderX), borderY: num(pa.borderY, dp.passthrough.borderY), radius: num(pa.radius, dp.passthrough.radius) },
     },

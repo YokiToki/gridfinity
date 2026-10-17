@@ -141,6 +141,10 @@ describe('сохранение параметров', () => {
     localStorage.setItem('rack.panel', '{bad')
     expect(loadPersisted('rack.panel', defaultRackPanel, migrateRackPanel)).toEqual(defaultRackPanel)
   })
+  it('старое поле pills.height читается как length', () => {
+    localStorage.setItem('rack.panel', JSON.stringify({ pattern: { kind: 'pills', pills: { height: 25 } } }))
+    expect(loadPersisted('rack.panel', defaultRackPanel, migrateRackPanel).pattern.pills).toMatchObject({ length: 25, width: 6 })
+  })
   it('частичные и испорченные данные нормализуются, режим не падает', () => {
     localStorage.setItem('rack.panel', JSON.stringify({ units: 'x', pattern: { kind: 'zzz', hex: { width: 'a', wall: 2 }, skadis: null }, ears: { positions: 5 }, back: [] }))
     const p = loadPersisted('rack.panel', defaultRackPanel, migrateRackPanel)
