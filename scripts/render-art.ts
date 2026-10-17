@@ -1,6 +1,6 @@
 /**
  * Генерация иллюстраций карточек стартовой страницы: настоящие детали через generate(), изометрия, z-буфер, трассировка.
- * Две группы со своим масштабом: Gridfinity (baseplate, box, cutout: детали 2×2 ячейки) и Keychain (keychainImage, keychainShape).
+ * Группы со своим масштабом: Gridfinity (baseplate, box, cutout: детали 2×2 ячейки), Keychain (keychainImage, keychainShape) и Rack (rackPanel).
  * Запуск: npm run art. Брелки не требуют файлов: растр для режима «Изображение» (лапа) строится кодом, см. geometry/art/paw.ts. Для выреза нужен образец
  * tmp/cutout.stl (в репозитории его нет: готовые картинки лежат в src/app/art, CI этот скрипт не запускает); без него группа
  * Gridfinity не пересоздаётся, а картинки брелков всё равно записываются.
@@ -15,6 +15,8 @@ import { defaultCutout, newCutoutId, type Cutout } from '../src/geometry/cutout'
 import { defaultFasteners } from '../src/geometry/fasteners'
 import { defaultKeychain, defaultMount } from '../src/geometry/keychain'
 import { defaultShape } from '../src/geometry/shapes'
+import { defaultRackPanel } from '../src/geometry/rack/panel'
+import { defaultPattern } from '../src/geometry/rack/patterns/types'
 import { defaultShapeState, shapeParams } from '../src/features/keychain/shapeState'
 import { pawBitmap } from '../src/geometry/art/paw'
 import { defaultOrientation, describeMesh, parseStl, repairMesh } from '../src/geometry/stl-import'
@@ -83,6 +85,11 @@ async function keychainModels(): Promise<Record<string, TriMesh>> {
   return { keychainImage: meshOf(image), keychainShape: meshOf(shape) }
 }
 
+/** Rack: панель 2 U с узором Skadis, ушами с пазами и задней стенкой нет; вид сверху-сбоку, чтобы читались и уши, и узор. */
+async function rackModels(): Promise<Record<string, TriMesh>> {
+  const panel = await generate('rackPanel', { ...defaultRackPanel, pattern: { ...defaultPattern, kind: 'skadis' } })
+  return { rackPanel: meshOf(panel) }
+}
 
 /**
  * Рендерит группу и пишет SVG. Без `heightOf` у группы один общий масштаб (картинки одной группы одного размера). С `heightOf`
@@ -106,6 +113,8 @@ function writeGroup(all: Record<string, TriMesh>, heightOf?: { name: string; hei
 // брелки не требуют файлов; Gridfinity — только при наличии образца выреза
 // высота рисунка брелка равна высоте коробки Gridfinity (≈ 149 единиц viewBox 250 × 165), чтобы карточки на главной стояли вровень
 writeGroup(await keychainModels(), { name: 'keychainImage', height: BOX_ART_HEIGHT }, { ...defaultArtOptions, smooth: KEYCHAIN_SMOOTH })
+// Rack: своя группа с одной деталью, чтобы остальные картинки не менялись
+writeGroup(await rackModels())
 if (!existsSync(SAMPLE)) {
   console.error(`Группа Gridfinity пропущена: нужен образец выреза ${SAMPLE} (STL, любая закрытая деталь). Картинки брелков записаны.`)
   process.exit(1)

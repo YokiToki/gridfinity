@@ -34,5 +34,5 @@ export const KEYCHAIN_MODES: (ProductMode & { id: KeychainModeId })[] = [
 /** Режимы Rack Master: пока только Панель; корпуса и лоток добавят следующие изменения. */
 export type RackModeId = 'panel'
 export const RACK_MODES: (ProductMode & { id: RackModeId })[] = [
-  { id: 'panel', path: `${RACK_PATH}/panel`, Icon: IconRectangle, labelKey: 'rack.modes.panel', startKey: 'start.rackPanel', artId: 'baseplate' },
+  { id: 'panel', path: `${RACK_PATH}/panel`, Icon: IconRectangle, labelKey: 'rack.modes.panel', startKey: 'start.rackPanel', artId: 'rackPanel' },
 ]

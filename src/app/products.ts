@@ -18,7 +18,7 @@ export interface Product {
 export const PRODUCTS: Product[] = [
   { id: 'gridfinity', path: GRIDFINITY_PATH, Icon: IconGridDots, modes: MODES, artId: 'box' },
   { id: 'keychain', path: KEYCHAIN_PATH, Icon: IconKey, modes: KEYCHAIN_MODES, artId: 'keychainImage' },
-  { id: 'rack', path: RACK_PATH, Icon: IconServer, modes: RACK_MODES, artId: 'baseplate' },
+  { id: 'rack', path: RACK_PATH, Icon: IconServer, modes: RACK_MODES, artId: 'rackPanel' },
 ]
 
 /** Продукт по пути: совпадает сам путь или его подпуть (граница по «/»). */

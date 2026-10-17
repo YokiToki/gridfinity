@@ -12,7 +12,7 @@
 
 - [x] 2.1 Product section: `rack` in `products.ts` and `modes.tsx`, routes `/rack` and `/rack/panel`, mode chooser, header switcher, `lastSession` accepts `rack`, en and ru strings for the product (names stay untranslated brand names). Tests: registry paths unique and prefixed, router test for `/rack`, `/rack/panel` and an unknown subpath, the product switcher lists three products, `lastSession` old and new records.
 - [x] 2.2 `features/rack/` (`RackPanelMode`, `migrate`, sections Size, Ears, Pattern, Back wall) with `Workspace`, persistence under `rack.panel`, section summaries and changed highlights, Start over. Component tests: collapsed by default, one highlight per change, every numeric input has steppers (`expectAllNumericSteppers`), pattern kind switches the visible fields, corrupt storage falls back to defaults, key parity en/ru. No artboard: built from `ui/` and tokens, said in the commit.
-- [ ] 2.3 Start page: third product card with art `rackPanel` (add to `scripts/render-art.ts`, `ART`, `ModeArt` budget test), three-column layout and key 3, equal-height cards at the three widths. Run `npm run art` and check the other pictures are unchanged in `git diff`. Test: three cards, hotkeys 1–3, art size under 60 KB.
+- [x] 2.3 Start page: third product card with art `rackPanel` (add to `scripts/render-art.ts`, `ART`, `ModeArt` budget test), three-column layout and key 3, equal-height cards at the three widths. Run `npm run art` and check the other pictures are unchanged in `git diff`. Test: three cards, hotkeys 1–3, art size under 60 KB.
 
 ## 3. Verification
 

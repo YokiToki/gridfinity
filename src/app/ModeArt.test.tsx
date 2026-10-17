@@ -16,8 +16,8 @@ vi.mock('../features/viewport/Viewport', () => ({ Viewport: () => <div data-test
 const BUDGET = 60 * 1024
 
 describe('иллюстрации карточек', () => {
-  it('пять иллюстраций (box, baseplate, cutout, keychainImage, keychainShape): валидный SVG до 60 КБ, тона классами, без цветов', () => {
-    expect(ART_IDS.sort()).toEqual(['baseplate', 'box', 'cutout', 'keychainImage', 'keychainShape'])
+  it('шесть иллюстраций (box, baseplate, cutout, keychainImage, keychainShape, rackPanel): валидный SVG до 60 КБ, тона классами, без цветов', () => {
+    expect(ART_IDS.sort()).toEqual(['baseplate', 'box', 'cutout', 'keychainImage', 'keychainShape', 'rackPanel'])
     for (const id of ART_IDS) {
       const svg = ART[id]
       expect(svg.length, id).toBeGreaterThan(500)
@@ -70,7 +70,7 @@ describe('карточки с рендерами: продукты и режим
       expect(ART_IDS).toContain(p.artId)
       for (const m of p.modes ?? []) expect(ART_IDS, `${p.id}/${m.id}`).toContain(m.artId)
     }
-    expect(PRODUCTS.map((p) => p.artId)).toEqual(['box', 'keychainImage', 'baseplate']) // иллюстрация Rack временная до 2.3
+    expect(PRODUCTS.map((p) => p.artId)).toEqual(['box', 'keychainImage', 'rackPanel'])
   })
   it('корневая страница: карточка Gridfinity показывает коробку, Keychain — брелок «Изображение»; значков вместо рендеров нет', () => {
     at('/')
@@ -82,6 +82,15 @@ describe('карточки с рендерами: продукты и режим
       expect(holder.querySelector('.tabler-icon')).toBeNull() // значок продукта не используется как иллюстрация
       expect(sameSvg(holder, ART[art])).toBe(true)
     }
+  })
+  it('корневая страница: карточка Rack показывает рендер панели; страница /rack — тот же рендер у карточки Panel', () => {
+    const { unmount } = at('/')
+    const holder = screen.getByTestId('card-rack').querySelector('[data-testid="art-rackPanel"]')!
+    expect(holder.querySelector('svg')).not.toBeNull(); expect(holder).toHaveAttribute('aria-hidden', 'true')
+    expect(sameSvg(holder, ART.rackPanel)).toBe(true)
+    unmount()
+    at('/rack')
+    expect(sameSvg(screen.getByTestId('card-panel').querySelector('[data-testid="art-rackPanel"]')!, ART.rackPanel)).toBe(true)
   })
   it('страница выбора Keychain: «Изображение» и «Форма» — каждая со своим рендером, декоративным и без цветов', () => {
     at('/keychain')
