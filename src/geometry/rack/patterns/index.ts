@@ -1,21 +1,22 @@
-import type { ManifoldToplevel, CrossSection } from 'manifold-3d'
+import type { ManifoldToplevel } from 'manifold-3d'
 import type { RackRegion } from '../spec'
 import { hexCut } from './hex'
 import { linesCut, passthroughCut } from './lines'
 import { pillsCut } from './pills'
-import { placePattern } from './region'
+import { placeCut, type PatternCut } from './region'
 import { skadisCut } from './skadis'
 import { MIN_FEATURE, type Issue, type PatternParams } from './types'
 
-/** Вырез выбранного узора в области панели (null, если узора нет или в область ничего не помещается). */
-export function cutPattern(w: ManifoldToplevel, pat: PatternParams, region: RackRegion): CrossSection | null {
+/** Вырез выбранного узора в области панели: сквозной и/или гравировки (пусто, если узора нет или в область ничего не помещается). */
+export function cutPattern(w: ManifoldToplevel, pat: PatternParams, region: RackRegion): PatternCut {
+  const at = (build: Parameters<typeof placeCut>[2]) => placeCut(region, pat.rotate, build)
   switch (pat.kind) {
-    case 'skadis': return placePattern(w, region, pat.rotate, (b) => skadisCut(w, b, pat.skadis))
-    case 'hex': return placePattern(w, region, pat.rotate, (b) => hexCut(w, b, pat.hex))
-    case 'pills': return placePattern(w, region, pat.rotate, (b) => pillsCut(w, b, pat.pills))
-    case 'lines': return placePattern(w, region, pat.rotate, (b) => linesCut(w, b, pat.lines))
-    case 'passthrough': return placePattern(w, region, pat.rotate, (b) => passthroughCut(w, b, pat.passthrough))
-    default: return null
+    case 'skadis': return at((b) => skadisCut(w, b, pat.skadis))
+    case 'hex': return at((b) => hexCut(w, b, pat.hex))
+    case 'pills': return at((b) => pillsCut(w, b, pat.pills))
+    case 'lines': return at((b) => linesCut(w, b, pat.lines))
+    case 'passthrough': return at((b) => passthroughCut(w, b, pat.passthrough))
+    default: return {}
   }
 }
 

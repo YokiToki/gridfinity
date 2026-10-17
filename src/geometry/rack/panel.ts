@@ -1,6 +1,7 @@
 import type { Manifold } from 'manifold-3d'
 import { roundedRectCS } from '../bin'
 import { getWasm } from '../wasm'
+import { applyEngrave } from './engrave'
 import { cutPattern, patternIssues } from './patterns'
 import { defaultPattern, type Issue, type PatternParams } from './patterns/types'
 import { HEIGHT_TOLERANCE, MAX_UNITS, MIN_UNITS, RACK_WIDTH, rackLayout } from './spec'
@@ -79,12 +80,14 @@ export async function buildRackPanel(p: RackPanelParams, wasmUrl?: string): Prom
   const ears = earCut(w, p, l.holes)
   const base = ears ? outline.subtract(ears) : outline
   const cut = cutPattern(w, p.pattern, l.region)
-  const plan = cut ? base.subtract(cut) : base
-  const panel = Manifold.extrude(plan, p.thickness)
-  const parts = panel.decompose()
+  const plan = cut.through ? base.subtract(cut.through) : base
+  const solid = Manifold.extrude(plan, p.thickness)
+  const parts = solid.decompose()
   const pieces = parts.length
   parts.forEach((q) => q.delete())
-  if (pieces > 1) { panel.delete(); return { panel: null, back: null, error: 'rack.error.disconnected', warnings: v.warnings } }
+  if (pieces > 1) { solid.delete(); return { panel: null, back: null, error: 'rack.error.disconnected', warnings: v.warnings } }
+  const panel = cut.engrave?.length ? applyEngrave(w, solid, cut.engrave, p.thickness) : solid
+  if (panel !== solid) solid.delete()
   const back = p.back.enabled ? Manifold.extrude(base, p.back.thickness).translate([0, 0, -p.back.thickness]) : null
   return { panel, back, warnings: v.warnings }
 }

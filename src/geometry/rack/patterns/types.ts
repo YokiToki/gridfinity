@@ -28,6 +28,6 @@ export const defaultPattern: PatternParams = {
 }
 
 /** Замечание о печатаемости: ключ перевода и имя настройки (ключ rack.field.*), которая слишком мала. */
-export interface Issue { key: string; setting?: string }
+export interface Issue { key: string; setting?: string; /** Число для текста (предел глубины, мм). */ value?: number }
 /** Минимальная печатаемая ширина: два периметра сопла 0.4 мм. */
 export const MIN_FEATURE = 0.8
