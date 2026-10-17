@@ -9,7 +9,7 @@ const oneOf = <T extends string>(v: unknown, all: readonly T[], d: T): T => (all
 /** Нормализует сохранённые параметры панели: каждое число, флаг и вид проверяются, частичная запись не ломает режим. */
 export function migrateRackPanel(raw: Record<string, unknown>): Record<string, unknown> {
   const d = defaultRackPanel, e = obj(raw.ears), pt = obj(raw.pattern), b = obj(raw.back)
-  const as = obj(pt.asanoha), sk = obj(pt.skadis), hx = obj(pt.hex), pl = obj(pt.pills), ln = obj(pt.lines), pa = obj(pt.passthrough)
+  const hk = obj(pt.hicks), as = obj(pt.asanoha), sk = obj(pt.skadis), hx = obj(pt.hex), pl = obj(pt.pills), ln = obj(pt.lines), pa = obj(pt.passthrough)
   const dp = d.pattern
   return {
     units: Math.round(num(raw.units, d.units)),
@@ -27,6 +27,7 @@ export function migrateRackPanel(raw: Record<string, unknown>): Record<string, u
       hex: { width: num(hx.width, dp.hex.width), wall: num(hx.wall, dp.hex.wall) },
       pills: { width: num(pl.width, dp.pills.width), length: num(pl.length, num(pl.height, dp.pills.length)), wall: num(pl.wall, dp.pills.wall), edgePills: bool(pl.edgePills, dp.pills.edgePills) },
       lines: { height: num(ln.height, dp.lines.height), wall: num(ln.wall, dp.lines.wall) },
+      hicks: { width: num(hk.width, dp.hicks.width), stroke: num(hk.stroke, dp.hicks.stroke), gap: num(hk.gap, dp.hicks.gap) },
       asanoha: { width: num(as.width, dp.asanoha.width), mainWidth: num(as.mainWidth, dp.asanoha.mainWidth), mainDepth: num(as.mainDepth, dp.asanoha.mainDepth), detailWidth: num(as.detailWidth, dp.asanoha.detailWidth), detailDepth: num(as.detailDepth, dp.asanoha.detailDepth) },
       passthrough: { borderX: num(pa.borderX, dp.passthrough.borderX), borderY: num(pa.borderY, dp.passthrough.borderY), radius: num(pa.radius, dp.passthrough.radius) },
     },

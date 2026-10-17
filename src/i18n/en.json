@@ -986,7 +986,8 @@
       "invalid": "Some values are out of range, the model is not updated."
     },
     "warning": {
-      "thin": "{{setting}} is below the minimum printable width of 0.8 mm."
+      "thin": "{{setting}} is below the minimum printable width of 0.8 mm.",
+      "depth": "{{setting}} is limited to {{value}} (panel thickness minus 0.8 mm)."
     },
     "field": {
       "slotWidth": "Slot width",
@@ -1002,7 +1003,13 @@
       "borderX": "Side border",
       "borderY": "Top and bottom border",
       "radius": "Opening corner radius",
-      "length": "Length"
+      "length": "Length",
+      "mainWidth": "Main stroke width",
+      "mainDepth": "Main stroke depth",
+      "detailWidth": "Detail stroke width",
+      "detailDepth": "Detail stroke depth",
+      "stroke": "Stroke",
+      "gap": "Whitespace"
     },
     "size": {
       "title": "Size",
@@ -1038,11 +1045,15 @@
         "hex": "Hexagons",
         "pills": "Pills",
         "lines": "Lines",
-        "passthrough": "Opening"
+        "passthrough": "Opening",
+        "asanoha": "Asanoha",
+        "hicks": "Hicks hexagon"
       },
       "rotate": "Rotate 90°",
       "help": "Only whole elements that fit the window between the ears are cut, centred.",
-      "slotted": "Pattern settings"
+      "slotted": "Pattern settings",
+      "engraveHelp": "Asanoha is engraved into the front face, the panel stays solid. A depth of 0 switches that set of strokes off.",
+      "hicksHelp": "Nested hexagon outlines: strokes stay as material, whitespace is cut through. Bridges keep it in one piece."
     },
     "back": {
       "title": "Back wall",

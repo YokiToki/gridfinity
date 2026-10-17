@@ -1,5 +1,5 @@
-export type PatternKind = 'none' | 'skadis' | 'hex' | 'pills' | 'lines' | 'passthrough' | 'asanoha'
-export const PATTERN_KINDS: PatternKind[] = ['none', 'skadis', 'hex', 'pills', 'lines', 'passthrough', 'asanoha']
+export type PatternKind = 'none' | 'skadis' | 'hex' | 'pills' | 'lines' | 'passthrough' | 'asanoha' | 'hicks'
+export const PATTERN_KINDS: PatternKind[] = ['none', 'skadis', 'hex', 'pills', 'lines', 'passthrough', 'asanoha', 'hicks']
 
 /** Параметры каждого узора хранятся отдельно, чтобы переключение вида не теряло настройки остальных. */
 export interface SkadisParams { slotWidth: number; slotLength: number; pitch: number; rowStep: number; shift: number }
@@ -9,6 +9,8 @@ export interface PillsParams { width: number; length: number; wall: number; edge
 export interface LinesParams { height: number; wall: number }
 /** Асаноха: width — ширина шестиугольника между гранями; штрихи гравируются, глубина 0 выключает набор. */
 export interface AsanohaParams { width: number; mainWidth: number; mainDepth: number; detailWidth: number; detailDepth: number }
+/** Hicks hexagon: width — ячейка между гранями, stroke — материал между вырезами, gap — вырез (пустота). */
+export interface HicksParams { width: number; stroke: number; gap: number }
 export interface PassthroughParams { borderX: number; borderY: number; radius: number }
 
 export interface PatternParams {
@@ -17,7 +19,7 @@ export interface PatternParams {
   margin: number
   /** Поворот узора на 90°. */
   rotate: boolean
-  skadis: SkadisParams; hex: HexParams; pills: PillsParams; lines: LinesParams; passthrough: PassthroughParams; asanoha: AsanohaParams
+  skadis: SkadisParams; hex: HexParams; pills: PillsParams; lines: LinesParams; passthrough: PassthroughParams; asanoha: AsanohaParams; hicks: HicksParams
 }
 
 export const defaultPattern: PatternParams = {
@@ -27,6 +29,7 @@ export const defaultPattern: PatternParams = {
   pills: { width: 6, length: 20, wall: 2, edgePills: true },
   lines: { height: 3, wall: 2 },
   passthrough: { borderX: 0, borderY: 0, radius: 3 },
+  hicks: { width: 24, stroke: 1.2, gap: 1.2 },
   asanoha: { width: 20, mainWidth: 1.2, mainDepth: 1.2, detailWidth: 1, detailDepth: 0.8 },
 }
 

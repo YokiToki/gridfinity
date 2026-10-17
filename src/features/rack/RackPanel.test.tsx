@@ -61,7 +61,7 @@ describe('RackPanel: секции', () => {
     render(<Harness start={{ ...withPattern({ kind: 'skadis' }), back: { enabled: true, thickness: 0.6 } }} />)
     await expectAllNumericSteppers()
   })
-  it.each(['hex', 'pills', 'lines', 'passthrough'] as const)('у числовых полей узора %s есть кнопки − и +', async (kind) => {
+  it.each(['hex', 'pills', 'lines', 'passthrough', 'asanoha', 'hicks'] as const)('у числовых полей узора %s есть кнопки − и +', async (kind) => {
     render(<Harness start={withPattern({ kind })} />)
     await expectAllNumericSteppers()
   })
@@ -83,6 +83,22 @@ describe('RackPanel: поля зависят от выбора', () => {
     await userEvent.selectOptions(screen.getByLabelText('Pattern'), 'passthrough')
     expect(screen.getByLabelText('Side border')).toBeInTheDocument(); expect(screen.queryByRole('switch', { name: 'Edge pills' })).toBeNull()
     expect(latest.pattern.kind).toBe('passthrough')
+  })
+  it('асаноха и Hicks показывают свои поля и подсказки', async () => {
+    render(<Harness />)
+    await openSection('Pattern')
+    await userEvent.selectOptions(screen.getByLabelText('Pattern'), 'asanoha')
+    for (const l of ['Width', 'Main stroke width', 'Main stroke depth', 'Detail stroke width', 'Detail stroke depth']) expect(screen.getByLabelText(l)).toBeInTheDocument()
+    expect(screen.getByText(/engraved into the front face/)).toBeInTheDocument(); expect(screen.queryByLabelText('Whitespace')).toBeNull()
+    await userEvent.selectOptions(screen.getByLabelText('Pattern'), 'hicks')
+    for (const l of ['Width', 'Stroke', 'Whitespace']) expect(screen.getByLabelText(l)).toBeInTheDocument()
+    expect(screen.getByText(/Bridges keep it in one piece/)).toBeInTheDocument(); expect(screen.queryByLabelText('Main stroke depth')).toBeNull()
+    expect(latest.pattern.kind).toBe('hicks')
+  })
+  it('глубина асаноха выше предела показывает предупреждение с пределом', async () => {
+    render(<Harness start={withPattern({ kind: 'asanoha', asanoha: { ...defaultPattern.asanoha, mainDepth: 5 } })} />)
+    await openSection('Pattern')
+    expect(screen.getByText(/Main stroke depth is limited to 2.2 mm/)).toBeInTheDocument()
   })
   it('настройки других узоров сохраняются при переключении', async () => {
     render(<Harness start={withPattern({ kind: 'hex', hex: { width: 12, wall: 2 } })} />)
@@ -144,6 +160,14 @@ describe('сохранение параметров', () => {
   it('старое поле pills.height читается как length', () => {
     localStorage.setItem('rack.panel', JSON.stringify({ pattern: { kind: 'pills', pills: { height: 25 } } }))
     expect(loadPersisted('rack.panel', defaultRackPanel, migrateRackPanel).pattern.pills).toMatchObject({ length: 25, width: 6 })
+  })
+  it('сохранённая панель без настроек асаноха и Hicks загружается с умолчаниями', () => {
+    localStorage.setItem('rack.panel', JSON.stringify({ pattern: { kind: 'hex', hex: { width: 10, wall: 2 } } }))
+    const p = loadPersisted('rack.panel', defaultRackPanel, migrateRackPanel)
+    expect(p.pattern.asanoha).toEqual(defaultPattern.asanoha); expect(p.pattern.hicks).toEqual(defaultPattern.hicks); expect(p.pattern.hex).toEqual({ width: 10, wall: 2 })
+    localStorage.setItem('rack.panel', JSON.stringify({ pattern: { kind: 'hicks', hicks: { width: 'x', stroke: 2 }, asanoha: { mainDepth: null } } }))
+    const q = loadPersisted('rack.panel', defaultRackPanel, migrateRackPanel)
+    expect(q.pattern.hicks).toEqual({ ...defaultPattern.hicks, stroke: 2 }); expect(q.pattern.asanoha.mainDepth).toBe(defaultPattern.asanoha.mainDepth)
   })
   it('старое положение «нет» читается как «только по краям»', () => {
     localStorage.setItem('rack.panel', JSON.stringify({ ears: { positions: 'none' } }))

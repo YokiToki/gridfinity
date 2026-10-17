@@ -3,6 +3,7 @@ import type { RackRegion } from '../spec'
 import { asanohaCut } from './asanoha'
 import { engraveIssues } from '../engrave'
 import { hexCut } from './hex'
+import { hicksCut } from './hicks'
 import { linesCut, passthroughCut } from './lines'
 import { pillsCut } from './pills'
 import { placeCut, type PatternCut } from './region'
@@ -18,6 +19,7 @@ export function cutPattern(w: ManifoldToplevel, pat: PatternParams, region: Rack
     case 'pills': return at((b) => pillsCut(w, b, pat.pills))
     case 'lines': return at((b) => linesCut(w, b, pat.lines))
     case 'passthrough': return at((b) => passthroughCut(w, b, pat.passthrough))
+    case 'hicks': return at((b) => hicksCut(w, b, pat.hicks))
     case 'asanoha': return at((b) => asanohaCut(w, b, pat.asanoha))
     default: return {}
   }
@@ -39,6 +41,7 @@ export function patternIssues(pat: PatternParams, region: RackRegion, thickness:
     case 'hex': checks.push(['width', pat.hex.width], ['wall', pat.hex.wall]); break
     case 'pills': checks.push(['width', pat.pills.width], ['length', pat.pills.length], ['wall', pat.pills.wall]); break
     case 'lines': checks.push(['height', pat.lines.height], ['wall', pat.lines.wall]); break
+    case 'hicks': checks.push(['width', pat.hicks.width], ['stroke', pat.hicks.stroke], ['gap', pat.hicks.gap]); break
     case 'asanoha': {
       const a = pat.asanoha
       if (a.mainDepth > 0) checks.push(['mainWidth', a.mainWidth])
