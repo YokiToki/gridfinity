@@ -42,6 +42,8 @@ export function useModel<M extends ModeId>(mode: M, params: ModeParams[M], opts:
         (m) => {
           if (cancelled || !m) return // устарело
           finished = true
+          // режим сообщил об ошибке построения (rackPanel: узор разрезал панель): прежняя сетка остаётся, экспорт считается устаревшим
+          if (m.rack?.error) { setError(m.rack.error); setBusy(false); return }
           setModel(m); setError(null); setBusy(false); setPending(false)
         },
         (e: Error) => { if (!cancelled) { finished = true; setError(e.message); setBusy(false); setPending(false) } },

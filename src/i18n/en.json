@@ -972,6 +972,84 @@
   "rack": {
     "modes": {
       "panel": "Panel"
+    },
+    "error": {
+      "units": "Choose 1 to 10 whole rack units.",
+      "thickness": "Thickness must be between 1.5 and 8 mm.",
+      "cornerRadius": "Corner radius must be between 0 and 10 mm.",
+      "earSize": "Hole size must be between 2 and 12 mm.",
+      "slotLength": "A slot must not be shorter than its width.",
+      "backThickness": "Back wall thickness must be between 0.2 and 2 mm.",
+      "margin": "Margin must be between 0 and 30 mm.",
+      "region": "The margin leaves no room for a pattern.",
+      "disconnected": "This pattern splits the panel into loose pieces. Increase the margin or the walls.",
+      "invalid": "Some values are out of range, the model is not updated."
+    },
+    "warning": {
+      "thin": "{{setting}} is below the minimum printable width of 0.8 mm."
+    },
+    "field": {
+      "slotWidth": "Slot width",
+      "slotLength": "Slot length",
+      "pitch": "Slot spacing",
+      "rowStep": "Row step",
+      "shift": "Row shift",
+      "width": "Width",
+      "wall": "Wall",
+      "height": "Height",
+      "margin": "Margin",
+      "edgePills": "Edge pills",
+      "borderX": "Side border",
+      "borderY": "Top and bottom border",
+      "radius": "Opening corner radius"
+    },
+    "size": {
+      "title": "Size",
+      "summary": "{{u}} U · {{w}} × {{h}}",
+      "units": "Rack units (U)",
+      "thickness": "Thickness",
+      "cornerRadius": "Corner radius",
+      "tolerance": "Height tolerance (−0.45 mm)",
+      "toleranceHelp": "Makes the panel 0.45 mm lower so neighbouring panels fit. The mounting holes stay on the standard grid."
+    },
+    "ears": {
+      "title": "Ears",
+      "summary": "{{shape}} · {{positions}}",
+      "positions": "Positions",
+      "all": "All three",
+      "outer": "Outer two",
+      "none": "None",
+      "shape": "Shape",
+      "round": "Round",
+      "slot": "Slot",
+      "diameter": "Diameter",
+      "width": "Ear slot width",
+      "slotLength": "Ear slot length",
+      "help": "Holes sit 236.525 mm apart, at 6.35, 22.225 and 38.1 mm in every unit."
+    },
+    "pattern": {
+      "title": "Pattern",
+      "summary": "{{kind}}",
+      "kind": "Pattern",
+      "kinds": {
+        "none": "None",
+        "skadis": "Skadis",
+        "hex": "Hexagons",
+        "pills": "Pills",
+        "lines": "Lines",
+        "passthrough": "Opening"
+      },
+      "rotate": "Rotate 90°",
+      "help": "Only whole elements that fit the window between the ears are cut, centred.",
+      "slotted": "Pattern settings"
+    },
+    "back": {
+      "title": "Back wall",
+      "summaryOn": "{{t}}",
+      "summaryOff": "off",
+      "enabled": "Add a back wall",
+      "thickness": "Back wall thickness",
+      "help": "A separate thin part behind the panel, so the pattern shows another colour. It is exported as a separate object."
     }
   }
 }

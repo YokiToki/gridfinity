@@ -13,6 +13,7 @@ import { defaultParams } from '../geometry/baseplate'
 import { defaultCutout, rectCutout } from '../geometry/cutout'
 import { defaultKeychain } from '../geometry/keychain'
 import { defaultShapeState } from '../features/keychain/shapeState'
+import { defaultRackPanel } from '../geometry/rack/panel'
 
 const generate = vi.fn()
 vi.mock('./useModel', () => ({
@@ -35,8 +36,9 @@ const MODES: Mode[] = [
   { name: 'Cutout', path: '/gridfinity/cutout', key: 'gridfinity.cutout', modeName: 'Cutout', dirty: () => ({ ...defaultCutout, lip: 'none', cutouts: [rectCutout({ name: 'Tool' })] }), defaults: defaultCutout },
   { name: 'Keychain image', path: '/keychain/image', key: 'keychain.relief', modeName: 'Image', dirty: () => ({ ...defaultKeychain, imageName: '', imageId: '', relief: { ...defaultKeychain.relief, hmax: 4 }, silhouette: { ...defaultKeychain.silhouette, close: 9 } }), defaults: { ...defaultKeychain, imageName: '' } },
   { name: 'Keychain shape', path: '/keychain/shape', key: 'keychain.shape', modeName: 'Shape', dirty: () => ({ ...defaultShapeState, shape: { ...defaultShapeState.shape, kind: 'circle', width: 44 }, base: { ...defaultShapeState.base, thickness: 3 } }), defaults: defaultShapeState },
+  { name: 'Rack panel', path: '/rack/panel', key: 'rack.panel', modeName: 'Panel', dirty: () => ({ ...defaultRackPanel, units: 4, back: { enabled: true, thickness: 1 } }), defaults: defaultRackPanel },
 ]
-const OTHER_KEYS = ['gridfinity.box', 'gridfinity.baseplate', 'gridfinity.cutout', 'keychain.relief', 'keychain.shape']
+const OTHER_KEYS = ['gridfinity.box', 'gridfinity.baseplate', 'gridfinity.cutout', 'keychain.relief', 'keychain.shape', 'rack.panel']
 
 describe('Начать заново', () => {
   beforeEach(async () => { globalThis.indexedDB = new IDBFactory(); localStorage.clear(); generate.mockClear(); await i18n.changeLanguage('en') })

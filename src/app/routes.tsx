@@ -9,7 +9,7 @@ import { BaseplateMode } from '../features/baseplate/BaseplateMode'
 import { CutoutMode } from '../features/cutout/CutoutMode'
 import { ImageMode } from '../features/keychain/ImageMode'
 import { ShapeMode } from '../features/keychain/ShapeMode'
-import { ComingSoon } from './ComingSoon'
+import { RackPanelMode } from '../features/rack/RackPanelMode'
 
 /** Прежние адреса режимов (до появления продуктов) ведут на новые. */
 const legacy = (mode: string): RouteObject => ({ path: mode, element: <Navigate to={`${GRIDFINITY_PATH}/${mode}`} replace /> })
@@ -42,7 +42,7 @@ export const routes: RouteObject[] = [{
       path: 'rack',
       children: [
         { index: true, element: <ModeChooser product={productById('rack')!} /> },
-        { path: 'panel', element: <ComingSoon name="Panel" /> },
+        { path: 'panel', element: <RackPanelMode /> },
         { path: '*', element: <Navigate to={RACK_PATH} replace /> },
       ],
     },

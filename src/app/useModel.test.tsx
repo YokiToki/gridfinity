@@ -32,6 +32,21 @@ describe('useModel', () => {
     expect(result.current.model?.parts[0].mesh.volume).toBe(2)
     vi.useRealTimers()
   })
+  it('результат с rack.error: прежняя сетка остаётся, ошибка отдаётся, экспорт устарел', async () => {
+    vi.useFakeTimers()
+    const bad: ModelResult = { parts: [], rack: { error: 'rack.error.disconnected', warnings: [] } }
+    const generate = vi.fn().mockResolvedValueOnce(mesh(1)).mockResolvedValueOnce(bad).mockResolvedValueOnce(mesh(3))
+    const { result, rerender } = renderHook(({ p }) => useModel('baseplate', p, { client: { generate } }), { initialProps: { p: defaultParams } })
+    await act(async () => { await vi.advanceTimersByTimeAsync(200) })
+    rerender({ p: { ...defaultParams, x: units(5) } })
+    await act(async () => { await vi.advanceTimersByTimeAsync(200) })
+    expect(result.current.model?.parts[0].mesh.volume).toBe(1)
+    expect(result.current.error).toBe('rack.error.disconnected'); expect(result.current.pending).toBe(true)
+    rerender({ p: { ...defaultParams, x: units(6) } })
+    await act(async () => { await vi.advanceTimersByTimeAsync(200) })
+    expect(result.current.model?.parts[0].mesh.volume).toBe(3); expect(result.current.error).toBeNull(); expect(result.current.pending).toBe(false)
+    vi.useRealTimers()
+  })
   it('enabled=false: генерация не запускается, прежняя сетка остаётся, pending=true', async () => {
     vi.useFakeTimers()
     const generate = vi.fn().mockResolvedValue(mesh(1))
