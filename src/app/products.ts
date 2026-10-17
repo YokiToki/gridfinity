@@ -1,8 +1,8 @@
-import { IconGridDots, IconKey, type Icon } from '@tabler/icons-react'
+import { IconGridDots, IconKey, IconServer, type Icon } from '@tabler/icons-react'
 import type { ArtId } from './ModeArt'
-import { GRIDFINITY_PATH, KEYCHAIN_MODES, KEYCHAIN_PATH, MODES, type ProductMode } from './modes'
+import { GRIDFINITY_PATH, KEYCHAIN_MODES, KEYCHAIN_PATH, MODES, RACK_MODES, RACK_PATH, type ProductMode } from './modes'
 
-export type ProductId = 'gridfinity' | 'keychain'
+export type ProductId = 'gridfinity' | 'keychain' | 'rack'
 
 /** Раздел сайта: свои маршруты, название, описание (ключи i18n products.<id>.*) и состояние. Новый продукт — одна запись здесь плюс маршруты. */
 export interface Product {
@@ -18,6 +18,7 @@ export interface Product {
 export const PRODUCTS: Product[] = [
   { id: 'gridfinity', path: GRIDFINITY_PATH, Icon: IconGridDots, modes: MODES, artId: 'box' },
   { id: 'keychain', path: KEYCHAIN_PATH, Icon: IconKey, modes: KEYCHAIN_MODES, artId: 'keychainImage' },
+  { id: 'rack', path: RACK_PATH, Icon: IconServer, modes: RACK_MODES, artId: 'baseplate' },
 ]
 
 /** Продукт по пути: совпадает сам путь или его подпуть (граница по «/»). */

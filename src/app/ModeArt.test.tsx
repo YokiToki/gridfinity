@@ -70,7 +70,7 @@ describe('карточки с рендерами: продукты и режим
       expect(ART_IDS).toContain(p.artId)
       for (const m of p.modes ?? []) expect(ART_IDS, `${p.id}/${m.id}`).toContain(m.artId)
     }
-    expect(PRODUCTS.map((p) => p.artId)).toEqual(['box', 'keychainImage'])
+    expect(PRODUCTS.map((p) => p.artId)).toEqual(['box', 'keychainImage', 'baseplate']) // иллюстрация Rack временная до 2.3
   })
   it('корневая страница: карточка Gridfinity показывает коробку, Keychain — брелок «Изображение»; значков вместо рендеров нет', () => {
     at('/')

@@ -1,5 +1,5 @@
 import type { ArtId } from './ModeArt'
-import { IconBox, IconCircleDashed, IconLayoutGrid, IconPhoto, IconShape2, type Icon } from '@tabler/icons-react'
+import { IconBox, IconCircleDashed, IconLayoutGrid, IconPhoto, IconRectangle, IconShape2, type Icon } from '@tabler/icons-react'
 
 /** Режим продукта на сайте: маршрут, значок и ключи i18n (подпись в переключателе, тексты карточки выбора). */
 export interface ProductMode {
@@ -17,6 +17,7 @@ export interface ProductMode {
 export type ModeId = 'box' | 'baseplate' | 'cutout'
 export const GRIDFINITY_PATH = '/gridfinity'
 export const KEYCHAIN_PATH = '/keychain'
+export const RACK_PATH = '/rack'
 export const MODES: (ProductMode & { id: ModeId })[] = [
   { id: 'box', path: `${GRIDFINITY_PATH}/box`, Icon: IconBox, labelKey: 'modes.box', startKey: 'start.box', artId: 'box' },
   { id: 'baseplate', path: `${GRIDFINITY_PATH}/baseplate`, Icon: IconLayoutGrid, labelKey: 'modes.baseplate', startKey: 'start.baseplate', artId: 'baseplate' },
@@ -28,4 +29,10 @@ export type KeychainModeId = 'image' | 'shape'
 export const KEYCHAIN_MODES: (ProductMode & { id: KeychainModeId })[] = [
   { id: 'image', path: `${KEYCHAIN_PATH}/image`, Icon: IconPhoto, labelKey: 'keychain.modes.image', startKey: 'start.keychainImage', artId: 'keychainImage' },
   { id: 'shape', path: `${KEYCHAIN_PATH}/shape`, Icon: IconShape2, labelKey: 'keychain.modes.shape', startKey: 'start.keychainShape', artId: 'keychainShape' },
+]
+
+/** Режимы Rack Master: пока только Панель; корпуса и лоток добавят следующие изменения. */
+export type RackModeId = 'panel'
+export const RACK_MODES: (ProductMode & { id: RackModeId })[] = [
+  { id: 'panel', path: `${RACK_PATH}/panel`, Icon: IconRectangle, labelKey: 'rack.modes.panel', startKey: 'start.rackPanel', artId: 'baseplate' },
 ]

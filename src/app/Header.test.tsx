@@ -32,6 +32,14 @@ describe('Header: продукты и режимы', () => {
     expect(within(modes).getAllByRole('link')).toHaveLength(3)
     expect(screen.getByRole('link', { name: /back to start/ })).toHaveTextContent('Gridfinity Master')
   })
+  it('в списке продуктов три ссылки, в Rack активен Rack Master и один режим Panel', () => {
+    at('/rack/panel')
+    const products = screen.getByRole('navigation', { name: 'Product' })
+    expect(within(products).getAllByRole('link').map((l) => l.getAttribute('aria-label'))).toEqual(['Gridfinity Master', 'Keychain Master', 'Rack Master'])
+    expect(within(products).getByRole('link', { name: 'Rack Master' })).toHaveAttribute('aria-current', 'page')
+    expect(within(screen.getByRole('navigation', { name: 'Mode' })).getAllByRole('link').map((l) => l.textContent)).toEqual(['Panel'])
+    expect(screen.getByRole('link', { name: /back to start/ })).toHaveTextContent('Rack Master')
+  })
   it('переход в Keychain: режимы Изображение и Форма, режимов Gridfinity нет, активен Keychain Master', async () => {
     at('/gridfinity/box')
     await userEvent.click(within(screen.getByRole('navigation', { name: 'Product' })).getByRole('link', { name: 'Keychain Master' }))

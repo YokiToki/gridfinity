@@ -42,6 +42,16 @@ describe('маршруты', () => {
   it('неизвестный режим Gridfinity возвращает к выбору режима', () => {
     expect(at('/gridfinity/zzz').state.location.pathname).toBe('/gridfinity')
   })
+  it('/rack — выбор режима с картой Panel, /rack/panel открывается, неизвестный подпуть ведёт на /rack', () => {
+    const a = at('/rack')
+    expect(screen.getByRole('heading', { name: 'Choose a rack part' })).toBeInTheDocument()
+    expect(screen.getByTestId('card-panel')).toHaveAttribute('href', '/rack/panel')
+    expect(a.state.location.pathname).toBe('/rack')
+  })
+  it('/rack/panel открывает режим по прямой ссылке, /rack/zzz возвращает к выбору', () => {
+    expect(at('/rack/panel').state.location.pathname).toBe('/rack/panel')
+    expect(at('/rack/zzz').state.location.pathname).toBe('/rack')
+  })
   it('/keychain — выбор режима, режимы открываются по прямым ссылкам', async () => {
     const a = at('/keychain')
     expect(screen.getByRole('heading', { name: 'Choose a keychain start' })).toBeInTheDocument()

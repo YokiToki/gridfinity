@@ -63,6 +63,12 @@
       "desc": "A plain tag from a ready-made shape: rectangle, circle, ellipse, capsule or polygon, with an optional rim.",
       "tag1": "shapes",
       "tag2": "rim"
+    },
+    "rackTitle": "Choose a rack part",
+    "rackPanel": {
+      "desc": "A flat 10-inch rack panel of 1 to 10 U with standard mounting holes and an optional through pattern.",
+      "tag1": "1–10 U",
+      "tag2": "patterns"
     }
   },
   "baseplate": {
@@ -562,6 +568,12 @@
       "desc": "Turn an image into a relief keychain: silhouette, height pattern, ring mount.",
       "tag1": "image → relief",
       "tag2": "soon"
+    },
+    "rack": {
+      "name": "Rack Master",
+      "desc": "10-inch rack panels: blank and vented, Skadis, hexagon, pills and lines patterns, STL and 3MF export.",
+      "tag1": "panel · 1–10 U",
+      "tag2": "patterns"
     }
   },
   "keychain": {
@@ -956,5 +968,10 @@
       "decline": "Decline"
     },
     "motivationTitle": "Why it is free"
+  },
+  "rack": {
+    "modes": {
+      "panel": "Panel"
+    }
   }
 }

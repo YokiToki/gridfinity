@@ -16,6 +16,12 @@ describe('lastSession', () => {
     expect(s).toMatchObject({ product: 'keychain', size: '1 emblem' })
     expect(s.mode).toBeUndefined()
   })
+  it('Rack: запись с продуктом и режимом читается, неизвестный продукт считается Gridfinity', () => {
+    recordSession('panel', '2 U', 'rack')
+    expect(readSession()).toMatchObject({ product: 'rack', mode: 'panel', size: '2 U' })
+    localStorage.setItem('gridfinity.last', JSON.stringify({ product: 'zzz', mode: 'box', size: '1', savedAt: 1 }))
+    expect(readSession()).toMatchObject({ product: 'gridfinity', mode: 'box' })
+  })
   it.each(['not json', '{"size":1}', '{"product":"gridfinity","size":"x","savedAt":1}', 'null'])('битая запись %s даёт null', (raw) => {
     localStorage.setItem('gridfinity.last', raw)
     expect(readSession()).toBeNull()

@@ -2,13 +2,14 @@ import { createHashRouter, Navigate, type RouteObject } from 'react-router'
 import { AppShell } from './AppShell'
 import { StartPage } from './StartPage'
 import { ModeChooser } from './ModeChooser'
-import { GRIDFINITY_PATH, KEYCHAIN_PATH } from './modes'
+import { GRIDFINITY_PATH, KEYCHAIN_PATH, RACK_PATH } from './modes'
 import { productById } from './products'
 import { BoxMode } from '../features/box/BoxMode'
 import { BaseplateMode } from '../features/baseplate/BaseplateMode'
 import { CutoutMode } from '../features/cutout/CutoutMode'
 import { ImageMode } from '../features/keychain/ImageMode'
 import { ShapeMode } from '../features/keychain/ShapeMode'
+import { ComingSoon } from './ComingSoon'
 
 /** Прежние адреса режимов (до появления продуктов) ведут на новые. */
 const legacy = (mode: string): RouteObject => ({ path: mode, element: <Navigate to={`${GRIDFINITY_PATH}/${mode}`} replace /> })
@@ -35,6 +36,14 @@ export const routes: RouteObject[] = [{
         { path: 'image', element: <ImageMode /> },
         { path: 'shape', element: <ShapeMode /> },
         { path: '*', element: <Navigate to={KEYCHAIN_PATH} replace /> },
+      ],
+    },
+    {
+      path: 'rack',
+      children: [
+        { index: true, element: <ModeChooser product={productById('rack')!} /> },
+        { path: 'panel', element: <ComingSoon name="Panel" /> },
+        { path: '*', element: <Navigate to={RACK_PATH} replace /> },
       ],
     },
     legacy('box'), legacy('baseplate'), legacy('cutout'),

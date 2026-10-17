@@ -24,11 +24,18 @@ const renderAt = (path: string) => render(
 describe('StartPage (выбор продукта)', () => {
   beforeEach(async () => { localStorage.clear(); await i18n.changeLanguage('en') })
 
-  it('две карточки ведут на разделы продуктов', () => {
+  it('три карточки ведут на разделы продуктов', () => {
     renderAt('/')
     expect(screen.getByTestId('card-gridfinity')).toHaveAttribute('href', '/gridfinity')
     expect(screen.getByTestId('card-keychain')).toHaveAttribute('href', '/keychain')
     expect(screen.getByTestId('card-keychain')).toHaveTextContent('Keychain Master')
+    expect(screen.getByTestId('card-rack')).toHaveAttribute('href', '/rack')
+    expect(screen.getByTestId('card-rack')).toHaveTextContent('Rack Master')
+  })
+  it('клавиша 3 открывает Rack Master', async () => {
+    renderAt('/')
+    await userEvent.keyboard('3')
+    expect(await screen.findByRole('heading', { name: 'Choose a rack part' })).toBeInTheDocument()
   })
   it('вьюпорт и панель параметров не рендерятся', () => {
     renderAt('/')
