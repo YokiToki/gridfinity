@@ -95,7 +95,7 @@ async function rackModels(): Promise<Record<string, TriMesh>> {
 /** Rack: корпус 2 U с окном, двумя keystone и сотами; лицевая грань на столе, оболочка растёт вверх открытой стороной к зрителю. */
 async function rackCaseModels(): Promise<Record<string, TriMesh>> {
   const r = await generate('rackCase', {
-    ...defaultRackCase, device: { width: 120, depth: 90, height: 60 }, keystones: { count: 2, side: 'right' },
+    ...defaultRackCase, device: { width: 120, depth: 90, height: 60 }, openings: [{ kind: 'keystone', count: 2, perRow: 1, zone: 'right', diameter: 8 }],
     vents: { enabled: true, width: 14, wall: 2.4, margin: 8 }, ears: { ...defaultRackCase.ears, positions: 'outer' },
   })
   return { rackCase: meshOf(r) }
